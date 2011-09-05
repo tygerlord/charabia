@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:stretchColumns="*"
+	>
+	<TableRow>
+		<TextView 
+			android:layout_span="2"
+			android:text="@string/to"
+		/>
+	</TableRow>
+	<TableRow>
+		<EditText
+			android:layout_span="2"
+			android:id="@+id/to"
+			android:inputType="text|textMultiLine|textAutoCorrect"
+			android:maxLines="3"
+			android:minLines="1"
+			android:background="@android:drawable/editbox_background"
+		/>
+	</TableRow>
+	<TableRow>
+		<Button
+			android:layout_span="2"
+			android:id="@+id/add_to"
+			android:text="@string/add_to"
+			android:onClick="add_to"
+		/>
+	</TableRow>
+	<TableRow>
+		<TextView  
+			android:layout_span="2"
+			android:text="@string/message"
+		/>
+	</TableRow>
+	<TableRow>
+		<EditText
+			android:layout_span="2"
+			android:id="@+id/message"
+			android:layout_marginBottom="10dp"
+			android:inputType="text|textMultiLine|textAutoCorrect"
+			android:background="@android:drawable/editbox_background"
+			android:maxLines="10"
+			android:minLines="10"
+		/>
+	</TableRow>
+	<TableRow>
+		<Button
+			android:id="@+id/envoyer"
+			android:text="@string/send"
+			android:onClick="send"
+		/>
+
+		<Button
+			android:layout_column="1"
+			android:id="@+id/quit"
+			android:text="@string/quit" 
+			android:onClick="quit"
+		/>
+	</TableRow>
+		
+</TableLayout>
+	
+

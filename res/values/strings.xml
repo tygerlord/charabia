@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">Charabia</string>
+	<string name="options">Options</string>
+	<string name="help">Aide</string>
+	<string name="about">A propos</string>
+	<string name="quit">Quitter</string>
+	<string name="keys">Clés</string>
+	<string name="master">Maitre</string>
+	<string name="slave">Esclave</string>
+	<string name="to">Destinataire(s)</string>
+	<string name="from">De</string>
+	<string name="message">Message</string>
+	<string name="send">Envoyer</string>
+	<string name="answer">Répondre</string>
+	<string name="says">Dit</string>
+	<string name="add_to">Ajouter destinataire</string>
+	<string name="next">Suivant</string>
+	<string name="imcoming_message_ticker_text">%d message(s)</string>
+	<string name="unexpected_error">erreur inattendue</string>
+	<string name="fail_send">Echec lors de l\'envoi</string>
+</resources>
