@@ -18,6 +18,7 @@
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ContentResolver;
 
 import android.os.Bundle;
 
@@ -58,10 +59,10 @@ public class SMSReceiver extends BroadcastReceiver
 						ContentResolver contentResolver = context.getContentResolver();
 						Tools.putSmsToDatabase(contentResolver, messages[0]);
 
-						SmsViewActivity.smsListe.add(messages[0]);
-						
-						Tools.showNotification(context);
-						
+						Tools.writeSMS(context, messages[0]);
+
+						Tools.showNotification(context, messages[0]);
+
 						abortBroadcast();
 					}
 				}

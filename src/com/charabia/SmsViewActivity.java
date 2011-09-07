@@ -44,8 +44,6 @@ public class SmsViewActivity extends Activity
 {
 	private static final String TAG = "SmsViewActivity";
 
-	public static java.util.Vector<SmsMessage> smsListe = new java.util.Vector<SmsMessage>();
-
 	private TextView from = null;
 	private TextView message = null;
 	private Button next = null;
@@ -145,34 +143,34 @@ public class SmsViewActivity extends Activity
 
 	public void doNext(View view) {
 	
-		Toast.makeText(getApplicationContext(), "doNext " + smsListe.size(), Toast.LENGTH_LONG).show();
+		Toast.makeText(getApplicationContext(), "doNext " + Tools.getNbMessages(getApplicationContext()), Toast.LENGTH_LONG).show();
 	
-		if(smsListe.isEmpty()) {
+		SmsMessage sms = Tools.getFirstMessage(getApplicationContext());
+		if(sms == null) {
 			finish();
 		}
-		else {
-			SmsMessage sms = smsListe.get(0);
-			smsListe.remove(0);
-			
-			String phoneNumber = sms.getDisplayOriginatingAddress() ;
-			from.setText(phoneNumber);
-			
-			String result = Tools.decrypt(getApplicationContext(), phoneNumber, sms.getMessageBody());
-			
-			//TODO: preference
-			ContentResolver contentResolver = getApplicationContext().getContentResolver();
-			Tools.putSmsToDatabase(contentResolver, phoneNumber, 
-				System.currentTimeMillis(), Tools.MESSAGE_TYPE_INBOX,
-				sms.getStatus(), result);
 
-			message.setText(result);
-			
-			if(smsListe.isEmpty()) {
-				next.setText(getString(R.string.quit));
-			}
-			else {
-				next.setText(getString(R.string.next));
-			}
+		// TODO: remove after reading only, so on next button call
+		Tools.removeSMS(getApplicationContext());
+		
+		String phoneNumber = sms.getDisplayOriginatingAddress() ;
+		from.setText(phoneNumber);
+		
+		String result = Tools.decrypt(getApplicationContext(), phoneNumber, sms.getMessageBody());
+		
+		//TODO: preference
+		ContentResolver contentResolver = getApplicationContext().getContentResolver();
+		Tools.putSmsToDatabase(contentResolver, phoneNumber, 
+			System.currentTimeMillis(), Tools.MESSAGE_TYPE_INBOX,
+			sms.getStatus(), result);
+
+		message.setText(result);
+		
+		if(Tools.getNbMessages(getApplicationContext())>0) {
+			next.setText(getString(R.string.next));
+		}
+		else {
+			next.setText(getString(R.string.quit));
 		}
 	}
 

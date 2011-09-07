@@ -27,7 +27,7 @@ public class BootReceiver extends BroadcastReceiver
 	{
 		if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED))
 		{
-			Tools.showNotificationTest(context);
+			Tools.showNotification(context);
 		}
 	}
  

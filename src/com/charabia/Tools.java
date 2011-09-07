@@ -36,13 +36,19 @@ import android.app.PendingIntent;
 import android.app.Notification;
 import android.app.NotificationManager;
 
+import android.widget.Toast;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
 import javax.crypto.spec.IvParameterSpec;
 
-import android.widget.Toast;
+import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
 class OpenHelper extends SQLiteOpenHelper 
 {
@@ -106,6 +112,10 @@ public class Tools
 
 	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
 
+	private static final String TAG = "CHARABIA_TOOLS";
+	
+	public static final String sms_dirname = "messages";
+	
 	private static final byte[] demo_key = new byte[] { 
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ,
@@ -158,8 +168,13 @@ public class Tools
 	}
 
 	static public void showNotification(Context context, SmsMessage message) {
+			int nbMessages = getNbMessages(context);
+			
 			String messageBody = message.getMessageBody();
 			String phoneNumber = message.getDisplayOriginatingAddress();
+
+			// look up the notification manager service
+			NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
 
 			Intent intent = new Intent(SmsViewActivity.class.getName());
 			intent.putExtra("DATA", message.getPdu());
@@ -200,21 +215,81 @@ public class Tools
 			// the notification.  It will always be a unique number within your
 			// application.
 			nm.notify(R.string.imcoming_message_ticker_text, notif);
-    }
+	}
 
+	static public void writeSMS(Context context, SmsMessage message) {
+		try {
+			String filename = System.currentTimeMillis() + ".sms"; 
+			Log.v(TAG, "writeSMS " + filename); 
+			File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
+			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir,filename)));
+			oos.writeObject(message);
+			oos.close();
+		}
+		catch(Exception e) {
+			Log.v(TAG, "error saving sms" + e.toString());
+		}
+	}
+
+	static public SmsMessage readSMS(Context context, String filename) {
+		Log.v(TAG, "readSMS " + filename); 
+		try {
+			File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir,filename)));
+			SmsMessage message = (SmsMessage) ois.readObject();
+			ois.close();
+			return message;
+		}
+		catch(Exception e) {
+			Log.v(TAG, "error reading sms" + e.toString());
+		}
+		return null;
+	}
+
+	static public SmsMessage getLastMessage(Context context) {
+		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
+		String[] filelist = dir.list();
+		if(filelist.length>0) {
+			return readSMS(context, filelist[filelist.length-1]);
+		}
+		return null;
+	}
+
+	static public SmsMessage getFirstMessage(Context context) {
+		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
+		String[] filelist = dir.list();
+		if(filelist.length>0) {
+			return readSMS(context, filelist[0]);
+		}
+		return null;
+	}
+
+	static void removeSMS(Context context) {
+		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
+		String[] filelist = dir.list();
+		if(filelist.length>0) {
+			File f = new File(dir, filelist[0]);
+			Log.v(TAG, "remove message " + filelist[0]);
+			f.delete();
+		}
+	}
+	
+	static public int getNbMessages(Context context) {
+		return context.getDir(sms_dirname, Context.MODE_PRIVATE).list().length;
+	}
 
 	static public void showNotification(Context context) {
 	
 		// look up the notification manager service
 		NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-		int nbMessages = SmsViewActivity.smsListe.size();
+		int nbMessages = Tools.getNbMessages(context);
 
-		if(nbMessages < 0) {
+		if(nbMessages <= 0) {
 			nm.cancel(R.string.imcoming_message_ticker_text);
 		}
 		else {
-			SmsMessage message = SmsViewActivity.smsListe.lastElement();
+			SmsMessage message = Tools.getLastMessage(context);
 			showNotification(context, message);
 		}
     }
