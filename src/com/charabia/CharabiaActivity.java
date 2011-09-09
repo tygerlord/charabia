@@ -47,8 +47,6 @@ import android.telephony.SmsManager;
 
 public class CharabiaActivity extends Activity
 {
-	private OpenHelper openHelper = new OpenHelper(this);
-
 	// Menus
 	private static final int SETTINGS_ID = 1;
 	private static final int ADD_ID = SETTINGS_ID + 1;
