@@ -19,4 +19,5 @@
 	<string name="imcoming_message_ticker_text">%d message(s)</string>
 	<string name="unexpected_error">erreur inattendue</string>
 	<string name="fail_send">Echec lors de l\'envoi</string>
+	<string name="end_data">fin</string>
 </resources>

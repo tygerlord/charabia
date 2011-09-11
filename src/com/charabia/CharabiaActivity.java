@@ -29,19 +29,15 @@ import android.content.Intent;
 import android.content.Context;
 import android.content.ContentResolver;
 
-import android.text.format.Time;
-
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-
-import android.provider.Contacts;  
-import android.provider.Contacts.People;
 
 import android.widget.Toast;
 import android.widget.EditText;
 
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 
 import android.telephony.SmsManager;
 
@@ -65,6 +61,8 @@ public class CharabiaActivity extends Activity
 	private EditText to = null;
 	private EditText message = null;
 	
+	private int mode = MODE_MAITRE;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -75,10 +73,10 @@ public class CharabiaActivity extends Activity
 		to = (EditText) findViewById(R.id.to);
 		message = (EditText) findViewById(R.id.message);
 		
-		message.setText(
+	/*	message.setText(
 			android.util.Base64.encodeToString(Tools.generateKeyAES(getApplicationContext()).getEncoded(), 
 			android.util.Base64.DEFAULT));
-		
+	*/	
 	//	Intent intent = new Intent(Intent.ACTION_SENDTO);
 	//	intent.setData(Uri.parse("sms:"));
 	//	startActivity(intent);
@@ -148,6 +146,16 @@ public class CharabiaActivity extends Activity
 				return true;
 			case ADD_ID:
 				showDialog(MODE_DIALOG);
+				
+				Toast.makeText(this, "mode="+mode, Toast.LENGTH_LONG).show();
+
+				OpenHelper oh = new OpenHelper(this);
+				SQLiteDatabase db = oh.getWritableDatabase();
+				
+				oh.insert(db, "test", "0602030405", new byte[] { 0x00 } );
+				
+				db.close();
+				
 				return true;
 			case HELP_ID:
 				intent = new Intent(Intent.ACTION_VIEW);
@@ -196,15 +204,14 @@ public class CharabiaActivity extends Activity
 		private final DialogInterface.OnClickListener modeListener =
 			new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialogInterface, int i) {
-						/*
-                        if(itemsAdd[i].equals(getString(R.string.generate_key)))
-                        {
-                                Intent intent = new Intent(Intent.ACTION_VIEW);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-                                intent.setClassName(getApplicationContext(), GenerateKeyActivity.class.getName());
-                                startActivity(intent);
-                        }
-						*/
+					switch(i) {
+						case 1:
+							mode = MODE_ESCLAVE;
+							break;
+						case 0:
+						default:
+							mode = MODE_MAITRE;
+					}
 			}
 		};
 
@@ -213,27 +220,22 @@ public class CharabiaActivity extends Activity
 	}
 	
 	public void add_to(View view) {
-		Intent intent = new Intent(Intent.ACTION_PICK, People.CONTENT_URI);//Uri.parse("content://contacts/people"));
+		Intent intent = new Intent(PickContactActivity.class.getName());//Uri.parse("content://contacts/people"));
 		startActivityForResult(intent, PICK_CONTACT);
 	}
 	
+	@Override
 	public void onActivityResult(int reqCode, int resultCode, Intent data) {
-      super.onActivityResult(reqCode, resultCode, data);
+		super.onActivityResult(reqCode, resultCode, data);
 
-      switch (reqCode) {
-        case (PICK_CONTACT) :
-          if (resultCode == Activity.RESULT_OK) {
-              Uri contactData = data.getData();
-                Cursor c =  managedQuery(contactData, null, null, null, null);
-                startManagingCursor(c);
-                if (c.moveToFirst()) {
-                  String name = c.getString(c.getColumnIndexOrThrow(People.NAME));  
-                  String number = c.getString(c.getColumnIndexOrThrow(People.NUMBER));
-                  //perrsonname.setText(name);
-                  Toast.makeText(this,  name + " has number " + number, Toast.LENGTH_LONG).show();
-                 }
-           }
-         break;
+		switch (reqCode) {
+        	case (PICK_CONTACT) :
+        		if (resultCode == Activity.RESULT_OK) {
+        			int id = data.getIntExtra("ID", -1);
+                    Toast.makeText(this,  "Contact ID=" + id, Toast.LENGTH_LONG).show();
+        			
+        		}
+	         break;
       }
 
   }

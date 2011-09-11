@@ -25,20 +25,13 @@ import android.view.View;
 
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 
 import android.content.Intent;
 import android.content.ContentResolver;
 
-import android.database.Cursor;
-
-import android.net.Uri;
-
 import android.telephony.SmsMessage;
 
-
-import java.util.ArrayList;
 
 public class SmsViewActivity extends Activity
 {
@@ -48,6 +41,7 @@ public class SmsViewActivity extends Activity
 	private TextView message = null;
 	private Button next = null;
 
+	private MySmsManager msm = null;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -59,64 +53,11 @@ public class SmsViewActivity extends Activity
 		message = (TextView) findViewById(R.id.message);
 		next = (Button) findViewById(R.id.next);
 		
+		msm = new MySmsManager(getApplicationContext());
+		
 		doNext(null);
-        //Cursor c = getContentResolver().query(Uri.parse("content://sms"), null, null /*"address=12345678"*/,
-          //         null, null);
- 
-		//ArrayList<String> liste = new ArrayList<String>();
-			
-		// if(c != null) {
-			// c.moveToFirst ();
-		
-			// do {
-				// String str = c.getString(c.getColumnIndexOrThrow("address")) + "\n" +
-					// c.getString(c.getColumnIndexOrThrow("person")) + "\n" +
-					// c.getInt(c.getColumnIndexOrThrow("type")) + "\n" +
-					// c.getInt(c.getColumnIndexOrThrow("read")) + "\n" +
-					// c.getString(c.getColumnIndexOrThrow("date")) + "\n" +
-					// c.getString(c.getColumnIndexOrThrow("body")) + "\n";
-				// liste.add(str);
-			// }while(c.moveToNext());
-		// }
-		
-		//String [] str = liste.toArray(new String[liste.size()]);
-
-		//String[] listeStrings = {"France","Allemagne","Russie"};
-		//setListAdapter(new ArrayAdapter<String>(this, R.layout.list_item, str));//listeStrings));
-	}
+ 	}
 	
-	@Override
-	protected void onResume() {
-		super.onResume();
-
-		/*
-		onNewIntent(getIntent());
-		
-		Intent intent = getIntent();
-		String action = intent == null ? null : intent.getAction();
-		byte[] data = intent == null ? null : intent.getByteArrayExtra("DATA");
-
-		
-        Log.v(TAG, "intent=" + intent + ","+ action + "," + data);
-		
-		
-		if (intent != null && action != null) {
-			if(action.equals(SmsViewActivity.class.getName())) {
-				if(data != null) {
-					SmsMessage sms = SmsMessage.createFromPdu(data);
-					if(sms != null) {
-						Log.v(TAG, "info:" + sms.getDisplayOriginatingAddress() + "," + sms.getMessageBody());
-					
-						from.setText(sms.getDisplayOriginatingAddress());
-						message.setText(sms.getMessageBody());
-					}
-				}
-			}
-		}
-		*/
-
-	}
-
 	@Override
 	protected void onPause() {
 		super.onPause();
@@ -125,8 +66,7 @@ public class SmsViewActivity extends Activity
 		
 	}
 
-	public void answer(View view) {
-	
+	public void answer(View view) {	
 		Intent intent = new Intent(Intent.ACTION_MAIN);
 		intent.setClassName(this, CharabiaActivity.class.getName());
 		intent.putExtra("TO", from.getText());
@@ -141,17 +81,21 @@ public class SmsViewActivity extends Activity
 		finish();
 	}
 
+	/*
+	 * @brief Action called to view next message
+	 */
 	public void doNext(View view) {
 	
-		Toast.makeText(getApplicationContext(), "doNext " + Tools.getNbMessages(getApplicationContext()), Toast.LENGTH_LONG).show();
+		Toast.makeText(getApplicationContext(), "doNext " + msm.getNbMessages(), Toast.LENGTH_LONG).show();
 	
-		SmsMessage sms = Tools.getFirstMessage(getApplicationContext());
+		SmsMessage sms = msm.getFirstMessage();
 		if(sms == null) {
 			finish();
+			return;
 		}
 
-		// TODO: remove after reading only, so on next button call
-		Tools.removeSMS(getApplicationContext());
+		//TODO: remove after reading only, so on next button call
+		msm.removeSMS();
 		
 		String phoneNumber = sms.getDisplayOriginatingAddress() ;
 		from.setText(phoneNumber);
@@ -166,7 +110,7 @@ public class SmsViewActivity extends Activity
 
 		message.setText(result);
 		
-		if(Tools.getNbMessages(getApplicationContext())>0) {
+		if(msm.getNbMessages()>0) {
 			next.setText(getString(R.string.next));
 		}
 		else {
@@ -174,37 +118,4 @@ public class SmsViewActivity extends Activity
 		}
 	}
 
-	@Override
-	protected void onNewIntent(Intent intent) {
-
-		Toast.makeText(getApplicationContext(), "new intent event", Toast.LENGTH_LONG).show();
-
-		// Fixe the original intent to this new intent so getIntent
-		// will now return this intent. onResume called after onnewintent
-		// use so this new intent.
-		// setIntent(intent);
-
-		String action = intent == null ? null : intent.getAction();
-		byte[] data = intent == null ? null : intent.getByteArrayExtra("DATA");
-
-		
-        Log.v(TAG, "intent=" + intent + ","+ action + "," + data);
-		
-
-		if (intent != null && action != null) {
-			if(action.equals(SmsViewActivity.class.getName())) {
-				if(data != null) {
-					SmsMessage sms = SmsMessage.createFromPdu(data);
-					if(sms != null) {
-						Log.v(TAG, "info:" + sms.getDisplayOriginatingAddress() + "," + sms.getMessageBody());
-					
-						from.setText(sms.getDisplayOriginatingAddress());
-						message.setText(sms.getMessageBody());
-					}
-				}
-			}
-		}
-		
-	}
-	
 }

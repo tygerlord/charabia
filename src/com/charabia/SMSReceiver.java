@@ -24,9 +24,6 @@ import android.os.Bundle;
 
 import android.telephony.SmsMessage;
 
-import android.widget.Toast;
- 
-
 public class SMSReceiver extends BroadcastReceiver 
 {
 	private final String ACTION_RECEIVE_SMS  = "android.provider.Telephony.SMS_RECEIVED";
@@ -59,9 +56,10 @@ public class SMSReceiver extends BroadcastReceiver
 						ContentResolver contentResolver = context.getContentResolver();
 						Tools.putSmsToDatabase(contentResolver, messages[0]);
 
-						Tools.writeSMS(context, messages[0]);
+						MySmsManager msm = new MySmsManager(context);
+						msm.writeSMS(messages[0]);
 
-						Tools.showNotification(context, messages[0]);
+						Tools.showNotification(context, msm.getNbMessages(), messages[0]);
 
 						abortBroadcast();
 					}

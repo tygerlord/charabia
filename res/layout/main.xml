@@ -42,9 +42,7 @@
 			android:layout_marginBottom="10dp"
 			android:inputType="text|textMultiLine|textAutoCorrect"
 			android:background="@android:drawable/editbox_background"
-			android:maxLines="10"
-			android:minLines="10"
-		/>
+			android:minLines="8" android:maxLines="8"/>
 	</TableRow>
 	<TableRow>
 		<Button

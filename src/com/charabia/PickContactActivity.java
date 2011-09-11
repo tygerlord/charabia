@@ -22,10 +22,26 @@ import android.app.ListActivity;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.Cursor;
 
+import android.widget.AdapterView;
+import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.AdapterView.OnItemClickListener;
 
+import android.view.View;
+
+import android.content.Intent;
+
+/**
+ * @author 
+ *
+ */
 public class PickContactActivity extends ListActivity
 {
+	private Cursor cursor = null;
+	
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onCreate(android.os.Bundle)
+	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -34,9 +50,10 @@ public class PickContactActivity extends ListActivity
 
 		OpenHelper oh = new OpenHelper(this);
 		
-		SQLiteDatabase db = oh.getReadableDatabase();
+		//Writeable in case of creation
+		SQLiteDatabase db = oh.getWritableDatabase();
 		
-		Cursor cursor = db.rawQuery("SELECT ?,? IN ?", new String[] { OpenHelper.NAME, OpenHelper.PHONE} );
+		cursor = db.rawQuery("SELECT * FROM "+ OpenHelper.TABLE_NAME, null );
 		
 		startManagingCursor(cursor);
 
@@ -46,6 +63,23 @@ public class PickContactActivity extends ListActivity
 		SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, R.layout.contactlist_entry, cursor, columns, to);
 
 		this.setListAdapter(mAdapter);
+		
+        ListView lv = getListView();
+
+        lv.setOnItemClickListener(new OnItemClickListener() {
+                public void onItemClick(AdapterView<?> parent, View view,
+                        int position, long id) {
+                			cursor.moveToPosition((int) id -1);
+                			Intent intent = getIntent();
+                			if(intent != null) {
+                				intent.putExtra("ID", cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
+                			}
+                			setResult(RESULT_OK, intent);
+                			finish();
+                }
+        });
+
 	}
 
+	
 }

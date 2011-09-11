@@ -53,7 +53,7 @@ import java.io.FileOutputStream;
 class OpenHelper extends SQLiteOpenHelper 
 {
 
-		public static final String DATABASE_NAME = "CHARABIA_BD";
+		public static final String DATABASE_NAME = "CHARABIA_BDD";
 
 		public static final String ID = "_id";
 		public static final String NAME = "NAME";
@@ -67,10 +67,10 @@ class OpenHelper extends SQLiteOpenHelper
 								"CREATE TABLE " + TABLE_NAME + " (" +
 								ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
 								NAME + " TEXT, " +
-								PHONE + "TEXT, " +
-								KEY + " BINARY 16);";
+								PHONE + " TEXT, " +
+								KEY + " BLOB);";
 
-		OpenHelper(Context context) {
+		public OpenHelper(Context context) {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
 		}
 
@@ -113,8 +113,6 @@ public class Tools
 	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
 
 	private static final String TAG = "CHARABIA_TOOLS";
-	
-	public static final String sms_dirname = "messages";
 	
 	private static final byte[] demo_key = new byte[] { 
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -167,8 +165,7 @@ public class Tools
 			System.currentTimeMillis(), MESSAGE_TYPE_INBOX, sms.getStatus(), sms.getMessageBody());
 	}
 
-	static public void showNotification(Context context, SmsMessage message) {
-			int nbMessages = getNbMessages(context);
+	static public void showNotification(Context context, int nbMessages, SmsMessage message) {
 			
 			String messageBody = message.getMessageBody();
 			String phoneNumber = message.getDisplayOriginatingAddress();
@@ -217,80 +214,21 @@ public class Tools
 			nm.notify(R.string.imcoming_message_ticker_text, notif);
 	}
 
-	static public void writeSMS(Context context, SmsMessage message) {
-		try {
-			String filename = System.currentTimeMillis() + ".sms"; 
-			Log.v(TAG, "writeSMS " + filename); 
-			File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir,filename)));
-			oos.writeObject(message);
-			oos.close();
-		}
-		catch(Exception e) {
-			Log.v(TAG, "error saving sms" + e.toString());
-		}
-	}
-
-	static public SmsMessage readSMS(Context context, String filename) {
-		Log.v(TAG, "readSMS " + filename); 
-		try {
-			File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir,filename)));
-			SmsMessage message = (SmsMessage) ois.readObject();
-			ois.close();
-			return message;
-		}
-		catch(Exception e) {
-			Log.v(TAG, "error reading sms" + e.toString());
-		}
-		return null;
-	}
-
-	static public SmsMessage getLastMessage(Context context) {
-		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-		String[] filelist = dir.list();
-		if(filelist.length>0) {
-			return readSMS(context, filelist[filelist.length-1]);
-		}
-		return null;
-	}
-
-	static public SmsMessage getFirstMessage(Context context) {
-		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-		String[] filelist = dir.list();
-		if(filelist.length>0) {
-			return readSMS(context, filelist[0]);
-		}
-		return null;
-	}
-
-	static void removeSMS(Context context) {
-		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-		String[] filelist = dir.list();
-		if(filelist.length>0) {
-			File f = new File(dir, filelist[0]);
-			Log.v(TAG, "remove message " + filelist[0]);
-			f.delete();
-		}
-	}
-	
-	static public int getNbMessages(Context context) {
-		return context.getDir(sms_dirname, Context.MODE_PRIVATE).list().length;
-	}
-
 	static public void showNotification(Context context) {
 	
+		MySmsManager msm = new MySmsManager(context);
+		
 		// look up the notification manager service
 		NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-		int nbMessages = Tools.getNbMessages(context);
+		int nbMessages = msm.getNbMessages();
 
 		if(nbMessages <= 0) {
 			nm.cancel(R.string.imcoming_message_ticker_text);
 		}
 		else {
-			SmsMessage message = Tools.getLastMessage(context);
-			showNotification(context, message);
+			SmsMessage message = msm.getLastMessage();
+			showNotification(context, nbMessages, message);
 		}
     }
 
