@@ -24,8 +24,11 @@ import android.database.Cursor;
 
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
+import android.widget.ArrayAdapter;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.Toast;
+
+import android.widget.TextView;
 
 import android.view.View;
 
@@ -46,22 +49,31 @@ public class PickContactActivity extends ListActivity
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.contactlist);
+		//setContentView(R.layout.contactlist);
 
 		OpenHelper oh = new OpenHelper(this);
 		
 		//Writeable in case of creation
 		SQLiteDatabase db = oh.getWritableDatabase();
 		
-		cursor = db.rawQuery("SELECT * FROM "+ OpenHelper.TABLE_NAME, null );
+		cursor = db.rawQuery("SELECT " + OpenHelper.ID + "," + OpenHelper.PHONE + " FROM "+ OpenHelper.TABLE_NAME, null );
 		
 		startManagingCursor(cursor);
 
-		String[] columns = new String[] { OpenHelper.NAME, OpenHelper.PHONE };
-		int[] to = new int[] { R.id.name, R.id.number };
-
-		SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, R.layout.contactlist_entry, cursor, columns, to);
-
+		
+		int n = cursor.getCount();
+		String[] t = new String[n];
+		String phoneNumber = "";
+		
+		for(int i = 0; i < n; i++) {
+			if(cursor.moveToPosition(i)) {
+				phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
+				t[i] = Tools.getDisplayName(this, phoneNumber) + "\n" + phoneNumber;				
+			}
+		}
+		
+		ArrayAdapter<String> mAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, t);
+		
 		this.setListAdapter(mAdapter);
 		
         ListView lv = getListView();
@@ -73,8 +85,8 @@ public class PickContactActivity extends ListActivity
                 			Intent intent = getIntent();
                 			if(intent != null) {
                 				intent.putExtra("ID", cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
-                			}
-                			setResult(RESULT_OK, intent);
+                				setResult(RESULT_OK, intent);
+                            }
                 			finish();
                 }
         });

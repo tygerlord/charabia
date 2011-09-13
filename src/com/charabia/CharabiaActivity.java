@@ -165,8 +165,16 @@ public class CharabiaActivity extends Activity
 				startActivity(intent);
 				return true;
 			case ABOUT_ID:
+				
+				String s = "0602030405";
+				Toast.makeText(this,  s + " name = " + Tools.getDisplayName(this,s), Toast.LENGTH_LONG);
+
+				//s = "0102030405";
+				//Toast.makeText(this,  s + " name = " + Tools.getDisplayName(this,s), Toast.LENGTH_LONG);
+				
 				AlertDialog.Builder builder = new AlertDialog.Builder(this);
 				builder.setTitle(getString(R.string.app_name));
+				builder.setMessage(Tools.getDisplayName(this,s));
 				//builder.setMessage(getString(R.string.apropos) + "\n\n" + getString(R.string.urlweb));
 				//builder.setIcon(R.drawable.charabia_icon);
 				//builder.setPositiveButton(R.string.ouvrir_navigateur, aboutListener);

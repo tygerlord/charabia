@@ -20,4 +20,5 @@
 	<string name="unexpected_error">erreur inattendue</string>
 	<string name="fail_send">Echec lors de l\'envoi</string>
 	<string name="end_data">fin</string>
+	<string name="unknow">inconnu</string>
 </resources>

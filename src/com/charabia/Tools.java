@@ -17,7 +17,6 @@ package com.charabia;
 
 import android.net.Uri;
 
-import android.util.Log;
 import android.util.Base64;
 
 import android.content.Intent;
@@ -25,7 +24,6 @@ import android.content.Context;
 import android.content.ContentValues;
 import android.content.ContentResolver;
 
-import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 
 import android.database.Cursor;
@@ -44,11 +42,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
 import javax.crypto.spec.IvParameterSpec;
 
-import java.io.File;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import android.provider.ContactsContract.PhoneLookup;
 
 class OpenHelper extends SQLiteOpenHelper 
 {
@@ -294,4 +288,21 @@ public class Tools
 		return null; //context.getString(R.string.unexpected_error);
 	}
 
+	public static String getDisplayName(Context context, String phoneNumber) {
+		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
+		ContentResolver contentResolver = context.getContentResolver();
+		Cursor cursor = contentResolver.query(uri, new String[]{PhoneLookup.DISPLAY_NAME}, null, null, null);
+		
+		String result = null;
+		
+		if(cursor.getCount() > 0) {
+			 cursor.moveToFirst();
+			 result = cursor.getString(cursor.getColumnIndex(PhoneLookup.DISPLAY_NAME));
+		}
+		else {	
+			result = context.getString(R.string.unknow);
+		}
+		cursor.close();
+		return result;
+	}
 }
