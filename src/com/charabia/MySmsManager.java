@@ -34,84 +34,57 @@ public class MySmsManager
 {
 	private Context context = null;
 	
-	private OpenHelper oh = null;
-	
-	private SQLiteDatabase db = null;
-	
-	private Cursor cursor = null;
-	
 	private static final String TAG = "CHARABIA_MY_SMS_MANAGER";
-	
-	public static final String sms_dirname = "messages";
 	
 	public MySmsManager(Context context) {
 		this.context = context;
-		oh = new OpenHelper(this.context);
-		db = oh.getWritableDatabase();
-		cursor = db.rawQuery("SELECT * FROM "+ OpenHelper.SMS_TABLE, null);
-	}
-	
-	public void closeAll() {
-		if(cursor != null) {
-			cursor.close();
-		}
-		if(db != null) {
-			db.close();
-		}
 	}
 	
 	public void writeSMS(SmsMessage message) {
-		oh.insert(db, message);
+		Log.v(TAG, "writeSMS");
+		OpenHelper oh = new OpenHelper(context);
+		SQLiteDatabase db = oh.getWritableDatabase();
+		oh.insertPdu(db, message.getPdu());
+		db.close();
 	}
 
 	public SmsMessage readSMS() {
 		Log.v(TAG, "readSMS");
-		
-		return SmsMessage.createFromPdu(
-				Base64.decode(cursor.getString(cursor.getColumnIndex(OpenHelper.SMS_PDU)), Base64.DEFAULT));
-	}
 
-	public SmsMessage getNextMessage() {
-		Log.v(TAG, "getNextMessage");
-		if(cursor.moveToNext()) {
-			return readSMS();
-		}
-		return null;
+		OpenHelper oh = new OpenHelper(context);
+		SQLiteDatabase db = oh.getWritableDatabase();
+		SmsMessage sms = SmsMessage.createFromPdu(oh.readPdu(db));
+		db.close();
+		return sms;
 	}
 
 	public SmsMessage getLastMessage() {
 		Log.v(TAG, "getLastMessage");
-		if(cursor.moveToLast()) {
-			return readSMS();
-		}
-		return null;
-	}
 
-	public SmsMessage getFirstMessage() {
-		Log.v(TAG, "getFirstMessage");
-		if(cursor.moveToFirst()) {
-			return readSMS();
-		}
-		return null;
+		OpenHelper oh = new OpenHelper(context);
+		SQLiteDatabase db = oh.getWritableDatabase();
+		SmsMessage sms = SmsMessage.createFromPdu(oh.readLastPdu(db));
+		db.close();
+		return sms;
 	}
 
 	public void removeSMS() {
-		oh.deleteSMS(db, cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
+		OpenHelper oh = new OpenHelper(context);
+		SQLiteDatabase db = oh.getWritableDatabase();
+
+		db.close();
 	}
 	
 	public int getNbMessages() {
-		//cursor = db.rawQuery("SELECT COUNT(*) FROM "+ OpenHelper.SMS_TABLE, null);
+		OpenHelper oh = new OpenHelper(context);
+		SQLiteDatabase db = oh.getWritableDatabase();
+
+		Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM "+ OpenHelper.SMS_TABLE, null);
+		int count = cursor.getInt(1);
+		cursor.close();
+		db.close();
 		
-		return cursor.getCount();
+		return count;
 	}
-	
-	public boolean moveToNext() {
-		return cursor.moveToNext();
-	}
-
-	public boolean moveToFirst() {
-		return cursor.moveToNext();
-	}
-
 	
 }

@@ -15,7 +15,6 @@
  */
 package com.charabia;
 
-import android.telephony.SmsMessage;
 import android.util.Base64;
 
 import android.content.Context;
@@ -23,8 +22,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-
-import java.sql.Blob;
 
 public class OpenHelper extends SQLiteOpenHelper 
 {
@@ -86,26 +83,46 @@ public class OpenHelper extends SQLiteOpenHelper
 	public void change(SQLiteDatabase db, int id, String name, byte[] key) {
 	}
 
-	public void insert(SQLiteDatabase db, SmsMessage sms) {
-		db.execSQL("INSERT INTO " + SMS_TABLE + " " +
-				"(" + SMS_PDU + ") " + 
-				"VALUES ('" + Base64.encodeToString(sms.getPdu(), Base64.DEFAULT) + "')");
+	public void insertPdu(SQLiteDatabase db, byte[] pdu) {
+		db.execSQL("INSERT INTO " + SMS_TABLE +
+				" VALUES ('" + Base64.encodeToString(pdu, Base64.DEFAULT) + "')");
 	}
 
-	public byte[] get(SQLiteDatabase db, int id) {
+	public byte[] readKey(SQLiteDatabase db, int id) {
+		byte[] ret = null;
 		Cursor cursor = db.rawQuery("SELECT " + KEY + " FROM " + KEYS_TABLE + " WHERE " + ID + "=?" , new String[] { Integer.toString(id) } );
 		if(cursor.moveToFirst()) {
-			return Base64.decode(cursor.getString(cursor.getColumnIndex(KEY)), Base64.DEFAULT);
+			ret = Base64.decode(cursor.getString(cursor.getColumnIndex(KEY)), Base64.DEFAULT);
 		}
-		return null;
+		cursor.close();
+		return ret;
 	}
 
-	public SmsMessage getSMS(SQLiteDatabase db, int id) {
-		Cursor cursor = db.rawQuery("SELECT " + SMS_PDU + " FROM " + SMS_TABLE + " WHERE " + ID + "=?" , new String[] { Integer.toString(id) } );
+	private byte[] readPdu(SQLiteDatabase db, String desc) {
+		byte[] ret = null;
+		Cursor cursor = db.rawQuery("SELECT * FROM " + SMS_TABLE + " ORDER BY " + ID + desc + " LIMIT 1", null);
 		if(cursor.moveToFirst()) {
-			return SmsMessage.createFromPdu(Base64.decode(cursor.getString(cursor.getColumnIndex(SMS_PDU)), Base64.DEFAULT));
+			ret = Base64.decode(cursor.getString(cursor.getColumnIndex(SMS_PDU)), Base64.DEFAULT);
 		}
-		return null;
+		cursor.close();
+		return ret;
+	}
+
+	public byte[] readPdu(SQLiteDatabase db) {
+		return readPdu(db, "");
+	}
+
+	public byte[] readLastPdu(SQLiteDatabase db) {
+		return readPdu(db, " DESC");
+	}
+	
+	public void deletePdu(SQLiteDatabase db) {
+//		Cursor cursor = db.rawQuery("SELECT * FROM " + SMS_TABLE + " ORDER BY " + ID + desc + " LIMIT 1", null);
+//		if(cursor.moveToFirst()) {
+//			ret = Base64.decode(cursor.getString(cursor.getColumnIndex(SMS_PDU)), Base64.DEFAULT);
+//		}
+//		cursor.close();
+//		return ret;
 	}
 
 }

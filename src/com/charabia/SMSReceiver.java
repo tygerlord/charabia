@@ -61,8 +61,6 @@ public class SMSReceiver extends BroadcastReceiver
 
 						Tools.showNotification(context, msm.getNbMessages(), messages[0]);
 
-						msm.closeAll();
-						
 						abortBroadcast();
 					}
 				}

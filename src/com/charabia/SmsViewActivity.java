@@ -55,12 +55,7 @@ public class SmsViewActivity extends Activity
 		
 		msm = new MySmsManager(getApplicationContext());
 		
-		if(msm.moveToFirst()) {
-			doNext(null);
-		}
-		else {
-			finish();
-		}
+		doNext(null);
  	}
 	
 	@Override
@@ -124,9 +119,8 @@ public class SmsViewActivity extends Activity
 			
 			msm.removeSMS();
 			
-		}while(msm.moveToNext());
+		}while(true);
 
-		msm.closeAll();
 		finish();
 	}
 
