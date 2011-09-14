@@ -152,7 +152,7 @@ public class CharabiaActivity extends Activity
 				OpenHelper oh = new OpenHelper(this);
 				SQLiteDatabase db = oh.getWritableDatabase();
 				
-				oh.insert(db, "test", "0602030405", new byte[] { 0x00 } );
+				oh.insert(db, "5554", new byte[] { 0x00 } );
 				
 				db.close();
 				
@@ -166,7 +166,7 @@ public class CharabiaActivity extends Activity
 				return true;
 			case ABOUT_ID:
 				
-				String s = "0602030405";
+				String s = "5554";
 				Toast.makeText(this,  s + " name = " + Tools.getDisplayName(this,s), Toast.LENGTH_LONG);
 
 				//s = "0102030405";
@@ -240,8 +240,9 @@ public class CharabiaActivity extends Activity
         	case (PICK_CONTACT) :
         		if (resultCode == Activity.RESULT_OK) {
         			int id = data.getIntExtra("ID", -1);
+        			String phoneNumber = data.getStringExtra("PHONE");
                     Toast.makeText(this,  "Contact ID=" + id, Toast.LENGTH_LONG).show();
-        			
+        			to.setText(to.getText() + "\n" + phoneNumber);
         		}
 	         break;
       }
@@ -263,7 +264,8 @@ public class CharabiaActivity extends Activity
 			System.currentTimeMillis(), Tools.MESSAGE_TYPE_SENT,
 			0, texte);
 
-		String cryptedTexte = Tools.encrypt(getApplicationContext(), phoneNumber, texte);
+		SmsCipher cipher = new SmsCipher(this);
+		String cryptedTexte = cipher.encrypt(SmsCipher.demo_key, phoneNumber, texte);
 		if(cryptedTexte != null) {
 			SmsManager.getDefault().sendTextMessage(phoneNumber, null, cryptedTexte, null, null);
 		

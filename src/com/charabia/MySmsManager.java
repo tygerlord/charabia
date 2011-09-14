@@ -16,21 +16,29 @@
 package com.charabia;
 
 
+import android.util.Base64;
 import android.util.Log;
 
 import android.telephony.SmsMessage;
 
 import android.content.Context;
 
-import java.io.File;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.Cursor;
 
+/**
+ * @author Fleblanc
+ *
+ */
 public class MySmsManager
 {
 	private Context context = null;
+	
+	private OpenHelper oh = null;
+	
+	private SQLiteDatabase db = null;
+	
+	private Cursor cursor = null;
 	
 	private static final String TAG = "CHARABIA_MY_SMS_MANAGER";
 	
@@ -38,79 +46,72 @@ public class MySmsManager
 	
 	public MySmsManager(Context context) {
 		this.context = context;
+		oh = new OpenHelper(this.context);
+		db = oh.getWritableDatabase();
+		cursor = db.rawQuery("SELECT * FROM "+ OpenHelper.SMS_TABLE, null);
+	}
+	
+	public void closeAll() {
+		if(cursor != null) {
+			cursor.close();
+		}
+		if(db != null) {
+			db.close();
+		}
 	}
 	
 	public void writeSMS(SmsMessage message) {
-		try {
-			String filename = System.currentTimeMillis() + ".sms"; 
-			Log.v(TAG, "writeSMS " + filename); 
-			File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(dir,filename)));
-			oos.writeObject(message.getPdu());
-			oos.close();
-		}
-		catch(Exception e) {
-			Log.v(TAG, "error saving sms" + e.toString());
-		}
+		oh.insert(db, message);
 	}
 
-	public SmsMessage readSMS(String filename) {
-		Log.v(TAG, "readSMS " + filename); 
-		try {
-			File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(dir,filename)));
-			byte[] pdu = (byte[]) ois.readObject();
-			SmsMessage message = SmsMessage.createFromPdu(pdu);
-			ois.close();
-			return message;
-		}
-		catch(Exception e) {
-			Log.v(TAG, "error reading sms" + e.toString());
-			// Error reading, perhaps file corrupted, try to remove to access next
-			removeSMS(filename);
+	public SmsMessage readSMS() {
+		Log.v(TAG, "readSMS");
+		
+		return SmsMessage.createFromPdu(
+				Base64.decode(cursor.getString(cursor.getColumnIndex(OpenHelper.SMS_PDU)), Base64.DEFAULT));
+	}
+
+	public SmsMessage getNextMessage() {
+		Log.v(TAG, "getNextMessage");
+		if(cursor.moveToNext()) {
+			return readSMS();
 		}
 		return null;
 	}
 
 	public SmsMessage getLastMessage() {
-		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-		String[] filelist = dir.list();
-		if(filelist.length>0) {
-			return readSMS(filelist[filelist.length-1]);
+		Log.v(TAG, "getLastMessage");
+		if(cursor.moveToLast()) {
+			return readSMS();
 		}
 		return null;
 	}
 
 	public SmsMessage getFirstMessage() {
-		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-		String[] filelist = dir.list();
-		if(filelist.length>0) {
-			return readSMS(filelist[0]);
+		Log.v(TAG, "getFirstMessage");
+		if(cursor.moveToFirst()) {
+			return readSMS();
 		}
 		return null;
 	}
 
-	public void removeSMS(String filename) {
-		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-		File f = new File(dir, filename);
-		
-		Log.v(TAG, "remove message " +filename);
-		f.delete();
-		
-	}
-	
 	public void removeSMS() {
-		File dir = context.getDir(sms_dirname, Context.MODE_PRIVATE);
-		String[] filelist = dir.list();
-		if(filelist.length>0) {
-			File f = new File(dir, filelist[0]);
-			Log.v(TAG, "remove message " + filelist[0]);
-			f.delete();
-		}
+		oh.deleteSMS(db, cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
 	}
 	
 	public int getNbMessages() {
-		return context.getDir(sms_dirname, Context.MODE_PRIVATE).list().length;
+		//cursor = db.rawQuery("SELECT COUNT(*) FROM "+ OpenHelper.SMS_TABLE, null);
+		
+		return cursor.getCount();
+	}
+	
+	public boolean moveToNext() {
+		return cursor.moveToNext();
 	}
 
+	public boolean moveToFirst() {
+		return cursor.moveToNext();
+	}
+
+	
 }

@@ -42,7 +42,7 @@ public class SmsViewActivity extends Activity
 	private Button next = null;
 
 	private MySmsManager msm = null;
-
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -55,7 +55,12 @@ public class SmsViewActivity extends Activity
 		
 		msm = new MySmsManager(getApplicationContext());
 		
-		doNext(null);
+		if(msm.moveToFirst()) {
+			doNext(null);
+		}
+		else {
+			finish();
+		}
  	}
 	
 	@Override
@@ -88,34 +93,41 @@ public class SmsViewActivity extends Activity
 	
 		Toast.makeText(getApplicationContext(), "doNext " + msm.getNbMessages(), Toast.LENGTH_LONG).show();
 	
-		SmsMessage sms = msm.getFirstMessage();
-		if(sms == null) {
-			finish();
-			return;
-		}
+		SmsMessage sms = null;
+		
+		do {
+			sms = msm.readSMS();
+			if(sms == null) {
+				break;
+			}
+			
+			String phoneNumber = sms.getDisplayOriginatingAddress() ;
+			from.setText(phoneNumber);
+			
+			SmsCipher cipher = new SmsCipher(this);
+			String result = cipher.decrypt(SmsCipher.demo_key, phoneNumber, sms.getMessageBody());
+			
+			//TODO: preference
+			ContentResolver contentResolver = getApplicationContext().getContentResolver();
+			Tools.putSmsToDatabase(contentResolver, phoneNumber, 
+				System.currentTimeMillis(), Tools.MESSAGE_TYPE_INBOX,
+				sms.getStatus(), result);
+	
+			message.setText(result);
+			
+			if(msm.getNbMessages()>0) {
+				next.setText(getString(R.string.next));
+			}
+			else {
+				next.setText(getString(R.string.quit));
+			}
+			
+			msm.removeSMS();
+			
+		}while(msm.moveToNext());
 
-		//TODO: remove after reading only, so on next button call
-		msm.removeSMS();
-		
-		String phoneNumber = sms.getDisplayOriginatingAddress() ;
-		from.setText(phoneNumber);
-		
-		String result = Tools.decrypt(getApplicationContext(), phoneNumber, sms.getMessageBody());
-		
-		//TODO: preference
-		ContentResolver contentResolver = getApplicationContext().getContentResolver();
-		Tools.putSmsToDatabase(contentResolver, phoneNumber, 
-			System.currentTimeMillis(), Tools.MESSAGE_TYPE_INBOX,
-			sms.getStatus(), result);
-
-		message.setText(result);
-		
-		if(msm.getNbMessages()>0) {
-			next.setText(getString(R.string.next));
-		}
-		else {
-			next.setText(getString(R.string.quit));
-		}
+		msm.closeAll();
+		finish();
 	}
 
 }

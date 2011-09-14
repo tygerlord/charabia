@@ -36,75 +36,13 @@ import android.app.NotificationManager;
 
 import android.widget.Toast;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.SecretKeySpec;
-import javax.crypto.spec.IvParameterSpec;
-
 import android.provider.ContactsContract.PhoneLookup;
-
-class OpenHelper extends SQLiteOpenHelper 
-{
-
-		public static final String DATABASE_NAME = "CHARABIA_BDD";
-
-		public static final String ID = "_id";
-		public static final String NAME = "NAME";
-		public static final String PHONE = "PHONE";
-		public static final String KEY = "KEY";
-		public static final String TABLE_NAME = "keystable";
-
-		private static final int DATABASE_VERSION = 1;
-
-		private static final String TABLE_CREATE =
-								"CREATE TABLE " + TABLE_NAME + " (" +
-								ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-								NAME + " TEXT, " +
-								PHONE + " TEXT, " +
-								KEY + " BLOB);";
-
-		public OpenHelper(Context context) {
-			super(context, DATABASE_NAME, null, DATABASE_VERSION);
-		}
-
-		@Override
-		public void onCreate(SQLiteDatabase db) {
-			db.execSQL(TABLE_CREATE);
-		}
-
-		@Override
-		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			//Log.w("Example", "Upgrading database, this will drop tables and recreate.");
-			db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
-			onCreate(db);
-		}
-
-		public void insert(SQLiteDatabase db, String name, String phone, byte[] key) {
-				db.execSQL("INSERT INTO " + TABLE_NAME + " " +
-						"(" + NAME + "," + PHONE + "," + KEY + ") " + 
-						"VALUES ('" + name + "','" + phone + "','" + key + "');");
-		}
-
-		public void delete(SQLiteDatabase db, int id) {
-			db.execSQL("DELETE FROM " + TABLE_NAME + " WHERE " + ID + "=" + id);
-		}
-
-		public void change(SQLiteDatabase db, int id, String name, byte[] key) {
-		}
-
-}
-
 
 public class Tools
 {
 	//private OpenHelper openHelper = new OpenHelper(this);
 
 	public static int id = 0;
-
-	public static final String KEYWORD = "itscharabia:";
-
-	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
 
 	private static final String TAG = "CHARABIA_TOOLS";
 	
@@ -225,68 +163,6 @@ public class Tools
 			showNotification(context, nbMessages, message);
 		}
     }
-
-	public static SecretKey generateKeyAES(Context context) {
-		try {
-			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-			keyGen.init(256);
-			SecretKey key = keyGen.generateKey();
-			
-			// key.getEncoded to have byte[]
-			return key;
-		}
-		catch(Exception e) {
-			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
-		}
-
-		return null;
-	}
-
-	public static String decrypt(Context context, String from, String texte) {
-		
-		try {
-			byte[] data = Base64.decode(texte.substring(KEYWORD.length()), Base64.DEFAULT);
-			
-			Cipher c = Cipher.getInstance(CIPHER_ALGO);
-		
-			SecretKey key = new SecretKeySpec(demo_key, "AES");
-		
-			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(data, 0, 16));
-
-			String result = new String(c.doFinal(data, 16, data.length-16));
-			
-			return result;
-		}
-		catch(Exception e) {
-			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
-		}
-
-		return context.getString(R.string.unexpected_error);
-	}
-
-	public static String encrypt(Context context, String to, String texte) {
-		try {
-			Cipher c = Cipher.getInstance(CIPHER_ALGO);
-
-			SecretKey key = new SecretKeySpec(demo_key, "AES");
-
-			c.init(Cipher.ENCRYPT_MODE, key);
-
-			byte[] bIV = c.getIV();
-			byte[] cryptedTexte = c.doFinal(texte.getBytes());
-			byte[] data = new byte[cryptedTexte.length+bIV.length];
-
-			System.arraycopy(bIV, 0, data, 0, bIV.length);
-			System.arraycopy(cryptedTexte, 0, data, bIV.length, cryptedTexte.length);
-
-			return KEYWORD + Base64.encodeToString(data, Base64.DEFAULT);
-		}
-		catch(Exception e) {
-			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
-		}
-		
-		return null; //context.getString(R.string.unexpected_error);
-	}
 
 	public static String getDisplayName(Context context, String phoneNumber) {
 		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));

@@ -56,11 +56,10 @@ public class PickContactActivity extends ListActivity
 		//Writeable in case of creation
 		SQLiteDatabase db = oh.getWritableDatabase();
 		
-		cursor = db.rawQuery("SELECT " + OpenHelper.ID + "," + OpenHelper.PHONE + " FROM "+ OpenHelper.TABLE_NAME, null );
+		cursor = db.rawQuery("SELECT " + OpenHelper.ID + "," + OpenHelper.PHONE + " FROM "+ OpenHelper.KEYS_TABLE, null );
 		
 		startManagingCursor(cursor);
 
-		
 		int n = cursor.getCount();
 		String[] t = new String[n];
 		String phoneNumber = "";
@@ -72,6 +71,8 @@ public class PickContactActivity extends ListActivity
 			}
 		}
 		
+        db.close();
+        
 		ArrayAdapter<String> mAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, t);
 		
 		this.setListAdapter(mAdapter);
@@ -81,12 +82,14 @@ public class PickContactActivity extends ListActivity
         lv.setOnItemClickListener(new OnItemClickListener() {
                 public void onItemClick(AdapterView<?> parent, View view,
                         int position, long id) {
-                			cursor.moveToPosition((int) id -1);
+                			cursor.moveToPosition(position);
                 			Intent intent = getIntent();
                 			if(intent != null) {
                 				intent.putExtra("ID", cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
+                				intent.putExtra("PHONE", cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
                 				setResult(RESULT_OK, intent);
                             }
+                			cursor.close();
                 			finish();
                 }
         });
