@@ -72,6 +72,8 @@ public class MySmsManager
 		OpenHelper oh = new OpenHelper(context);
 		SQLiteDatabase db = oh.getWritableDatabase();
 
+		oh.deletePdu(db);
+		
 		db.close();
 	}
 	
@@ -79,8 +81,12 @@ public class MySmsManager
 		OpenHelper oh = new OpenHelper(context);
 		SQLiteDatabase db = oh.getWritableDatabase();
 
+		int count = -1;
 		Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM "+ OpenHelper.SMS_TABLE, null);
-		int count = cursor.getInt(1);
+		if(cursor.moveToFirst()) {
+			count = cursor.getInt(0);
+		}
+		
 		cursor.close();
 		db.close();
 		

@@ -88,40 +88,38 @@ public class SmsViewActivity extends Activity
 	
 		Toast.makeText(getApplicationContext(), "doNext " + msm.getNbMessages(), Toast.LENGTH_LONG).show();
 	
-		SmsMessage sms = null;
+		SmsMessage sms = msm.readSMS();
+		if(sms == null) {
+			finish();
+		}
 		
-		do {
-			sms = msm.readSMS();
-			if(sms == null) {
-				break;
-			}
-			
-			String phoneNumber = sms.getDisplayOriginatingAddress() ;
-			from.setText(phoneNumber);
-			
-			SmsCipher cipher = new SmsCipher(this);
-			String result = cipher.decrypt(SmsCipher.demo_key, phoneNumber, sms.getMessageBody());
-			
-			//TODO: preference
-			ContentResolver contentResolver = getApplicationContext().getContentResolver();
-			Tools.putSmsToDatabase(contentResolver, phoneNumber, 
-				System.currentTimeMillis(), Tools.MESSAGE_TYPE_INBOX,
-				sms.getStatus(), result);
-	
-			message.setText(result);
-			
-			if(msm.getNbMessages()>0) {
-				next.setText(getString(R.string.next));
-			}
-			else {
-				next.setText(getString(R.string.quit));
-			}
-			
-			msm.removeSMS();
-			
-		}while(true);
+		String phoneNumber = sms.getDisplayOriginatingAddress() ;
+		from.setText(phoneNumber);
+		
+		SmsCipher cipher = new SmsCipher(this);
+		String result = cipher.decrypt(SmsCipher.demo_key, phoneNumber, sms.getMessageBody());
+		
+		//TODO: preference
+		ContentResolver contentResolver = getApplicationContext().getContentResolver();
+		Tools.putSmsToDatabase(contentResolver, phoneNumber, 
+			System.currentTimeMillis(), Tools.MESSAGE_TYPE_INBOX,
+			sms.getStatus(), result);
 
-		finish();
+		message.setText(result);
+		
+		if(msm.getNbMessages()>0) {
+			next.setText(getString(R.string.next));
+		}
+		else {
+			next.setText(getString(R.string.quit));
+	        next.setOnClickListener(new View.OnClickListener() {
+	             public void onClick(View v) {
+	                 finish();
+	             }
+	         });
+	 	}
+		
+		msm.removeSMS();
 	}
 
 }

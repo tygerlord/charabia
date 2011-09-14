@@ -76,7 +76,7 @@ public class OpenHelper extends SQLiteOpenHelper
 		db.execSQL("DELETE FROM " + KEYS_TABLE + " WHERE " + ID + "=" + id);
 	}
 
-	public void deleteSMS(SQLiteDatabase db, int id) {
+	public void deletePdu(SQLiteDatabase db, int id) {
 		db.execSQL("DELETE FROM " + SMS_TABLE + " WHERE " + ID + "=" + id);
 	}
 
@@ -84,7 +84,8 @@ public class OpenHelper extends SQLiteOpenHelper
 	}
 
 	public void insertPdu(SQLiteDatabase db, byte[] pdu) {
-		db.execSQL("INSERT INTO " + SMS_TABLE +
+		db.execSQL("INSERT INTO " + SMS_TABLE + 
+				"(" + SMS_PDU + ")" +
 				" VALUES ('" + Base64.encodeToString(pdu, Base64.DEFAULT) + "')");
 	}
 
@@ -117,12 +118,11 @@ public class OpenHelper extends SQLiteOpenHelper
 	}
 	
 	public void deletePdu(SQLiteDatabase db) {
-//		Cursor cursor = db.rawQuery("SELECT * FROM " + SMS_TABLE + " ORDER BY " + ID + desc + " LIMIT 1", null);
-//		if(cursor.moveToFirst()) {
-//			ret = Base64.decode(cursor.getString(cursor.getColumnIndex(SMS_PDU)), Base64.DEFAULT);
-//		}
-//		cursor.close();
-//		return ret;
+		Cursor cursor = db.rawQuery("SELECT " + ID + " FROM " + SMS_TABLE + " ORDER BY " + ID  + " LIMIT 1", null);
+		if(cursor.moveToFirst()) {
+			deletePdu(db, cursor.getInt(cursor.getColumnIndex(ID)));
+		}
+		cursor.close();
 	}
 
 }
