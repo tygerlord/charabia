@@ -86,11 +86,25 @@ public class SmsViewActivity extends Activity
 	 */
 	public void doNext(View view) {
 	
-		Toast.makeText(getApplicationContext(), "doNext " + msm.getNbMessages(), Toast.LENGTH_LONG).show();
-	
+		int nbMessages = msm.getNbMessages();
+		
+		Toast.makeText(getApplicationContext(), "doNext " + nbMessages, Toast.LENGTH_LONG).show();
+		
+		if(nbMessages <= 0) {
+			finish();
+			return;
+		}
+		else if(nbMessages == 1) {
+			next.setText(getString(R.string.quit));
+		}
+		else {
+			next.setText(getString(R.string.next));
+		}
+		
 		SmsMessage sms = msm.readSMS();
 		if(sms == null) {
-			finish();
+			message.setText(getString(R.string.unexpected_error));
+			return;
 		}
 		
 		String phoneNumber = sms.getDisplayOriginatingAddress() ;
@@ -106,18 +120,6 @@ public class SmsViewActivity extends Activity
 			sms.getStatus(), result);
 
 		message.setText(result);
-		
-		if(msm.getNbMessages()>0) {
-			next.setText(getString(R.string.next));
-		}
-		else {
-			next.setText(getString(R.string.quit));
-	        next.setOnClickListener(new View.OnClickListener() {
-	             public void onClick(View v) {
-	                 finish();
-	             }
-	         });
-	 	}
 		
 		msm.removeSMS();
 	}

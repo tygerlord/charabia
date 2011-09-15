@@ -34,9 +34,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import android.widget.Toast;
+import android.widget.TextView;
 import android.widget.EditText;
 
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import android.telephony.SmsManager;
@@ -58,7 +58,7 @@ public class CharabiaActivity extends Activity
 
 	private static final int PICK_CONTACT = 0;
 	
-	private EditText to = null;
+	private TextView to = null;
 	private EditText message = null;
 	
 	private int mode = MODE_MAITRE;
@@ -70,7 +70,7 @@ public class CharabiaActivity extends Activity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
-		to = (EditText) findViewById(R.id.to);
+		to = (TextView) findViewById(R.id.to);
 		message = (EditText) findViewById(R.id.message);
 		
 	/*	message.setText(
@@ -116,6 +116,14 @@ public class CharabiaActivity extends Activity
 
 
 		}
+	}
+
+	@Override
+	public void onPause() {
+		super.onPause();
+		
+		Tools.showNotification(getApplicationContext());
+		
 	}
 
 	@Override
@@ -252,7 +260,11 @@ public class CharabiaActivity extends Activity
  	public void quit(View view) {
 		finish();
 	}
-
+ 	
+ 	public void clear(View view) {
+ 		to.setText("");
+ 	}
+ 	
 	public void send(View view) {
 		
 		String phoneNumber = to.getText().toString();
