@@ -41,6 +41,8 @@ import android.database.sqlite.SQLiteDatabase;
 
 import android.telephony.SmsManager;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+
 public class CharabiaActivity extends Activity
 {
 	// Menus
@@ -56,12 +58,17 @@ public class CharabiaActivity extends Activity
 	private static final int MODE_MAITRE = 0;
 	private static final int MODE_ESCLAVE = 1;
 
+	// List of intent 
 	private static final int PICK_CONTACT = 0;
+	private static final int SCAN_MODE_ESCLAVE = PICK_CONTACT+1;
 	
 	private TextView to = null;
 	private EditText message = null;
 	
 	private int mode = MODE_MAITRE;
+	
+	private byte[] key = null;
+	private boolean flagReadRightKeyPart = false;
 	
 	/** Called when the activity is first created. */
 	@Override
@@ -90,11 +97,18 @@ public class CharabiaActivity extends Activity
 	protected void onResume() {
 		super.onResume();
 		
+		if(flagReadRightKeyPart) {
+			flagReadRightKeyPart = false;
+			IntentIntegrator.initiateScan(CharabiaActivity.this);
+		}
+		
 		Intent intent = getIntent();
 		String action = intent == null ? null : intent.getAction();
 		//String dataString = intent == null ? null : intent.getDataString();
 		//int id = intent == null ? -2 : intent.getShortExtra("ID", (short)-1);
 
+		Toast.makeText(this, "onResume\n" + action, Toast.LENGTH_LONG).show();
+		
 		if (intent != null && action != null) 
 		{
 			if(action.equals(Intent.ACTION_VIEW)) {
@@ -220,21 +234,23 @@ public class CharabiaActivity extends Activity
 		private final DialogInterface.OnClickListener modeListener =
 			new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialogInterface, int i) {
+					SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
+					key = cipher.generateKeyAES().getEncoded();
 					switch(i) {
 						case 1:
 							mode = MODE_ESCLAVE;
+							IntentIntegrator.initiateScan(CharabiaActivity.this);
 							break;
 						case 0:
 						default:
 							mode = MODE_MAITRE;
+							flagReadRightKeyPart = true;
+							IntentIntegrator.shareText(CharabiaActivity.this, "essai");
+							Toast.makeText(CharabiaActivity.this, "mode maitre", Toast.LENGTH_LONG).show();
 					}
 			}
 		};
 
-	public void hello(View view) {
-		Toast.makeText(getApplicationContext(), "ok", Toast.LENGTH_LONG).show();
-	}
-	
 	public void add_to(View view) {
 		Intent intent = new Intent(PickContactActivity.class.getName());//Uri.parse("content://contacts/people"));
 		startActivityForResult(intent, PICK_CONTACT);
@@ -245,15 +261,33 @@ public class CharabiaActivity extends Activity
 		super.onActivityResult(reqCode, resultCode, data);
 
 		switch (reqCode) {
-        	case (PICK_CONTACT) :
-        		if (resultCode == Activity.RESULT_OK) {
+        	case (PICK_CONTACT):
+        		if (resultCode == RESULT_OK) {
         			int id = data.getIntExtra("ID", -1);
         			String phoneNumber = data.getStringExtra("PHONE");
                     Toast.makeText(this,  "Contact ID=" + id, Toast.LENGTH_LONG).show();
         			to.setText(to.getText() + "\n" + phoneNumber);
         		}
-	         break;
-      }
+	          break;
+        	case(IntentIntegrator.REQUEST_CODE):
+	            if (resultCode == RESULT_OK) {
+	            	String contents = data.getStringExtra("SCAN_RESULT");
+	                String format = data.getStringExtra("SCAN_RESULT_FORMAT");
+	                // Handle successful scan
+	                
+	                Toast.makeText(this, "ok", Toast.LENGTH_LONG).show();
+	                
+	                if(mode == MODE_ESCLAVE) {
+	                	
+	                }
+	                else {
+	                	
+	                }
+	                
+	            }
+        		break;
+	         	
+		}
 
   }
 

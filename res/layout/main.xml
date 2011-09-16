@@ -31,7 +31,8 @@
 		<Button
 			android:layout_span="1"
 			android.id="@+id/clear"
-			android:text="@string/clear"
+			android:drawableLeft="@android:drawable/btn_minus"
+			android:gravity="left|center_vertical"
 			android:onClick="clear"
 		/>
 	</TableRow>
