@@ -25,14 +25,16 @@
 		<Button
 			android:layout_span="1"
 			android:id="@+id/add_to"
+			android:drawableLeft="@android:drawable/ic_input_add"
+			android:gravity="left|center_vertical"
 			android:text="@string/add_to"
 			android:onClick="add_to"
 		/>
-		<Button
+		<Button 
 			android:layout_span="1"
-			android.id="@+id/clear"
-			android:drawableLeft="@android:drawable/btn_minus"
+			android:drawableLeft="@android:drawable/ic_delete"
 			android:gravity="left|center_vertical"
+			android:text="@string/clear"
 			android:onClick="clear"
 		/>
 	</TableRow>
@@ -55,6 +57,8 @@
 		<Button
 			android:id="@+id/envoyer"
 			android:text="@string/send"
+			android:drawableLeft="@android:drawable/ic_menu_send"
+			android:gravity="left|center_vertical"
 			android:onClick="send"
 		/>
 
@@ -62,6 +66,8 @@
 			android:layout_column="1"
 			android:id="@+id/quit"
 			android:text="@string/quit" 
+			android:drawableLeft="@android:drawable/ic_menu_close_clear_cancel"
+			android:gravity="left|center_vertical"
 			android:onClick="quit"
 		/>
 	</TableRow>

@@ -33,8 +33,8 @@
 			android:id="@+id/message"
 			android:layout_marginBottom="10dp"
 			android:background="@android:drawable/editbox_background"
-			android:maxLines="10"
-			android:minLines="10"
+			android:maxLines="8"
+			android:minLines="8"
 		/>
 	</TableRow>
 	<TableRow>
@@ -42,6 +42,8 @@
 			android:id="@+id/answer"
 			android:text="@string/answer" 
 			android:onClick="answer"
+			android:drawableLeft="@android:drawable/ic_menu_send"
+			android:gravity="left|center_vertical"
 		/>
 
 		<Button
@@ -49,6 +51,8 @@
 			android:id="@+id/next"
 			android:text="@string/quit" 
 			android:onClick="doNext"
+			android:drawableLeft="@android:drawable/ic_menu_close_clear_cancel"
+			android:gravity="left|center_vertical"
 		/>
 	</TableRow>
 		

@@ -181,4 +181,23 @@ public class Tools
 		cursor.close();
 		return result;
 	}
+	
+//	public static String getPhone(Context context) {
+//		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
+//		ContentResolver contentResolver = context.getContentResolver();
+//		Cursor cursor = contentResolver.query(uri, new String[]{PhoneLookup.DISPLAY_NAME}, null, null, null);
+//		
+//		String result = null;
+//		
+//		if(cursor.getCount() > 0) {
+//			 cursor.moveToFirst();
+//			 result = cursor.getString(cursor.getColumnIndex(PhoneLookup.DISPLAY_NAME));
+//		}
+//		else {	
+//			result = context.getString(R.string.unknow);
+//		}
+//		cursor.close();
+//		return result;
+//	}
+
 }

@@ -40,6 +40,7 @@ import android.widget.EditText;
 import android.database.sqlite.SQLiteDatabase;
 
 import android.telephony.SmsManager;
+import android.telephony.TelephonyManager;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 
@@ -68,7 +69,6 @@ public class CharabiaActivity extends Activity
 	private int mode = MODE_MAITRE;
 	
 	private byte[] key = null;
-	private boolean flagReadRightKeyPart = false;
 	
 	/** Called when the activity is first created. */
 	@Override
@@ -97,18 +97,11 @@ public class CharabiaActivity extends Activity
 	protected void onResume() {
 		super.onResume();
 		
-		if(flagReadRightKeyPart) {
-			flagReadRightKeyPart = false;
-			IntentIntegrator.initiateScan(CharabiaActivity.this);
-		}
-		
 		Intent intent = getIntent();
 		String action = intent == null ? null : intent.getAction();
 		//String dataString = intent == null ? null : intent.getDataString();
 		//int id = intent == null ? -2 : intent.getShortExtra("ID", (short)-1);
 
-		Toast.makeText(this, "onResume\n" + action, Toast.LENGTH_LONG).show();
-		
 		if (intent != null && action != null) 
 		{
 			if(action.equals(Intent.ACTION_VIEW)) {
@@ -180,11 +173,13 @@ public class CharabiaActivity extends Activity
 				
 				return true;
 			case HELP_ID:
-				intent = new Intent(Intent.ACTION_VIEW);
-				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+				TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE); 
+				Toast.makeText(this,tm.getVoiceMailNumber(),Toast.LENGTH_LONG).show();
+				//intent = new Intent(Intent.ACTION_VIEW);
+				//intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 				//intent.setClassName(this, WebViewActivity.class.getName());
-				intent.setData(Uri.parse("file:///android_asset/html/help/index.html"));
-				startActivity(intent);
+				//intent.setData(Uri.parse("file:///android_asset/html/help/index.html"));
+				//startActivity(intent);
 				return true;
 			case ABOUT_ID:
 				
@@ -231,25 +226,31 @@ public class CharabiaActivity extends Activity
 		return dialog;
 	}
 		
-		private final DialogInterface.OnClickListener modeListener =
-			new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialogInterface, int i) {
-					SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
-					key = cipher.generateKeyAES().getEncoded();
-					switch(i) {
-						case 1:
-							mode = MODE_ESCLAVE;
-							IntentIntegrator.initiateScan(CharabiaActivity.this);
-							break;
-						case 0:
-						default:
-							mode = MODE_MAITRE;
-							flagReadRightKeyPart = true;
-							IntentIntegrator.shareText(CharabiaActivity.this, "essai");
-							Toast.makeText(CharabiaActivity.this, "mode maitre", Toast.LENGTH_LONG).show();
-					}
-			}
-		};
+	private String buildTag() {
+		return "";
+	}
+	
+	private final DialogInterface.OnClickListener modeListener =
+		new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialogInterface, int i) {
+				SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
+				key = cipher.generateKeyAES().getEncoded();
+				switch(i) {
+					case 1:
+						//Slave 
+						IntentIntegrator.shareText(CharabiaActivity.this, "essai");
+						IntentIntegrator.initiateScan(CharabiaActivity.this);							
+						break;
+					case 0:
+					default:
+						//Master
+						//flagReadRightKeyPart = true;
+						IntentIntegrator.initiateScan(CharabiaActivity.this);							
+						IntentIntegrator.shareText(CharabiaActivity.this, "essai");
+						Toast.makeText(CharabiaActivity.this, "mode maitre", Toast.LENGTH_LONG).show();
+				}
+		}
+	};
 
 	public void add_to(View view) {
 		Intent intent = new Intent(PickContactActivity.class.getName());//Uri.parse("content://contacts/people"));
@@ -303,6 +304,16 @@ public class CharabiaActivity extends Activity
 		
 		String phoneNumber = to.getText().toString();
 		String texte = message.getText().toString();
+		
+		if(phoneNumber.equals("")) {
+			Toast.makeText(this, "no phone number", Toast.LENGTH_LONG).show();
+			return;
+		}
+		
+		if(texte.equals("")) {
+			Toast.makeText(this, "message empty", Toast.LENGTH_LONG).show();
+			return;		
+		}
 		
 		//TODO: preference
 		ContentResolver contentResolver = getApplicationContext().getContentResolver();
