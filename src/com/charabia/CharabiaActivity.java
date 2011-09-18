@@ -29,6 +29,7 @@ import android.content.Intent;
 import android.content.Context;
 import android.content.ContentResolver;
 
+import android.util.Base64;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -48,7 +49,8 @@ public class CharabiaActivity extends Activity
 {
 	// Menus
 	private static final int SETTINGS_ID = 1;
-	private static final int ADD_ID = SETTINGS_ID + 1;
+	private static final int DELETE_ID = SETTINGS_ID+1;
+	private static final int ADD_ID = DELETE_ID + 1;
 	private static final int HELP_ID = ADD_ID + 1;
 	private static final int ABOUT_ID = HELP_ID + 1;
 	private static final int QUIT_ID = ABOUT_ID + 1;
@@ -56,16 +58,16 @@ public class CharabiaActivity extends Activity
 	// Dialogs
 	private static final int MODE_DIALOG = 0;
 
-	private static final int MODE_MAITRE = 0;
-	private static final int MODE_ESCLAVE = 1;
-
 	// List of intent 
 	private static final int PICK_CONTACT = 0;
-	private static final int SCAN_MODE_ESCLAVE = PICK_CONTACT+1;
 	
 	private TextView to = null;
 	private EditText message = null;
 	
+	// Keys share mode
+	private static final int MODE_MAITRE = 0;
+	private static final int MODE_ESCLAVE = 1;
+
 	private int mode = MODE_MAITRE;
 	
 	private byte[] key = null;
@@ -78,19 +80,7 @@ public class CharabiaActivity extends Activity
 		setContentView(R.layout.main);
 
 		to = (TextView) findViewById(R.id.to);
-		message = (EditText) findViewById(R.id.message);
-		
-	/*	message.setText(
-			android.util.Base64.encodeToString(Tools.generateKeyAES(getApplicationContext()).getEncoded(), 
-			android.util.Base64.DEFAULT));
-	*/	
-	//	Intent intent = new Intent(Intent.ACTION_SENDTO);
-	//	intent.setData(Uri.parse("sms:"));
-	//	startActivity(intent);
-		
-	//	ContentResolver contentResolver = getContentResolver();
-	//	Time t = new Time(); t.setToNow();
-	//	putSmsToDatabase(contentResolver, "0102030405", t.toMillis(false), SmsManager.STATUS_ON_ICC_UNREAD, "Hello World!!!");
+		message = (EditText) findViewById(R.id.message);		
 	}
 	
 	@Override
@@ -99,29 +89,15 @@ public class CharabiaActivity extends Activity
 		
 		Intent intent = getIntent();
 		String action = intent == null ? null : intent.getAction();
-		//String dataString = intent == null ? null : intent.getDataString();
-		//int id = intent == null ? -2 : intent.getShortExtra("ID", (short)-1);
 
 		if (intent != null && action != null) 
 		{
-			if(action.equals(Intent.ACTION_VIEW)) {
-				//String url = "sms:12345678?body=hello%20there";
-				//intent = new Intent(Intent.ACTION_SENDTO);
-				//intent.setData(Uri.parse(url));
-				//intent.setData("toto");
-				//startActivity(intent);
-				intent = new Intent(Intent.ACTION_PICK, android.provider.Contacts.People.CONTENT_URI); 
-				startActivity(intent);
-			}
-			
 			if(action.equals(Intent.ACTION_MAIN)) {
 				String str = intent.getStringExtra("TO");
 				if(str != null) {
 					to.setText(str);
 				}
 			}
-
-
 		}
 	}
 
@@ -226,28 +202,30 @@ public class CharabiaActivity extends Activity
 		return dialog;
 	}
 		
-	private String buildTag() {
-		return "";
-	}
-	
 	private final DialogInterface.OnClickListener modeListener =
 		new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialogInterface, int i) {
 				SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
 				key = cipher.generateKeyAES().getEncoded();
-				switch(i) {
-					case 1:
+				TelephonyManager tm = (TelephonyManager)CharabiaActivity.this.getSystemService(Context.TELEPHONY_SERVICE); 
+				mode = i;
+				int size = key.length/2;
+				switch(mode) {
+					case MODE_ESCLAVE:
 						//Slave 
-						IntentIntegrator.shareText(CharabiaActivity.this, "essai");
+						IntentIntegrator.shareText(CharabiaActivity.this, 
+								tm.getVoiceMailNumber() + "\n" +
+								Base64.encodeToString(key,size,size,Base64.DEFAULT));
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						break;
-					case 0:
+					case MODE_MAITRE:
 					default:
 						//Master
 						//flagReadRightKeyPart = true;
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
-						IntentIntegrator.shareText(CharabiaActivity.this, "essai");
-						Toast.makeText(CharabiaActivity.this, "mode maitre", Toast.LENGTH_LONG).show();
+						IntentIntegrator.shareText(CharabiaActivity.this, 
+								tm.getVoiceMailNumber() + "\n" +
+								Base64.encodeToString(key,0,size,Base64.DEFAULT));
 				}
 		}
 	};
@@ -272,19 +250,32 @@ public class CharabiaActivity extends Activity
 	          break;
         	case(IntentIntegrator.REQUEST_CODE):
 	            if (resultCode == RESULT_OK) {
-	            	String contents = data.getStringExtra("SCAN_RESULT");
-	                String format = data.getStringExtra("SCAN_RESULT_FORMAT");
-	                // Handle successful scan
+	                OpenHelper oh = new OpenHelper(this);
+	                SQLiteDatabase db = oh.getWritableDatabase();
+	                try {
+		            	String contents = data.getStringExtra("SCAN_RESULT");
+		                String format = data.getStringExtra("SCAN_RESULT_FORMAT");
+		                // Handle successful scan
+		                
+		                // TODO: add more tests control
+		                
+		                String[] infos = contents.split("\n");
+		                
+		                
+		                if(mode == MODE_ESCLAVE) {
+		                	
+		                }
+		                else {
+		                	
+		                }
+		                
+		                oh.insert(db, infos[0], key);
+	            	}
+	            	catch(Exception e) {
+	            		Toast.makeText(this, "erreur creation clef", Toast.LENGTH_LONG).show();
+	            	}
 	                
-	                Toast.makeText(this, "ok", Toast.LENGTH_LONG).show();
-	                
-	                if(mode == MODE_ESCLAVE) {
-	                	
-	                }
-	                else {
-	                	
-	                }
-	                
+	                db.close();
 	            }
         		break;
 	         	
