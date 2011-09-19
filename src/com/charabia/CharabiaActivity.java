@@ -19,11 +19,10 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.app.AlertDialog;
 
+import android.net.Uri;
 import android.os.Bundle;
 
 import android.content.DialogInterface;
-
-import android.net.Uri;
 
 import android.content.Intent;
 import android.content.Context;
@@ -114,6 +113,8 @@ public class CharabiaActivity extends Activity
 		super.onCreateOptionsMenu(menu);
 		menu.add(0, SETTINGS_ID, 0, R.string.options)
 			.setIcon(android.R.drawable.ic_menu_preferences);
+		menu.add(0, DELETE_ID, 0, R.string.delete)
+			.setIcon(android.R.drawable.ic_menu_delete);
 		menu.add(0, ADD_ID, 0, R.string.keys)
 			.setIcon(android.R.drawable.ic_menu_add);
 		menu.add(0, HELP_ID, 0, R.string.help)
@@ -135,39 +136,22 @@ public class CharabiaActivity extends Activity
 				//intent.setClassName(this, PreferencesActivity.class.getName());
 				startActivity(intent);
 				return true;
+			case DELETE_ID:
+				return true;
 			case ADD_ID:
 				showDialog(MODE_DIALOG);
-				
-				Toast.makeText(this, "mode="+mode, Toast.LENGTH_LONG).show();
-
-				OpenHelper oh = new OpenHelper(this);
-				SQLiteDatabase db = oh.getWritableDatabase();
-				
-				oh.insert(db, "5554", new byte[] { 0x00 } );
-				
-				db.close();
-				
 				return true;
 			case HELP_ID:
-				TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE); 
-				Toast.makeText(this,tm.getVoiceMailNumber(),Toast.LENGTH_LONG).show();
-				//intent = new Intent(Intent.ACTION_VIEW);
-				//intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-				//intent.setClassName(this, WebViewActivity.class.getName());
-				//intent.setData(Uri.parse("file:///android_asset/html/help/index.html"));
-				//startActivity(intent);
+				intent = new Intent(Intent.ACTION_VIEW);
+				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+				intent.setClassName(this, WebViewActivity.class.getName());
+				intent.setData(Uri.parse("file:///android_asset/html/help/index.html"));
+				startActivity(intent);
 				return true;
 			case ABOUT_ID:
-				
-				String s = "5554";
-				Toast.makeText(this,  s + " name = " + Tools.getDisplayName(this,s), Toast.LENGTH_LONG);
-
-				//s = "0102030405";
-				//Toast.makeText(this,  s + " name = " + Tools.getDisplayName(this,s), Toast.LENGTH_LONG);
-				
 				AlertDialog.Builder builder = new AlertDialog.Builder(this);
 				builder.setTitle(getString(R.string.app_name));
-				builder.setMessage(Tools.getDisplayName(this,s));
+				//builder.setMessage(Tools.getDisplayName(this,s));
 				//builder.setMessage(getString(R.string.apropos) + "\n\n" + getString(R.string.urlweb));
 				//builder.setIcon(R.drawable.charabia_icon);
 				//builder.setPositiveButton(R.string.ouvrir_navigateur, aboutListener);
@@ -261,18 +245,20 @@ public class CharabiaActivity extends Activity
 		                
 		                String[] infos = contents.split("\n");
 		                
+		                byte[] key_part = Base64.decode(infos[1], Base64.DEFAULT);
+		                int size = key.length/2;
 		                
 		                if(mode == MODE_ESCLAVE) {
-		                	
+		                	System.arraycopy(key_part, 0, key, 0, size);
 		                }
 		                else {
-		                	
+		                	System.arraycopy(key_part, 0, key, size, size);		                	
 		                }
 		                
 		                oh.insert(db, infos[0], key);
 	            	}
 	            	catch(Exception e) {
-	            		Toast.makeText(this, "erreur creation clef", Toast.LENGTH_LONG).show();
+	            		Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
 	            	}
 	                
 	                db.close();

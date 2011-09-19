@@ -22,4 +22,6 @@
 	<string name="end_data">fin</string>
 	<string name="unknow">inconnu</string>
 	<string name="clear">Effacer</string>
+	<string name="delete">Supprimer</string>
+	<string name="error_create_key">Erreur lors de la création de la clé</string>
 </resources>
