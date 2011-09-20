@@ -21,12 +21,14 @@ import android.app.AlertDialog;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 
 import android.content.DialogInterface;
 
 import android.content.Intent;
 import android.content.Context;
 import android.content.ContentResolver;
+import android.content.SharedPreferences;
 
 import android.util.Base64;
 import android.view.View;
@@ -71,6 +73,8 @@ public class CharabiaActivity extends Activity
 	
 	private byte[] key = null;
 	
+	private String phonenumber = null;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -79,13 +83,34 @@ public class CharabiaActivity extends Activity
 		setContentView(R.layout.main);
 
 		to = (TextView) findViewById(R.id.to);
-		message = (EditText) findViewById(R.id.message);		
+		message = (EditText) findViewById(R.id.message);	
+		
 	}
 	
 	@Override
 	protected void onResume() {
 		super.onResume();
-		
+
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		phonenumber = prefs.getString(PreferencesActivity.PHONE_NUMBER, null);
+		if(phonenumber == null || phonenumber.length() <= 0) {
+			
+			Intent intent;
+	
+			intent = new Intent(Intent.ACTION_VIEW);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+			intent.setClassName(this, PreferencesActivity.class.getName());
+			startActivity(intent);
+	
+			intent = new Intent(Intent.ACTION_VIEW);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+			intent.setClassName(this, WebViewActivity.class.getName());
+			//intent.setData(Uri.parse("file:///android_asset/html/help/enter_phone_number.html"));
+			intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "enter_phone_number.html")));
+			startActivity(intent);
+		}
+
+
 		Intent intent = getIntent();
 		String action = intent == null ? null : intent.getAction();
 
@@ -133,7 +158,7 @@ public class CharabiaActivity extends Activity
 			case SETTINGS_ID:
 				intent = new Intent(Intent.ACTION_VIEW);
 				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-				//intent.setClassName(this, PreferencesActivity.class.getName());
+				intent.setClassName(this, PreferencesActivity.class.getName());
 				startActivity(intent);
 				return true;
 			case DELETE_ID:
@@ -145,7 +170,8 @@ public class CharabiaActivity extends Activity
 				intent = new Intent(Intent.ACTION_VIEW);
 				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 				intent.setClassName(this, WebViewActivity.class.getName());
-				intent.setData(Uri.parse("file:///android_asset/html/help/index.html"));
+				//intent.setData(Uri.parse("file:///android_asset/html/help/index.html"));
+				intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "index.html")));
 				startActivity(intent);
 				return true;
 			case ABOUT_ID:
