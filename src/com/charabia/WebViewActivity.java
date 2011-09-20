@@ -19,7 +19,6 @@ import java.util.Locale;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -81,18 +80,17 @@ public class WebViewActivity extends Activity
 		String[] filelist = null;
 		
 		try {
-			filelist = am.list("html-"+locale.getLanguage()+"path");
+			filelist = am.list("html-"+locale.getLanguage()+path);
 			for(int i = 0; filelist != null && i < filelist.length; i++) {
-				Log.v("COMPARE", filename + "==" + filelist[i]);
 				if(filename.equals(filelist[i])) {
-					return "file:///android_asset/html-"+locale.getLanguage()+"path"+"/"+filename;
+					return "file:///android_asset/html-"+locale.getLanguage()+path+"/"+filename;
 				}
 			}
 			
 		} catch (IOException e) {
 		}
 
-		Log.v("CHARABIA:getBaseUrl", "html-"+locale.getLanguage()+path+"/"+filename+"not found");
+		Log.v("CHARABIA:getBaseUrl", "html-"+locale.getLanguage()+path+"/"+filename+" not found");
 		
 		return "file:///android_asset/html"+path+"/"+filename;
 	}

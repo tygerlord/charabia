@@ -15,6 +15,8 @@
  */
  package com.charabia;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.AlertDialog;
@@ -75,6 +77,8 @@ public class CharabiaActivity extends Activity
 	
 	private String phonenumber = null;
 	
+	//private ArrayList<String> listTo = new ArrayList<String>();
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -119,7 +123,7 @@ public class CharabiaActivity extends Activity
 			if(action.equals(Intent.ACTION_MAIN)) {
 				String str = intent.getStringExtra("TO");
 				if(str != null) {
-					to.setText(str);
+					to.setText(Tools.getDisplayName(this, str)+","+str);
 				}
 			}
 		}
@@ -217,14 +221,13 @@ public class CharabiaActivity extends Activity
 			public void onClick(DialogInterface dialogInterface, int i) {
 				SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
 				key = cipher.generateKeyAES().getEncoded();
-				TelephonyManager tm = (TelephonyManager)CharabiaActivity.this.getSystemService(Context.TELEPHONY_SERVICE); 
 				mode = i;
 				int size = key.length/2;
 				switch(mode) {
 					case MODE_ESCLAVE:
 						//Slave 
 						IntentIntegrator.shareText(CharabiaActivity.this, 
-								tm.getVoiceMailNumber() + "\n" +
+								phonenumber + "\n" +
 								Base64.encodeToString(key,size,size,Base64.DEFAULT));
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						break;
@@ -234,7 +237,7 @@ public class CharabiaActivity extends Activity
 						//flagReadRightKeyPart = true;
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						IntentIntegrator.shareText(CharabiaActivity.this, 
-								tm.getVoiceMailNumber() + "\n" +
+								phonenumber + "\n" +
 								Base64.encodeToString(key,0,size,Base64.DEFAULT));
 				}
 		}
@@ -255,7 +258,8 @@ public class CharabiaActivity extends Activity
         			int id = data.getIntExtra("ID", -1);
         			String phoneNumber = data.getStringExtra("PHONE");
                     Toast.makeText(this,  "Contact ID=" + id, Toast.LENGTH_LONG).show();
-        			to.setText(to.getText() + "\n" + phoneNumber);
+                    CharSequence temp = to.getText();
+        			to.setText(Tools.getDisplayName(this, phoneNumber)+","+phoneNumber+"\n"+temp);
         		}
 	          break;
         	case(IntentIntegrator.REQUEST_CODE):
