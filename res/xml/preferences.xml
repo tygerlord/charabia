@@ -6,7 +6,8 @@
 			android:key="phonenumber"
 			android:defaultValue=""
 			android:title="Phone number"
+			android:inputType="phone"
 		/>
 	</PreferenceCategory>
 
-	</PreferenceScreen>
+</PreferenceScreen>

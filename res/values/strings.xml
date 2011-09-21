@@ -24,4 +24,8 @@
 	<string name="clear">Effacer</string>
 	<string name="delete">Supprimer</string>
 	<string name="error_create_key">Erreur lors de la création de la clé</string>
+	<string name="edit">Contacts</string>
+	<string name="message_send_to">Message envoyé au %s"</string>
+	<string name="no_phone_number">Pas de numéro de téléphone</string>
+	<string name="empty_message">Message vide</string>
 </resources>
