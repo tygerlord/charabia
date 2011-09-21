@@ -46,7 +46,7 @@ public class WebViewActivity extends Activity
 		webSettings.setSavePassword(false);
 		webSettings.setSaveFormData(false);
 		webSettings.setJavaScriptEnabled(false);
-		webSettings.setSupportZoom(false);
+		webSettings.setBuiltInZoomControls(true);
 
 		webView.setWebChromeClient(new WebChromeClient());
 		

@@ -17,12 +17,8 @@
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
-import android.preference.EditTextPreference;
 import android.preference.PreferenceActivity;
-import android.preference.Preference;
 import android.preference.PreferenceScreen;
-import android.preference.Preference.OnPreferenceChangeListener;
 
 public final class PreferencesActivity extends PreferenceActivity
 	implements OnSharedPreferenceChangeListener {
@@ -51,15 +47,10 @@ public final class PreferencesActivity extends PreferenceActivity
 		PreferenceScreen preferences = getPreferenceScreen();
 		preferences.getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
 		
-		//sauvePassephrase  = (CheckBoxPreference) preferences.findPreference(KEY_SAUVE_PASSEPHRASE);
-		//passephrase = (EditTextPreference) preferences.findPreference(KEY_PASSEPHRASE);
-		
 	}
 
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-		//if (key.equals(KEY_SAUVE_PASSEPHRASE)) {
-		//	passephrase.setEnabled(sauvePassephrase.isChecked());
-		//}
-		
+		if (key.equals(PHONE_NUMBER)) {
+		}
 	}
 }

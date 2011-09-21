@@ -16,7 +16,6 @@
 package com.charabia;
 
 
-import android.util.Base64;
 import android.util.Log;
 
 import android.telephony.SmsMessage;

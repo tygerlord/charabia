@@ -23,12 +23,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.Cursor;
 
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.widget.ArrayAdapter;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Toast;
-
-import android.widget.TextView;
 
 import android.view.View;
 
@@ -38,7 +36,7 @@ import android.content.Intent;
  * @author 
  *
  */
-public class PickContactActivity extends ListActivity
+public class PickContactActivity extends ListActivity implements OnItemLongClickListener
 {
 	private Cursor cursor = null;
 	
@@ -79,22 +77,25 @@ public class PickContactActivity extends ListActivity
 		
         ListView lv = getListView();
 
-        lv.setOnItemClickListener(new OnItemClickListener() {
-                public void onItemClick(AdapterView<?> parent, View view,
-                        int position, long id) {
-                			cursor.moveToPosition(position);
-                			Intent intent = getIntent();
-                			if(intent != null) {
-                				intent.putExtra("ID", cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
-                				intent.putExtra("PHONE", cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
-                				setResult(RESULT_OK, intent);
-                            }
-                			cursor.close();
-                			finish();
-                }
-        });
-
+        lv.setOnItemLongClickListener(this);
 	}
-
 	
+	@Override
+	protected void onListItemClick(ListView lv, View v, int position, long id) {
+		cursor.moveToPosition(position);
+		Intent intent = getIntent();
+		if(intent != null) {
+			intent.putExtra("ID", cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
+			intent.putExtra("PHONE", cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
+			setResult(RESULT_OK, intent);
+        }
+		cursor.close();
+		finish();		
+	}
+	
+	@Override
+	public boolean onItemLongClick(AdapterView<?> av, View v, int position, long id) {
+		Toast.makeText(this, "long click", Toast.LENGTH_LONG).show();
+		return true;
+	}
 }

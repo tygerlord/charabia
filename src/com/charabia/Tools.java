@@ -17,8 +17,6 @@ package com.charabia;
 
 import android.net.Uri;
 
-import android.util.Base64;
-
 import android.content.Intent;
 import android.content.Context;
 import android.content.ContentValues;
@@ -27,14 +25,9 @@ import android.content.ContentResolver;
 import android.telephony.SmsMessage;
 
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-
 import android.app.PendingIntent;
 import android.app.Notification;
 import android.app.NotificationManager;
-
-import android.widget.Toast;
 
 import android.provider.ContactsContract.PhoneLookup;
 
@@ -182,22 +175,4 @@ public class Tools
 		return result;
 	}
 	
-//	public static String getPhone(Context context) {
-//		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
-//		ContentResolver contentResolver = context.getContentResolver();
-//		Cursor cursor = contentResolver.query(uri, new String[]{PhoneLookup.DISPLAY_NAME}, null, null, null);
-//		
-//		String result = null;
-//		
-//		if(cursor.getCount() > 0) {
-//			 cursor.moveToFirst();
-//			 result = cursor.getString(cursor.getColumnIndex(PhoneLookup.DISPLAY_NAME));
-//		}
-//		else {	
-//			result = context.getString(R.string.unknow);
-//		}
-//		cursor.close();
-//		return result;
-//	}
-
 }

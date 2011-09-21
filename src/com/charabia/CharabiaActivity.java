@@ -15,8 +15,6 @@
  */
  package com.charabia;
 
-import java.util.ArrayList;
-
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.AlertDialog;
@@ -28,7 +26,6 @@ import android.preference.PreferenceManager;
 import android.content.DialogInterface;
 
 import android.content.Intent;
-import android.content.Context;
 import android.content.ContentResolver;
 import android.content.SharedPreferences;
 
@@ -44,16 +41,14 @@ import android.widget.EditText;
 import android.database.sqlite.SQLiteDatabase;
 
 import android.telephony.SmsManager;
-import android.telephony.TelephonyManager;
-
 import com.google.zxing.integration.android.IntentIntegrator;
 
 public class CharabiaActivity extends Activity
 {
 	// Menus
 	private static final int SETTINGS_ID = 1;
-	private static final int DELETE_ID = SETTINGS_ID+1;
-	private static final int ADD_ID = DELETE_ID + 1;
+	private static final int EDIT_ID = SETTINGS_ID+1;
+	private static final int ADD_ID = EDIT_ID + 1;
 	private static final int HELP_ID = ADD_ID + 1;
 	private static final int ABOUT_ID = HELP_ID + 1;
 	private static final int QUIT_ID = ABOUT_ID + 1;
@@ -142,8 +137,8 @@ public class CharabiaActivity extends Activity
 		super.onCreateOptionsMenu(menu);
 		menu.add(0, SETTINGS_ID, 0, R.string.options)
 			.setIcon(android.R.drawable.ic_menu_preferences);
-		menu.add(0, DELETE_ID, 0, R.string.delete)
-			.setIcon(android.R.drawable.ic_menu_delete);
+		menu.add(0, EDIT_ID, 0, R.string.edit)
+			.setIcon(android.R.drawable.ic_menu_edit);
 		menu.add(0, ADD_ID, 0, R.string.keys)
 			.setIcon(android.R.drawable.ic_menu_add);
 		menu.add(0, HELP_ID, 0, R.string.help)
@@ -165,7 +160,10 @@ public class CharabiaActivity extends Activity
 				intent.setClassName(this, PreferencesActivity.class.getName());
 				startActivity(intent);
 				return true;
-			case DELETE_ID:
+			case EDIT_ID:
+				intent = new Intent(Intent.ACTION_VIEW);
+				intent.setClassName(this, PickContactActivity.class.getName());
+				startActivity(intent);
 				return true;
 			case ADD_ID:
 				showDialog(MODE_DIALOG);
@@ -234,7 +232,6 @@ public class CharabiaActivity extends Activity
 					case MODE_MAITRE:
 					default:
 						//Master
-						//flagReadRightKeyPart = true;
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						IntentIntegrator.shareText(CharabiaActivity.this, 
 								phonenumber + "\n" +
@@ -244,7 +241,7 @@ public class CharabiaActivity extends Activity
 	};
 
 	public void add_to(View view) {
-		Intent intent = new Intent(PickContactActivity.class.getName());//Uri.parse("content://contacts/people"));
+		Intent intent = new Intent(PickContactActivity.class.getName());
 		startActivityForResult(intent, PICK_CONTACT);
 	}
 	
@@ -257,7 +254,6 @@ public class CharabiaActivity extends Activity
         		if (resultCode == RESULT_OK) {
         			int id = data.getIntExtra("ID", -1);
         			String phoneNumber = data.getStringExtra("PHONE");
-                    Toast.makeText(this,  "Contact ID=" + id, Toast.LENGTH_LONG).show();
                     CharSequence temp = to.getText();
         			to.setText(Tools.getDisplayName(this, phoneNumber)+","+phoneNumber+"\n"+temp);
         		}
@@ -309,36 +305,57 @@ public class CharabiaActivity extends Activity
  	
 	public void send(View view) {
 		
-		String phoneNumber = to.getText().toString();
+		String phoneNumbers = to.getText().toString();
 		String texte = message.getText().toString();
-		
-		if(phoneNumber.equals("")) {
-			Toast.makeText(this, "no phone number", Toast.LENGTH_LONG).show();
+
+		if(phoneNumbers.equals("")) {
+			Toast.makeText(this, R.string.no_phone_number, Toast.LENGTH_LONG).show();
 			return;
 		}
-		
-		if(texte.equals("")) {
-			Toast.makeText(this, "message empty", Toast.LENGTH_LONG).show();
-			return;		
-		}
-		
-		//TODO: preference
-		ContentResolver contentResolver = getApplicationContext().getContentResolver();
-		Tools.putSmsToDatabase(contentResolver, phoneNumber, 
-			System.currentTimeMillis(), Tools.MESSAGE_TYPE_SENT,
-			0, texte);
 
-		SmsCipher cipher = new SmsCipher(this);
-		String cryptedTexte = cipher.encrypt(SmsCipher.demo_key, phoneNumber, texte);
-		if(cryptedTexte != null) {
-			SmsManager.getDefault().sendTextMessage(phoneNumber, null, cryptedTexte, null, null);
+		String[] lines = phoneNumbers.split("\n");
+		String phoneNumber = "";
 		
-			to.setText("");
-			message.setText("");
+		for(int i = 0; i < lines.length; i++) {
+			
+			try {
+				phoneNumber = lines[i].split(",")[1];
+				
+				if(phoneNumber.equals("")) {
+					Toast.makeText(this, R.string.no_phone_number, Toast.LENGTH_LONG).show();
+					return;
+				}
+				
+				if(texte.equals("")) {
+					Toast.makeText(this, R.string.empty_message, Toast.LENGTH_LONG).show();
+					return;		
+				}
+				
+				//TODO: preference
+				ContentResolver contentResolver = getContentResolver();
+				Tools.putSmsToDatabase(contentResolver, phoneNumber, 
+					System.currentTimeMillis(), Tools.MESSAGE_TYPE_SENT,
+					0, texte);
+		
+				SmsCipher cipher = new SmsCipher(this);
+				String cryptedTexte = cipher.encrypt(SmsCipher.demo_key, phoneNumber, texte);
+				if(cryptedTexte != null) {
+					SmsManager.getDefault().sendTextMessage(phoneNumber, null, cryptedTexte, null, null);
+				
+					Toast.makeText(this, getString(R.string.message_send_to, phoneNumber), Toast.LENGTH_SHORT).show();
+					
+					to.setText("");
+					message.setText("");
+				}
+				else {
+					Toast.makeText(this, R.string.fail_send, Toast.LENGTH_LONG).show();
+				}
+			}
+			catch(Exception e) {
+				Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
+			}
+			
 		}
-		else {
-			Toast.makeText(getApplicationContext(), getString(R.string.fail_send), Toast.LENGTH_LONG).show();
-		}
+	
 	}
-
 }
