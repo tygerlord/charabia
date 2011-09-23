@@ -25,9 +25,12 @@ import android.preference.PreferenceManager;
 
 import android.content.DialogInterface;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.ContentResolver;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 
 import android.util.Base64;
 import android.view.View;
@@ -37,8 +40,6 @@ import android.view.MenuItem;
 import android.widget.Toast;
 import android.widget.TextView;
 import android.widget.EditText;
-
-import android.database.sqlite.SQLiteDatabase;
 
 import android.telephony.SmsManager;
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -172,20 +173,23 @@ public class CharabiaActivity extends Activity
 				intent = new Intent(Intent.ACTION_VIEW);
 				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 				intent.setClassName(this, WebViewActivity.class.getName());
-				//intent.setData(Uri.parse("file:///android_asset/html/help/index.html"));
 				intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "index.html")));
 				startActivity(intent);
 				return true;
 			case ABOUT_ID:
-				AlertDialog.Builder builder = new AlertDialog.Builder(this);
-				builder.setTitle(getString(R.string.app_name));
-				//builder.setMessage(Tools.getDisplayName(this,s));
-				//builder.setMessage(getString(R.string.apropos) + "\n\n" + getString(R.string.urlweb));
-				//builder.setIcon(R.drawable.charabia_icon);
-				//builder.setPositiveButton(R.string.ouvrir_navigateur, aboutListener);
-				//builder.setNegativeButton(R.string.abandon, null);
-				builder.show();
-				return true;
+				try {
+					PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+					AlertDialog.Builder builder = new AlertDialog.Builder(this);
+					builder.setTitle(getString(R.string.app_name));
+					builder.setMessage(getString(R.string.info, pi.versionName, pi.versionCode));
+					builder.setIcon(R.drawable.ic_launcher);
+					builder.setPositiveButton(R.string.quit, null);
+					builder.show();
+					return true;
+				} catch (NameNotFoundException e) {
+					e.printStackTrace();
+				}
+				return false;
 			case QUIT_ID:
 				finish();
 				return true;
@@ -260,8 +264,6 @@ public class CharabiaActivity extends Activity
 	          break;
         	case(IntentIntegrator.REQUEST_CODE):
 	            if (resultCode == RESULT_OK) {
-	                OpenHelper oh = new OpenHelper(this);
-	                SQLiteDatabase db = oh.getWritableDatabase();
 	                try {
 		            	String contents = data.getStringExtra("SCAN_RESULT");
 		                String format = data.getStringExtra("SCAN_RESULT_FORMAT");
@@ -281,13 +283,26 @@ public class CharabiaActivity extends Activity
 		                	System.arraycopy(key_part, 0, key, size, size);		                	
 		                }
 		                
-		                oh.insert(db, infos[0], key);
+		               ContentResolver cr = getContentResolver();
+		                
+	                	ContentValues values = new ContentValues();
+	                	values.put(OpenHelper.PHONE, infos[0]);
+	                	values.put(OpenHelper.KEY, Base64.encodeToString(key_part, Base64.DEFAULT));
+	                	int count = cr.update(ContactProvider.CONTENT_URI, 
+		                		values,
+		                		"(" + OpenHelper.PHONE + "=?)",
+		                		new String[] { infos[0] }); 
+		                if(count <= 0) {
+		                	cr.insert(ContactProvider.CONTENT_URI, values);
+		                }
+		                
+		               	Toast.makeText(this, R.string.contact_added, Toast.LENGTH_LONG).show();
+		                
 	            	}
 	            	catch(Exception e) {
 	            		Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
 	            	}
 	                
-	                db.close();
 	            }
         		break;
 	         	

@@ -4,6 +4,7 @@
 	<string name="options">Options</string>
 	<string name="help">Aide</string>
 	<string name="about">A propos</string>
+	<string name="info">\nVersion %1$s\n(code %2$d)</string>
 	<string name="quit">Quitter</string>
 	<string name="keys">Clés</string>
 	<string name="master">Maitre</string>
@@ -28,4 +29,6 @@
 	<string name="message_send_to">Message envoyé au %s"</string>
 	<string name="no_phone_number">Pas de numéro de téléphone</string>
 	<string name="empty_message">Message vide</string>
+	<string name="no_contact">Pas de contacts d\'enregistré</string>
+	<string name="contact_added">Contact ajouté</string>
 </resources>

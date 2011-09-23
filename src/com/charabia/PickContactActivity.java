@@ -20,28 +20,28 @@ import android.os.Bundle;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.ListActivity;
-
-import android.database.sqlite.SQLiteDatabase;
+import android.app.AlertDialog.Builder;
 import android.database.Cursor;
 
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
-import android.widget.ArrayAdapter;
+import android.widget.TextView;
 import android.view.View;
 
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ContentUris;
 
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SimpleCursorAdapter;
+import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
 
 /**
  * @author 
@@ -49,21 +49,6 @@ import android.support.v4.widget.SimpleCursorAdapter;
  */
 public class PickContactActivity extends FragmentActivity 
 {
-	
-	// Dialogs
-	private static final int EDIT_DIALOG = 0;
-
-	// Loader
-	private static final int CONTACTS_LOADER = 1;
-	
-	private String[] contactsListe = null;
-
-	private ArrayAdapter<String> mAdapter = null;
-
-	private Cursor cursor = null;
-	
-	private ArrayListFragment list = null;
-	
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -71,70 +56,63 @@ public class PickContactActivity extends FragmentActivity
         		
 	      // Create the list fragment and add it as our sole content.
         if (getSupportFragmentManager().findFragmentById(android.R.id.content) == null) {
-            list = new ArrayListFragment();
-            getSupportFragmentManager().beginTransaction().add(android.R.id.content, list).commit();
+        	CursorLoaderListFragment listFragment = new CursorLoaderListFragment();
+            getSupportFragmentManager().beginTransaction().add(android.R.id.content, listFragment).commit();
         }
 		
-//		mAdapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, list);
-//		
-//		setListAdapter(mAdapter);
-//
-//		getLoaderManager().initLoader(CONTACTS_LOADER, null, this);
-//		
-//        getListView().setOnItemLongClickListener(this);
-	}
-	
-	
-	/* Handles dialogs */
-	protected Dialog onCreateDialog(int id) {
-		Dialog dialog = null;
-		AlertDialog.Builder builder;
-		switch(id) {
-			case EDIT_DIALOG:
-				builder = new AlertDialog.Builder(this);
-				builder.setTitle(getString(R.string.app_name));
-				builder.setItems(new String[] { 
-					getString(R.string.delete), 
-					 }, editListener);
-				dialog = builder.create();
-			break;
-			default:
-				dialog = null;
-		}
-		return dialog;
 	}
 		
-	private final DialogInterface.OnClickListener editListener =
-		new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialogInterface, int i) {
-				switch(i) {
-					case 0: //delete
-						//OpenHelper oh = new OpenHelper(getApplicationContext());
-						//SQLiteDatabase db = oh.getWritableDatabase();
-						
-						//oh.delete(db, cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
-						
-						//db.close();
-						break;
-					default:
-				}
-		}
-	};
+	public static class viewBinder implements ViewBinder {
 
-	public static class ArrayListFragment extends ListFragment implements OnItemLongClickListener, LoaderManager.LoaderCallbacks<Cursor> 
+		Context context;
+		
+		public viewBinder(Context context) {
+			this.context = context;
+		}
+		
+		@Override
+		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
+			try {
+				TextView tv = (TextView)v;
+				
+				if(cursor.getColumnIndex(OpenHelper.PHONE) == columnIndex) {
+					String phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
+					tv.setText(Tools.getDisplayName(context, phoneNumber) + "\n" + phoneNumber);
+					
+					return true;
+				}
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+			}
+			
+			return false;
+		}
+		
+	}
+	
+	public static class CursorLoaderListFragment extends ListFragment implements OnItemLongClickListener, LoaderManager.LoaderCallbacks<Cursor> 
 	{
-		private Cursor cursor = null;
+		// Loader
+		private static final int CONTACTS_LOADER = 1;
+
+		private long id = -1;
+		
 		private SimpleCursorAdapter mAdapter = null;
 		
 		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
             super.onActivityCreated(savedInstanceState);
             
+            setEmptyText(getActivity().getString(R.string.no_contact));
+            
             mAdapter = new SimpleCursorAdapter(getActivity(), 
             		 android.R.layout.simple_list_item_1, null, 
             		 new String[] { OpenHelper.PHONE }, 
             		 new int[] { android.R.id.text1 },
-            		 SimpleCursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+            		 0);
+            
+            mAdapter.setViewBinder(new viewBinder(getActivity()));
             
             setListAdapter(mAdapter);
             
@@ -147,24 +125,43 @@ public class PickContactActivity extends FragmentActivity
 		
 		@Override
 		public void onListItemClick(ListView lv, View v, int position, long id) {
-			if(cursor == null) {
-				return; 
-			}
 			
-			cursor.moveToPosition(position);
+			Cursor cursor = mAdapter.getCursor();
+			
 			Intent intent = getActivity().getIntent();
 			if(intent != null) {
-				intent.putExtra("ID", cursor.getInt(cursor.getColumnIndex(OpenHelper.ID)));
+				intent.putExtra("ID", id);
 				intent.putExtra("PHONE", cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
 				getActivity().setResult(Activity.RESULT_OK, intent);
 	        }
-			cursor.close();
 			getActivity().finish();		
 		}
 	
+		private final DialogInterface.OnClickListener editListener =
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialogInterface, int i) {
+						switch(i) {
+							case 0: //delete
+								ContentResolver cr = getActivity().getContentResolver();
+								
+								Uri uri = ContentUris.withAppendedId(ContactProvider.CONTENT_URI, id);
+								cr.delete(uri, null, null);
+								break;
+							default:
+						}
+				}
+			};
+
 		@Override
 		public boolean onItemLongClick(AdapterView<?> av, View v, int position, long id) {
-			getActivity().showDialog(EDIT_DIALOG);
+			this.id = id;
+			
+			Builder builder = new AlertDialog.Builder(getActivity());
+			builder.setTitle(getString(R.string.app_name));
+			builder.setItems(new String[] { 
+				getString(R.string.delete), 
+				 }, editListener);
+			builder.create().show();
 			return true;
 		}
 	

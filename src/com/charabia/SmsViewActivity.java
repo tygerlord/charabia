@@ -86,8 +86,6 @@ public class SmsViewActivity extends Activity
 	
 		int nbMessages = msm.getNbMessages();
 		
-		Toast.makeText(getApplicationContext(), "doNext " + nbMessages, Toast.LENGTH_LONG).show();
-		
 		if(nbMessages <= 0) {
 			finish();
 			return;
