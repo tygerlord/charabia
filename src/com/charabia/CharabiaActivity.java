@@ -129,7 +129,8 @@ public class CharabiaActivity extends Activity
 	public void onPause() {
 		super.onPause();
 		
-		Tools.showNotification(getApplicationContext());
+		
+		new Tools(this).showNotification();
 		
 	}
 
@@ -256,7 +257,6 @@ public class CharabiaActivity extends Activity
 		switch (reqCode) {
         	case (PICK_CONTACT):
         		if (resultCode == RESULT_OK) {
-        			int id = data.getIntExtra("ID", -1);
         			String phoneNumber = data.getStringExtra("PHONE");
                     CharSequence temp = to.getText();
         			to.setText(Tools.getDisplayName(this, phoneNumber)+","+phoneNumber+"\n"+temp);
@@ -288,12 +288,12 @@ public class CharabiaActivity extends Activity
 	                	ContentValues values = new ContentValues();
 	                	values.put(OpenHelper.PHONE, infos[0]);
 	                	values.put(OpenHelper.KEY, Base64.encodeToString(key_part, Base64.DEFAULT));
-	                	int count = cr.update(ContactProvider.CONTENT_URI, 
+	                	int count = cr.update(DataProvider.CONTENT_URI, 
 		                		values,
 		                		"(" + OpenHelper.PHONE + "=?)",
 		                		new String[] { infos[0] }); 
 		                if(count <= 0) {
-		                	cr.insert(ContactProvider.CONTENT_URI, values);
+		                	cr.insert(DataProvider.CONTENT_URI, values);
 		                }
 		                
 		               	Toast.makeText(this, R.string.contact_added, Toast.LENGTH_LONG).show();

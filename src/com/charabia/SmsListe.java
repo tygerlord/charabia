@@ -27,6 +27,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.util.Base64;
 import android.view.View;
 
 import android.content.ContentResolver;
@@ -42,12 +43,13 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
+import android.telephony.SmsMessage;
 
 /**
  * @author 
  *
  */
-public class PickContactActivity extends FragmentActivity 
+public class SmsListe extends FragmentActivity 
 {
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -72,12 +74,18 @@ public class PickContactActivity extends FragmentActivity
 		
 		@Override
 		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
+			Tools tools = new Tools(context);
 			try {
 				TextView tv = (TextView)v;
 				
-				if(cursor.getColumnIndex(OpenHelper.PHONE) == columnIndex) {
-					String phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
-					tv.setText(Tools.getDisplayName(context, phoneNumber) + "\n" + phoneNumber);
+				if(cursor.getColumnIndex(OpenHelper.SMS_PDU) == columnIndex) {
+					byte[] pdu = Base64.decode(cursor.getString(columnIndex), Base64.DEFAULT);
+					SmsMessage sms = SmsMessage.createFromPdu(pdu);
+					
+					String phoneNumber = sms.getOriginatingAddress();
+					String texte = tools.getDisplayName(phoneNumber) + "(" + phoneNumber + ")";
+					
+					tv.setText(context.getString(R.string.from) + " " +  texte + "\n" + sms.getDisplayMessageBody());
 					
 					return true;
 				}
@@ -91,13 +99,11 @@ public class PickContactActivity extends FragmentActivity
 		
 	}
 	
-	public static class CursorLoaderListFragment extends ListFragment implements OnItemLongClickListener, LoaderManager.LoaderCallbacks<Cursor> 
+	public static class CursorLoaderListFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> 
 	{
 		// Loader
-		private static final int CONTACTS_LOADER = 1;
+		private static final int SMS_LOADER = 1;
 
-		private long id = -1;
-		
 		private SimpleCursorAdapter mAdapter = null;
 		
 		@Override
@@ -108,7 +114,7 @@ public class PickContactActivity extends FragmentActivity
             
             mAdapter = new SimpleCursorAdapter(getActivity(), 
             		 android.R.layout.simple_list_item_1, null, 
-            		 new String[] { OpenHelper.PHONE }, 
+            		 new String[] { OpenHelper.SMS_PDU }, 
             		 new int[] { android.R.id.text1 },
             		 0);
             
@@ -118,9 +124,7 @@ public class PickContactActivity extends FragmentActivity
             
             setListShown(false);
             
-            getListView().setOnItemLongClickListener(this);
-            
-            getLoaderManager().initLoader(CONTACTS_LOADER, null, this);
+            getLoaderManager().initLoader(SMS_LOADER, null, this);
 		}
 		
 		@Override
@@ -128,50 +132,21 @@ public class PickContactActivity extends FragmentActivity
 			
 			Cursor cursor = mAdapter.getCursor();
 			
-			Intent intent = getActivity().getIntent();
-			if(intent != null) {
-				intent.putExtra("ID", id);
-				intent.putExtra("PHONE", cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
-				getActivity().setResult(Activity.RESULT_OK, intent);
-	        }
-			getActivity().finish();		
+//			Intent intent = getActivity().getIntent();
+//			if(intent != null) {
+//				intent.putExtra("ID", id);
+//				intent.putExtra("PHONE", cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
+//				getActivity().setResult(Activity.RESULT_OK, intent);
+//	        }
+//			getActivity().finish();		
 		}
 	
-		private final DialogInterface.OnClickListener editListener =
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialogInterface, int i) {
-						switch(i) {
-							case 0: //delete
-								ContentResolver cr = getActivity().getContentResolver();
-								
-								Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
-								cr.delete(uri, null, null);
-								break;
-							default:
-						}
-				}
-			};
-
-		@Override
-		public boolean onItemLongClick(AdapterView<?> av, View v, int position, long id) {
-			this.id = id;
-			
-			Builder builder = new AlertDialog.Builder(getActivity());
-			builder.setTitle(getString(R.string.app_name));
-			builder.setItems(new String[] { 
-				getString(R.string.delete), 
-				 }, editListener);
-			builder.create().show();
-			return true;
-		}
-	
-
 		@Override
 		public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-			Uri baseUri = DataProvider.CONTENT_URI;
+			Uri baseUri = DataProvider.CONTENT_URI_PDUS;
 			
 	        return new CursorLoader(getActivity(), baseUri,
-	        		new String[] { OpenHelper.ID, OpenHelper.PHONE}, 
+	        		new String[] { OpenHelper.ID, OpenHelper.SMS_PDU}, 
 	        		null, 
 	        		null,
 	        		null);

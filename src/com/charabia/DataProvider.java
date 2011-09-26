@@ -28,44 +28,68 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 
-public class ContactProvider extends ContentProvider 
+public class DataProvider extends ContentProvider 
 {
 	public static final String PROVIDER_NAME = 
-	     "com.charabia.provider.Contacts";
-	  
+		"com.charabia.provider.data";
+	
 	public static final Uri CONTENT_URI = 
-	     Uri.parse("content://"+ PROVIDER_NAME + "/contacts");
-	  
+		Uri.parse("content://"+ PROVIDER_NAME + "/contacts");
+
+	public static final Uri CONTENT_URI_PDUS = 
+			Uri.parse("content://"+ PROVIDER_NAME + "/pdus");
+
 	private static final int CONTACTS = 1;
 	private static final int CONTACT_ID = 2;   
-	     
+	private static final int PDUS = 3;
+	private static final int PDU_ID = 4;
+	
 	private static final UriMatcher uriMatcher;
 	static{
 		uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-	    uriMatcher.addURI(PROVIDER_NAME, "contacts", CONTACTS);
-	    uriMatcher.addURI(PROVIDER_NAME, "contacts/#", CONTACT_ID);      
+		uriMatcher.addURI(PROVIDER_NAME, "contacts", CONTACTS);
+		uriMatcher.addURI(PROVIDER_NAME, "contacts/#", CONTACT_ID);      
+		uriMatcher.addURI(PROVIDER_NAME, "pdus", PDUS);
+		uriMatcher.addURI(PROVIDER_NAME, "pdus/#", PDU_ID);
 	}
-    
+
 	private SQLiteDatabase db = null;
       
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
 		int count=0;
+		String id = null;
+		String table = null;
 		switch (uriMatcher.match(uri)) {
-	    	case CONTACTS:
-	    		count = db.delete(OpenHelper.KEYS_TABLE, selection, selectionArgs);
-	    		break;
-	        case CONTACT_ID:
-	            String id = uri.getPathSegments().get(1);
-	            count = db.delete(
-	            		OpenHelper.KEYS_TABLE,                        
-	            		OpenHelper.ID + " = " + id + 
-	            		(!TextUtils.isEmpty(selection) ? " AND (" + 
-	            		selection + ')' : ""), selectionArgs);
-	            break;
-	        default: throw new IllegalArgumentException(
-	            "Unknown URI " + uri);    
-		}       
+			case CONTACTS:
+				table = OpenHelper.KEYS_TABLE;
+				break;
+			case CONTACT_ID:
+				id = uri.getPathSegments().get(1);
+				table = OpenHelper.KEYS_TABLE;
+				break;
+			case PDUS:
+				table = OpenHelper.SMS_TABLE;
+				break;
+			case PDU_ID:
+				id = uri.getPathSegments().get(1);
+				table = OpenHelper.SMS_TABLE;
+				break;
+			default: throw new IllegalArgumentException(
+				"Unknown URI " + uri);    
+		}    
+		
+		if(id == null) {
+			count = db.delete(table, selection, selectionArgs);			
+		}
+		else {
+			count = db.delete(
+					table,
+					OpenHelper.ID + " = " + id + 
+					(!TextUtils.isEmpty(selection) ? " AND (" + 
+					selection + ')' : ""), selectionArgs);		
+		}
+		
 		getContext().getContentResolver().notifyChange(uri, null);
 		return count;      
   	}
@@ -76,7 +100,11 @@ public class ContactProvider extends ContentProvider
 			case CONTACTS:
 				return "vnd.android.cursor.dir/vnd.charabia.contacts";
 			case CONTACT_ID:                
-				return "vnd.android.cursor.item/vnd.charabia.contacts";
+				return "vnd.android.cursor.item/vnd.charabia.contact";
+			case PDUS:
+				return "vnd.android.cursor.dir/vnd.charabia.pdus";
+			case PDU_ID:                
+				return "vnd.android.cursor.item/vnd.charabia.pdu";
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);        
 		}   
@@ -84,12 +112,24 @@ public class ContactProvider extends ContentProvider
 	
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-	      long rowID = db.insert(
-	         OpenHelper.KEYS_TABLE, "", values);
+		String table = null;
+		
+		switch (uriMatcher.match(uri)) {
+			case CONTACTS:
+				table = OpenHelper.KEYS_TABLE;
+				break;
+			case PDUS:
+				table = OpenHelper.SMS_TABLE;
+				break;
+			default: throw new IllegalArgumentException(
+				"Unknown URI " + uri);    
+		}    
+
+		long rowID = db.insert(table, "", values);
 	           
 	      if (rowID>0)
 	      {
-	         Uri _uri = ContentUris.withAppendedId(CONTENT_URI, rowID);
+	         Uri _uri = ContentUris.withAppendedId(uri, rowID);
 	         getContext().getContentResolver().notifyChange(_uri, null);    
 	         return _uri;                
 	      }        
@@ -108,9 +148,31 @@ public class ContactProvider extends ContentProvider
 	public Cursor query(Uri uri, String[] projection, String selection,
 			String[] selectionArgs, String sortOrder) {
 		SQLiteQueryBuilder sqlBuilder = new SQLiteQueryBuilder();
-		sqlBuilder.setTables(OpenHelper.KEYS_TABLE);
+		String id = null;
+		String table = null;
+		
+		switch (uriMatcher.match(uri)) {
+			case CONTACTS:
+				table = OpenHelper.KEYS_TABLE;
+				break;
+			case CONTACT_ID:
+				id = uri.getPathSegments().get(1);
+				table = OpenHelper.KEYS_TABLE;
+				break;
+			case PDUS:
+				table = OpenHelper.SMS_TABLE;
+				break;
+			case PDU_ID:
+				id = uri.getPathSegments().get(1);
+				table = OpenHelper.SMS_TABLE;
+				break;
+			default: throw new IllegalArgumentException(
+				"Unknown URI " + uri);    
+		}    
+		
+		sqlBuilder.setTables(table);
 		       
-		if (uriMatcher.match(uri) == CONTACT_ID) {
+		if (id != null) {
 			sqlBuilder.appendWhere(
 		        OpenHelper.ID + " = " + uri.getPathSegments().get(1));
 		}
@@ -132,22 +194,40 @@ public class ContactProvider extends ContentProvider
 	public int update(Uri uri, ContentValues values, String selection,
 			String[] selectionArgs) {
 		int count=0;
+		String id = null;
+		String table = null;
 		switch (uriMatcher.match(uri)) {
 	    	case CONTACTS:
-	    		count = db.update(OpenHelper.KEYS_TABLE, values, selection, selectionArgs);
+	    		table = OpenHelper.KEYS_TABLE;
 	    		break;
 	        case CONTACT_ID:
-	            String id = uri.getPathSegments().get(1);
-	            count = db.update(
-	            		OpenHelper.KEYS_TABLE,
-	            		values,
-	            		OpenHelper.ID + " = " + id + 
-	            		(!TextUtils.isEmpty(selection) ? " AND (" + 
-	            		selection + ')' : ""), selectionArgs);
+	            id = uri.getPathSegments().get(1);
+	    		table = OpenHelper.KEYS_TABLE;
+	            break;
+	    	case PDUS:
+	    		table = OpenHelper.SMS_TABLE;
+	    		break;
+	        case PDU_ID:
+	            id = uri.getPathSegments().get(1);
+	    		table = OpenHelper.SMS_TABLE;
 	            break;
 	        default: throw new IllegalArgumentException(
 	            "Unknown URI " + uri);    
-		}       
+		}     
+		
+		if(id == null) {
+    		count = db.update(table, values, selection, selectionArgs);	
+		}
+		else {
+            id = uri.getPathSegments().get(1);
+            count = db.update(
+            		table,
+            		values,
+            		OpenHelper.ID + " = " + id + 
+            		(!TextUtils.isEmpty(selection) ? " AND (" + 
+            		selection + ')' : ""), selectionArgs);		
+		}
+		
 		getContext().getContentResolver().notifyChange(uri, null);
 		return count;      
 	}

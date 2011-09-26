@@ -41,8 +41,6 @@ public class SmsCipher
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 
 		};
 
-	private static final String TAG = "CHARABIA_SMS_CIPHER";
-
 	private Context context = null;
 	
 	public SmsCipher(Context context) {
@@ -112,7 +110,7 @@ public class SmsCipher
 			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
 		}
 		
-		return null; //context.getString(R.string.unexpected_error);
+		return null;
 	}
 
 }

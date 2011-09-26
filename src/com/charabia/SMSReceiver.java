@@ -48,6 +48,7 @@ public class SMSReceiver extends BroadcastReceiver
 					//Toast.makeText(context, "Message : " + messageBody, Toast.LENGTH_LONG).show();
 				
 					if(messageBody.startsWith(SmsCipher.KEYWORD)) {
+						Tools tools = new Tools(context);
 						//showNotification(context, phoneNumber, messageBody);
 						//Tools.showNotification(context, messages[0]);
 
@@ -59,7 +60,7 @@ public class SMSReceiver extends BroadcastReceiver
 						MySmsManager msm = new MySmsManager(context);
 						msm.writeSMS(messages[0]);
 
-						Tools.showNotification(context, msm.getNbMessages(), messages[0]);
+						tools.showNotification(tools.getNbMessages(), messages[0]);
 
 						abortBroadcast();
 					}

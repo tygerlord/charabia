@@ -27,19 +27,19 @@ import android.widget.Button;
 
 import android.content.Intent;
 import android.content.ContentResolver;
+import android.database.Cursor;
 
 import android.telephony.SmsMessage;
 
 
 public class SmsViewActivity extends Activity
 {
-	private static final String TAG = "SmsViewActivity";
 
 	private TextView from = null;
 	private TextView message = null;
-	private Button next = null;
+	//private Button next = null;
 
-	private MySmsManager msm = null;
+	//private MySmsManager msm = null;
 	
 	/** Called when the activity is first created. */
 	@Override
@@ -49,18 +49,30 @@ public class SmsViewActivity extends Activity
 		
 		from = (TextView) findViewById(R.id.from);
 		message = (TextView) findViewById(R.id.message);
-		next = (Button) findViewById(R.id.next);
+		//next = (Button) findViewById(R.id.next);
 		
-		msm = new MySmsManager(getApplicationContext());
+		//msm = new MySmsManager(getApplicationContext());
 		
-		doNext(null);
+		//doNext(null);
  	}
+	
+	@Override 
+	public void onResume() {
+		super.onResume();
+	
+		Intent intent = getIntent();
+		
+		if(intent == null) {
+			Toast.makeText(this, text, duration)
+			return;
+		}
+	}
 	
 	@Override
 	protected void onPause() {
 		super.onPause();
 		
-		Tools.showNotification(getApplicationContext());
+		new Tools(this).showNotification();
 		
 	}
 
@@ -71,10 +83,6 @@ public class SmsViewActivity extends Activity
 		startActivity(intent);
 	}
 
-	public void hello(View view) {
-		Toast.makeText(getApplicationContext(), "send", Toast.LENGTH_LONG).show();
-	}
-
 	public void quit(View view) {
 		finish();
 	}
@@ -82,42 +90,44 @@ public class SmsViewActivity extends Activity
 	/*
 	 * @brief Action called to view next message
 	 */
-	public void doNext(View view) {
-	
-		int nbMessages = msm.getNbMessages();
-		
-		if(nbMessages <= 0) {
-			finish();
-			return;
-		}
-		else if(nbMessages == 1) {
-			next.setText(getString(R.string.quit));
-		}
-		else {
-			next.setText(getString(R.string.next));
-		}
-		
-		SmsMessage sms = msm.readSMS();
-		if(sms == null) {
-			message.setText(getString(R.string.unexpected_error));
-			return;
-		}
-		
-		String phoneNumber = sms.getDisplayOriginatingAddress() ;
-		from.setText(phoneNumber);
-		
-		SmsCipher cipher = new SmsCipher(this);
-		String result = cipher.decrypt(SmsCipher.demo_key, phoneNumber, sms.getMessageBody());
-		
-		//TODO: preference
-		ContentResolver contentResolver = getApplicationContext().getContentResolver();
-		Tools.putSmsToDatabase(contentResolver, phoneNumber, 
-			System.currentTimeMillis(), Tools.MESSAGE_TYPE_INBOX,
-			sms.getStatus(), result);
-
-		message.setText(result);
-		
-		msm.removeSMS();
-	}
+//	public void doNext(View view) {
+//	
+//		quit(view);
+//		
+//		int nbMessages = msm.getNbMessages();
+//		
+//		if(nbMessages <= 0) {
+//			finish();
+//			return;
+//		}
+//		else if(nbMessages == 1) {
+//			next.setText(getString(R.string.quit));
+//		}
+//		else {
+//			next.setText(getString(R.string.next));
+//		}
+//		
+//		SmsMessage sms = msm.readSMS();
+//		if(sms == null) {
+//			message.setText(getString(R.string.unexpected_error));
+//			return;
+//		}
+//		
+//		String phoneNumber = sms.getDisplayOriginatingAddress() ;
+//		from.setText(phoneNumber);
+//		
+//		SmsCipher cipher = new SmsCipher(this);
+//		String result = cipher.decrypt(SmsCipher.demo_key, phoneNumber, sms.getMessageBody());
+//		
+//		//TODO: preference
+//		ContentResolver contentResolver = getApplicationContext().getContentResolver();
+//		Tools.putSmsToDatabase(contentResolver, phoneNumber, 
+//			System.currentTimeMillis(), Tools.MESSAGE_TYPE_INBOX,
+//			sms.getStatus(), result);
+//
+//		message.setText(result);
+//		
+//		msm.removeSMS();
+//	}
 
 }
