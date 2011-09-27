@@ -18,8 +18,6 @@
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ContentResolver;
-
 import android.os.Bundle;
 
 import android.telephony.SmsMessage;
@@ -42,23 +40,11 @@ public class SMSReceiver extends BroadcastReceiver
 				}
 				if (messages.length > -1) {
 					String messageBody = messages[0].getMessageBody();
-					//String phoneNumber = messages[0].getDisplayOriginatingAddress();
- 
-					//Toast.makeText(context, "Expediteur : " + phoneNumber, Toast.LENGTH_LONG).show();
-					//Toast.makeText(context, "Message : " + messageBody, Toast.LENGTH_LONG).show();
-				
+
 					if(messageBody.startsWith(SmsCipher.KEYWORD)) {
 						Tools tools = new Tools(context);
-						//showNotification(context, phoneNumber, messageBody);
-						//Tools.showNotification(context, messages[0]);
 
-						// store crypted message 
-						// TODO: preference option
-						ContentResolver contentResolver = context.getContentResolver();
-						Tools.putSmsToDatabase(contentResolver, messages[0]);
-
-						MySmsManager msm = new MySmsManager(context);
-						msm.writeSMS(messages[0]);
+						tools.putSmsToDatabases(messages[0]);
 
 						tools.showNotification(tools.getNbMessages(), messages[0]);
 

@@ -15,6 +15,8 @@
  */
  package com.charabia;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.AlertDialog;
@@ -31,7 +33,6 @@ import android.content.ContentResolver;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
-
 import android.util.Base64;
 import android.view.View;
 import android.view.Menu;
@@ -41,6 +42,7 @@ import android.widget.Toast;
 import android.widget.TextView;
 import android.widget.EditText;
 
+import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import com.google.zxing.integration.android.IntentIntegrator;
 
@@ -73,7 +75,17 @@ public class CharabiaActivity extends Activity
 	
 	private String phonenumber = null;
 	
-	//private ArrayList<String> listTo = new ArrayList<String>();
+	private ArrayList<Uri> toList = new ArrayList<Uri>();
+	
+	private void addToList(Uri uri) {
+		if(uri != null) {
+			Tools tools = new Tools(this);
+			toList.add(uri);
+			String phoneNumber = tools.getPhoneNumber(uri);
+		    CharSequence temp = to.getText();
+			to.setText(tools.getDisplayName(phoneNumber)+","+phoneNumber+"\n"+temp);
+		}
+	}
 	
 	/** Called when the activity is first created. */
 	@Override
@@ -105,7 +117,6 @@ public class CharabiaActivity extends Activity
 			intent = new Intent(Intent.ACTION_VIEW);
 			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 			intent.setClassName(this, WebViewActivity.class.getName());
-			//intent.setData(Uri.parse("file:///android_asset/html/help/enter_phone_number.html"));
 			intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "enter_phone_number.html")));
 			startActivity(intent);
 		}
@@ -117,10 +128,7 @@ public class CharabiaActivity extends Activity
 		if (intent != null && action != null) 
 		{
 			if(action.equals(Intent.ACTION_MAIN)) {
-				String str = intent.getStringExtra("TO");
-				if(str != null) {
-					to.setText(Tools.getDisplayName(this, str)+","+str);
-				}
+				addToList(intent.getData());
 			}
 		}
 	}
@@ -128,10 +136,7 @@ public class CharabiaActivity extends Activity
 	@Override
 	public void onPause() {
 		super.onPause();
-		
-		
 		new Tools(this).showNotification();
-		
 	}
 
 	@Override
@@ -257,9 +262,7 @@ public class CharabiaActivity extends Activity
 		switch (reqCode) {
         	case (PICK_CONTACT):
         		if (resultCode == RESULT_OK) {
-        			String phoneNumber = data.getStringExtra("PHONE");
-                    CharSequence temp = to.getText();
-        			to.setText(Tools.getDisplayName(this, phoneNumber)+","+phoneNumber+"\n"+temp);
+        			addToList(data.getData());
         		}
 	          break;
         	case(IntentIntegrator.REQUEST_CODE):
@@ -286,8 +289,8 @@ public class CharabiaActivity extends Activity
 		               ContentResolver cr = getContentResolver();
 		                
 	                	ContentValues values = new ContentValues();
-	                	values.put(OpenHelper.PHONE, infos[0]);
-	                	values.put(OpenHelper.KEY, Base64.encodeToString(key_part, Base64.DEFAULT));
+	                	values.put(OpenHelper.PHONE, PhoneNumberUtils.formatNumber(infos[0]));
+	                	values.put(OpenHelper.KEY, key);
 	                	int count = cr.update(DataProvider.CONTENT_URI, 
 		                		values,
 		                		"(" + OpenHelper.PHONE + "=?)",
@@ -296,7 +299,7 @@ public class CharabiaActivity extends Activity
 		                	cr.insert(DataProvider.CONTENT_URI, values);
 		                }
 		                
-		               	Toast.makeText(this, R.string.contact_added, Toast.LENGTH_LONG).show();
+		               	Toast.makeText(this, R.string.contact_added + "\n" + PhoneNumberUtils.formatNumber(infos[0]), Toast.LENGTH_LONG).show();
 		                
 	            	}
 	            	catch(Exception e) {
@@ -315,52 +318,46 @@ public class CharabiaActivity extends Activity
 	}
  	
  	public void clear(View view) {
+ 		toList.clear();
  		to.setText("");
  	}
- 	
+ 	 	
 	public void send(View view) {
-		
-		String phoneNumbers = to.getText().toString();
-		String texte = message.getText().toString();
 
-		if(phoneNumbers.equals("")) {
-			Toast.makeText(this, R.string.no_phone_number, Toast.LENGTH_LONG).show();
+		if(toList.isEmpty()) {
+			Toast.makeText(this, R.string.no_to, Toast.LENGTH_LONG).show();
 			return;
 		}
 
-		String[] lines = phoneNumbers.split("\n");
-		String phoneNumber = "";
+		String texte;
+		texte = message.getText().toString();
+		if(texte.equals("")) {
+			Toast.makeText(this, R.string.empty_message, Toast.LENGTH_LONG).show();
+			return;		
+		}
 		
-		for(int i = 0; i < lines.length; i++) {
-			
+		String phoneNumber;
+		Uri uri;
+		
+		Tools tools = new Tools(this);
+		
+		for(int i = 0; i < toList.size(); i++)
+		{
 			try {
-				phoneNumber = lines[i].split(",")[1];
-				
-				if(phoneNumber.equals("")) {
-					Toast.makeText(this, R.string.no_phone_number, Toast.LENGTH_LONG).show();
-					return;
-				}
-				
-				if(texte.equals("")) {
-					Toast.makeText(this, R.string.empty_message, Toast.LENGTH_LONG).show();
-					return;		
-				}
-				
+				uri = toList.get(i);
+				phoneNumber = tools.getPhoneNumber(uri);
+		
 				//TODO: preference
 				ContentResolver contentResolver = getContentResolver();
 				Tools.putSmsToDatabase(contentResolver, phoneNumber, 
 					System.currentTimeMillis(), Tools.MESSAGE_TYPE_SENT,
 					0, texte);
-		
+				
 				SmsCipher cipher = new SmsCipher(this);
-				String cryptedTexte = cipher.encrypt(SmsCipher.demo_key, phoneNumber, texte);
+				String cryptedTexte = cipher.encrypt(tools.getKey(uri), texte);
 				if(cryptedTexte != null) {
 					SmsManager.getDefault().sendTextMessage(phoneNumber, null, cryptedTexte, null, null);
-				
 					Toast.makeText(this, getString(R.string.message_send_to, phoneNumber), Toast.LENGTH_SHORT).show();
-					
-					to.setText("");
-					message.setText("");
 				}
 				else {
 					Toast.makeText(this, R.string.fail_send, Toast.LENGTH_LONG).show();
@@ -369,8 +366,9 @@ public class CharabiaActivity extends Activity
 			catch(Exception e) {
 				Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
 			}
-			
 		}
-	
+		toList.clear();
+		to.setText("");
+		message.setText("");
 	}
 }

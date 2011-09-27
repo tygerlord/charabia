@@ -18,21 +18,13 @@
 import android.net.Uri;
 import android.os.Bundle;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.AlertDialog.Builder;
 import android.database.Cursor;
 
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.util.Base64;
 import android.view.View;
 
-import android.content.ContentResolver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ContentUris;
 
@@ -79,7 +71,7 @@ public class SmsListe extends FragmentActivity
 				TextView tv = (TextView)v;
 				
 				if(cursor.getColumnIndex(OpenHelper.SMS_PDU) == columnIndex) {
-					byte[] pdu = Base64.decode(cursor.getString(columnIndex), Base64.DEFAULT);
+					byte[] pdu = cursor.getBlob(columnIndex);
 					SmsMessage sms = SmsMessage.createFromPdu(pdu);
 					
 					String phoneNumber = sms.getOriginatingAddress();
@@ -110,7 +102,7 @@ public class SmsListe extends FragmentActivity
 		public void onActivityCreated(Bundle savedInstanceState) {
             super.onActivityCreated(savedInstanceState);
             
-            setEmptyText(getActivity().getString(R.string.no_contact));
+            setEmptyText(getActivity().getString(R.string.no_message));
             
             mAdapter = new SimpleCursorAdapter(getActivity(), 
             		 android.R.layout.simple_list_item_1, null, 
@@ -132,13 +124,10 @@ public class SmsListe extends FragmentActivity
 			
 			Cursor cursor = mAdapter.getCursor();
 			
-//			Intent intent = getActivity().getIntent();
-//			if(intent != null) {
-//				intent.putExtra("ID", id);
-//				intent.putExtra("PHONE", cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
-//				getActivity().setResult(Activity.RESULT_OK, intent);
-//	        }
-//			getActivity().finish();		
+			Intent intent = new Intent();
+			intent.setClassName(getActivity(), SmsViewActivity.class.getName());
+			intent.setData(ContentUris.withAppendedId(DataProvider.CONTENT_URI_PDUS, id));
+			startActivity(intent);
 		}
 	
 		@Override
@@ -170,6 +159,5 @@ public class SmsListe extends FragmentActivity
 		}
 
 	}
-	
 	
 }

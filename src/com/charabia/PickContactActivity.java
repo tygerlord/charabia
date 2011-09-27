@@ -64,10 +64,12 @@ public class PickContactActivity extends FragmentActivity
 		
 	public static class viewBinder implements ViewBinder {
 
-		Context context;
+		private Context context;
+		private Tools tools;
 		
 		public viewBinder(Context context) {
 			this.context = context;
+			tools = new Tools(context);
 		}
 		
 		@Override
@@ -77,7 +79,7 @@ public class PickContactActivity extends FragmentActivity
 				
 				if(cursor.getColumnIndex(OpenHelper.PHONE) == columnIndex) {
 					String phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
-					tv.setText(Tools.getDisplayName(context, phoneNumber) + "\n" + phoneNumber);
+					tv.setText(tools.getDisplayName(phoneNumber) + "\n" + phoneNumber);
 					
 					return true;
 				}
@@ -130,8 +132,7 @@ public class PickContactActivity extends FragmentActivity
 			
 			Intent intent = getActivity().getIntent();
 			if(intent != null) {
-				intent.putExtra("ID", id);
-				intent.putExtra("PHONE", cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
+				intent.setData(ContentUris.withAppendedId(DataProvider.CONTENT_URI, id));
 				getActivity().setResult(Activity.RESULT_OK, intent);
 	        }
 			getActivity().finish();		

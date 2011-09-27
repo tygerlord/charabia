@@ -67,7 +67,7 @@ public class SmsCipher
 		return generateKeyAES(256);
 	}
 	
-	public String decrypt(byte[] key_data, String from, String texte) {
+	public String decrypt(byte[] key_data, String texte) {
 		
 		try {
 			byte[] data = Base64.decode(texte.substring(KEYWORD.length()), Base64.DEFAULT);
@@ -89,7 +89,7 @@ public class SmsCipher
 		return context.getString(R.string.unexpected_error);
 	}
 
-	public String encrypt(byte[] key_data, String to, String texte) {
+	public String encrypt(byte[] key_data, String texte) {
 		try {
 			Cipher c = Cipher.getInstance(CIPHER_ALGO);
 

@@ -31,4 +31,7 @@
 	<string name="empty_message">Message vide</string>
 	<string name="no_contact">Pas de contacts d\'enregistré</string>
 	<string name="contact_added">Contact ajouté</string>
+	<string name="no_message">Pas de message</string>
+	<string name="no_to">pas de destinataire spécifié</string>
+	<string name="preference_phone_number">Numéro de Téléphone</string>
 </resources>

@@ -41,12 +41,12 @@ public class OpenHelper extends SQLiteOpenHelper
 								"CREATE TABLE " + KEYS_TABLE + " (" +
 								ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
 								PHONE + " TEXT, " +
-								KEY + " TEXT);";
+								KEY + " BLOB);";
 
 	private static final String SMS_TABLE_CREATE =
 				"CREATE TABLE " + SMS_TABLE + " (" +
 				ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-				SMS_PDU + " TEXT);";
+				SMS_PDU + " BLOB);";
 
 	public OpenHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -66,29 +66,35 @@ public class OpenHelper extends SQLiteOpenHelper
 		onCreate(db);
 	}
 
+	@Deprecated
 	public void insert(SQLiteDatabase db, String phone, byte[] key) {
 		db.execSQL("INSERT INTO " + KEYS_TABLE + " " +
 				"(" + PHONE + "," + KEY + ") " + 
 				"VALUES ('" + phone + "','" + Base64.encodeToString(key, Base64.DEFAULT) + "')");
 	}
 
+	@Deprecated
 	public void delete(SQLiteDatabase db, int id) {
 		db.execSQL("DELETE FROM " + KEYS_TABLE + " WHERE " + ID + "=" + id);
 	}
 
+	@Deprecated
 	public void deletePdu(SQLiteDatabase db, int id) {
 		db.execSQL("DELETE FROM " + SMS_TABLE + " WHERE " + ID + "=" + id);
 	}
 
+	@Deprecated
 	public void change(SQLiteDatabase db, int id, String name, byte[] key) {
 	}
 
+	@Deprecated
 	public void insertPdu(SQLiteDatabase db, byte[] pdu) {
 		db.execSQL("INSERT INTO " + SMS_TABLE + 
 				"(" + SMS_PDU + ")" +
 				" VALUES ('" + Base64.encodeToString(pdu, Base64.DEFAULT) + "')");
 	}
 
+	@Deprecated
 	public byte[] readKey(SQLiteDatabase db, int id) {
 		byte[] ret = null;
 		Cursor cursor = db.rawQuery("SELECT " + KEY + " FROM " + KEYS_TABLE + " WHERE " + ID + "=?" , new String[] { Integer.toString(id) } );
@@ -99,6 +105,7 @@ public class OpenHelper extends SQLiteOpenHelper
 		return ret;
 	}
 
+	@Deprecated
 	private byte[] readPdu(SQLiteDatabase db, String desc) {
 		byte[] ret = null;
 		Cursor cursor = db.rawQuery("SELECT * FROM " + SMS_TABLE + " ORDER BY " + ID + desc + " LIMIT 1", null);
@@ -109,14 +116,17 @@ public class OpenHelper extends SQLiteOpenHelper
 		return ret;
 	}
 
+	@Deprecated
 	public byte[] readPdu(SQLiteDatabase db) {
 		return readPdu(db, "");
 	}
 
+	@Deprecated
 	public byte[] readLastPdu(SQLiteDatabase db) {
 		return readPdu(db, " DESC");
 	}
 	
+	@Deprecated
 	public void deletePdu(SQLiteDatabase db) {
 		Cursor cursor = db.rawQuery("SELECT " + ID + " FROM " + SMS_TABLE + " ORDER BY " + ID  + " LIMIT 1", null);
 		if(cursor.moveToFirst()) {

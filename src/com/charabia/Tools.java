@@ -23,6 +23,7 @@ import android.content.ContentValues;
 import android.content.ContentResolver;
 
 import android.telephony.SmsMessage;
+import android.util.Log;
 import android.widget.Toast;
 
 import android.database.Cursor;
@@ -34,10 +35,11 @@ import android.provider.ContactsContract.PhoneLookup;
 
 public class Tools
 {
+	
+	private static final String TAG = "Charabia_tools";
+	
 	private Context context;
 	
-	//private OpenHelper openHelper = new OpenHelper(this);
-
 	public static int id = 0;
 
 	public static final String SMS_EXTRA_NAME = "pdus";
@@ -65,7 +67,7 @@ public class Tools
 		this.context = context;
 	}
 	
-	public static void putSmsToDatabase( ContentResolver contentResolver, String originatingAddress, long timeStampMillis, int type, int status, String body)
+	public static void putSmsToDatabase(ContentResolver contentResolver, String originatingAddress, long timeStampMillis, int type, int status, String body)
 	{
 		// Create SMS row
 		ContentValues values = new ContentValues();
@@ -80,12 +82,30 @@ public class Tools
 		contentResolver.insert( Uri.parse( SMS_URI ), values );
 	}
 
-	public static void putSmsToDatabase( ContentResolver contentResolver, SmsMessage sms )
+	public static void putSmsToDatabase(ContentResolver contentResolver, SmsMessage sms)
 	{
 		putSmsToDatabase(contentResolver, sms.getDisplayOriginatingAddress(), 
 			sms.getTimestampMillis(), MESSAGE_TYPE_INBOX, sms.getStatus(), sms.getMessageBody());
 	}
 
+	/*
+	 * @brief put sms on databases (charabia and sms base)
+	 */
+	public void putSmsToDatabases(SmsMessage sms) {
+		try {
+			ContentResolver cr = context.getContentResolver();
+			// TODO preference option
+			putSmsToDatabase(cr, sms);
+			
+			ContentValues values = new ContentValues();
+			values.put(OpenHelper.SMS_PDU, sms.getPdu());
+			cr.insert(DataProvider.CONTENT_URI_PDUS, values);
+		}
+		catch(Exception e) {
+			Log.e(TAG, e.toString());
+		}
+	}
+	
 	public void showNotification(int nbMessages, SmsMessage message) {
 		
 		String messageBody = message.getMessageBody();
@@ -136,19 +156,25 @@ public class Tools
 	
 	public void showNotification() {
 		
-		MySmsManager msm = new MySmsManager(context);
-		
 		// look up the notification manager service
 		NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-		int nbMessages = msm.getNbMessages();
+		int nbMessages = getNbMessages();
 
 		if(nbMessages <= 0) {
 			nm.cancel(R.string.imcoming_message_ticker_text);
 		}
 		else {
-			SmsMessage message = msm.getLastMessage();
-			showNotification(nbMessages, message);
+			ContentResolver contentResolver = context.getContentResolver();
+			Cursor cursor = contentResolver.query(DataProvider.CONTENT_URI_PDUS,
+					new String[]{OpenHelper.SMS_PDU}, null, null, null);
+			if(cursor.moveToFirst()) {
+				byte[] pdu = cursor.getBlob(cursor.getColumnIndex(OpenHelper.SMS_PDU)); 
+				showNotification(nbMessages, SmsMessage.createFromPdu(pdu));
+			}
+			else {
+				Log.e(TAG, "Erreur retreive last message");
+			}
 		}
     }
 
@@ -171,6 +197,31 @@ public class Tools
 		return result;
 	}
 
+	public byte[] getKey(Uri uri) throws Exception {
+		byte[] result = null;
+		ContentResolver cr = context.getContentResolver();
+		Cursor cursor = cr.query(uri, new String[] { OpenHelper.KEY }, null, null, null);
+		if(cursor.moveToNext()) {
+			result = cursor.getBlob(cursor.getColumnIndex(OpenHelper.KEY));
+		}
+		else throw new Exception("key not found for " + uri.toString());
+		cursor.close();
+		return result;
+	}
+
+	public byte[] getKey(String phoneNumber) throws Exception {
+		byte[] result = null;
+		ContentResolver cr = context.getContentResolver();
+		Cursor cursor = cr.query(DataProvider.CONTENT_URI, new String[] { OpenHelper.KEY }, 
+				OpenHelper.PHONE + "=?", new String[] { phoneNumber }, null);
+		if(cursor.moveToNext()) {
+			result = cursor.getBlob(cursor.getColumnIndex(OpenHelper.KEY));
+		}
+		else throw new Exception("key not found for " + phoneNumber);
+		cursor.close();
+		return result;
+	}
+
 	public String getDisplayName(String phoneNumber) {
 		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
 		ContentResolver contentResolver = context.getContentResolver();
@@ -181,6 +232,23 @@ public class Tools
 		if(cursor.getCount() > 0) {
 			 cursor.moveToFirst();
 			 result = cursor.getString(cursor.getColumnIndex(PhoneLookup.DISPLAY_NAME));
+		}
+		else {	
+			result = context.getString(R.string.unknow);
+		}
+		cursor.close();
+		return result;
+	}
+
+	public String getPhoneNumber(Uri uri) {
+		ContentResolver contentResolver = context.getContentResolver();
+		Cursor cursor = contentResolver.query(uri, new String[]{OpenHelper.PHONE}, null, null, null);
+		
+		String result = null;
+		
+		if(cursor.getCount() > 0) {
+			 cursor.moveToFirst();
+			 result = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
 		}
 		else {	
 			result = context.getString(R.string.unknow);
