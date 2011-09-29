@@ -33,22 +33,15 @@ public class DataProvider extends ContentProvider
 	public static final String PROVIDER_NAME = 
 		"com.charabia.provider.data";
 	
-	public static final Uri CONTENT_URI = 
-		Uri.parse("content://"+ PROVIDER_NAME + "/contacts");
-
 	public static final Uri CONTENT_URI_PDUS = 
 			Uri.parse("content://"+ PROVIDER_NAME + "/pdus");
 
-	private static final int CONTACTS = 1;
-	private static final int CONTACT_ID = 2;   
 	private static final int PDUS = 3;
 	private static final int PDU_ID = 4;
 	
 	private static final UriMatcher uriMatcher;
 	static{
 		uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-		uriMatcher.addURI(PROVIDER_NAME, "contacts", CONTACTS);
-		uriMatcher.addURI(PROVIDER_NAME, "contacts/#", CONTACT_ID);      
 		uriMatcher.addURI(PROVIDER_NAME, "pdus", PDUS);
 		uriMatcher.addURI(PROVIDER_NAME, "pdus/#", PDU_ID);
 	}
@@ -61,13 +54,6 @@ public class DataProvider extends ContentProvider
 		String id = null;
 		String table = null;
 		switch (uriMatcher.match(uri)) {
-			case CONTACTS:
-				table = OpenHelper.KEYS_TABLE;
-				break;
-			case CONTACT_ID:
-				id = uri.getPathSegments().get(1);
-				table = OpenHelper.KEYS_TABLE;
-				break;
 			case PDUS:
 				table = OpenHelper.SMS_TABLE;
 				break;
@@ -97,10 +83,6 @@ public class DataProvider extends ContentProvider
 	@Override
 	public String getType(Uri uri) {
 		switch (uriMatcher.match(uri)) {
-			case CONTACTS:
-				return "vnd.android.cursor.dir/vnd.charabia.contacts";
-			case CONTACT_ID:                
-				return "vnd.android.cursor.item/vnd.charabia.contact";
 			case PDUS:
 				return "vnd.android.cursor.dir/vnd.charabia.pdus";
 			case PDU_ID:                
@@ -115,9 +97,6 @@ public class DataProvider extends ContentProvider
 		String table = null;
 		
 		switch (uriMatcher.match(uri)) {
-			case CONTACTS:
-				table = OpenHelper.KEYS_TABLE;
-				break;
 			case PDUS:
 				table = OpenHelper.SMS_TABLE;
 				break;
@@ -152,13 +131,6 @@ public class DataProvider extends ContentProvider
 		String table = null;
 		
 		switch (uriMatcher.match(uri)) {
-			case CONTACTS:
-				table = OpenHelper.KEYS_TABLE;
-				break;
-			case CONTACT_ID:
-				id = uri.getPathSegments().get(1);
-				table = OpenHelper.KEYS_TABLE;
-				break;
 			case PDUS:
 				table = OpenHelper.SMS_TABLE;
 				break;
@@ -197,13 +169,6 @@ public class DataProvider extends ContentProvider
 		String id = null;
 		String table = null;
 		switch (uriMatcher.match(uri)) {
-	    	case CONTACTS:
-	    		table = OpenHelper.KEYS_TABLE;
-	    		break;
-	        case CONTACT_ID:
-	            id = uri.getPathSegments().get(1);
-	    		table = OpenHelper.KEYS_TABLE;
-	            break;
 	    	case PDUS:
 	    		table = OpenHelper.SMS_TABLE;
 	    		break;
@@ -231,4 +196,4 @@ public class DataProvider extends ContentProvider
 		getContext().getContentResolver().notifyChange(uri, null);
 		return count;      
 	}
- }
+}

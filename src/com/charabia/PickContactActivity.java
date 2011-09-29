@@ -17,6 +17,8 @@
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -77,9 +79,10 @@ public class PickContactActivity extends FragmentActivity
 			try {
 				TextView tv = (TextView)v;
 				
-				if(cursor.getColumnIndex(OpenHelper.PHONE) == columnIndex) {
-					String phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
-					tv.setText(tools.getDisplayName(phoneNumber) + "\n" + phoneNumber);
+				if(cursor.getColumnIndex(Phone.NUMBER) == columnIndex) {
+					String phoneNumber = cursor.getString(columnIndex);
+					String name = cursor.getString(cursor.getColumnIndex(Phone.DISPLAY_NAME));
+					tv.setText(name + "\n" + phoneNumber);
 					
 					return true;
 				}
@@ -109,12 +112,13 @@ public class PickContactActivity extends FragmentActivity
             setEmptyText(getActivity().getString(R.string.no_contact));
             
             mAdapter = new SimpleCursorAdapter(getActivity(), 
-            		 android.R.layout.simple_list_item_1, null, 
-            		 new String[] { OpenHelper.PHONE }, 
-            		 new int[] { android.R.id.text1 },
-            		 0);
-            
-            mAdapter.setViewBinder(new viewBinder(getActivity()));
+            		android.R.layout.simple_list_item_2, null, 
+            		new String[] { 
+            			ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            			ContactsContract.CommonDataKinds.Phone.NUMBER,
+            		}, 
+            		new int[] { android.R.id.text1, android.R.id.text2 },
+            		0);
             
             setListAdapter(mAdapter);
             
@@ -132,7 +136,7 @@ public class PickContactActivity extends FragmentActivity
 			
 			Intent intent = getActivity().getIntent();
 			if(intent != null) {
-				intent.setData(ContentUris.withAppendedId(DataProvider.CONTENT_URI, id));
+				intent.setData(ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id));
 				getActivity().setResult(Activity.RESULT_OK, intent);
 	        }
 			getActivity().finish();		
@@ -145,7 +149,7 @@ public class PickContactActivity extends FragmentActivity
 							case 0: //delete
 								ContentResolver cr = getActivity().getContentResolver();
 								
-								Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
+								Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
 								cr.delete(uri, null, null);
 								break;
 							default:
@@ -169,10 +173,14 @@ public class PickContactActivity extends FragmentActivity
 
 		@Override
 		public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-			Uri baseUri = DataProvider.CONTENT_URI;
+			Uri baseUri = ContactsContract.Data.CONTENT_URI;
 			
 	        return new CursorLoader(getActivity(), baseUri,
-	        		new String[] { OpenHelper.ID, OpenHelper.PHONE}, 
+	        		new String[] { 
+	        			ContactsContract.Data._ID,
+	        			ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+	        			ContactsContract.CommonDataKinds.Phone.NUMBER,
+	        		}, 
 	        		null, 
 	        		null,
 	        		null);

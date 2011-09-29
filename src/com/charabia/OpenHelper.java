@@ -29,19 +29,10 @@ public class OpenHelper extends SQLiteOpenHelper
 	public static final String DATABASE_NAME = "CHARABIA_BDD";
 
 	public static final String ID = "_id";
-	public static final String PHONE = "PHONE";
-	public static final String KEY = "KEY";
 	public static final String SMS_PDU = "SMS_PDU";
-	public static final String KEYS_TABLE = "KEYS_TABLE";
 	public static final String SMS_TABLE = "SMS_TABLE";
 
 	private static final int DATABASE_VERSION = 1;
-
-	private static final String KEYS_TABLE_CREATE =
-								"CREATE TABLE " + KEYS_TABLE + " (" +
-								ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-								PHONE + " TEXT, " +
-								KEY + " BLOB);";
 
 	private static final String SMS_TABLE_CREATE =
 				"CREATE TABLE " + SMS_TABLE + " (" +
@@ -54,30 +45,17 @@ public class OpenHelper extends SQLiteOpenHelper
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		db.execSQL(KEYS_TABLE_CREATE);
 		db.execSQL(SMS_TABLE_CREATE);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		//TODO: change to keep KEYS on recreate
-		db.execSQL("DROP TABLE IF EXISTS " + KEYS_TABLE);
+		//TODO: keep sms
 		db.execSQL("DROP TABLE IF EXISTS " + SMS_TABLE);
 		onCreate(db);
 	}
 
-	@Deprecated
-	public void insert(SQLiteDatabase db, String phone, byte[] key) {
-		db.execSQL("INSERT INTO " + KEYS_TABLE + " " +
-				"(" + PHONE + "," + KEY + ") " + 
-				"VALUES ('" + phone + "','" + Base64.encodeToString(key, Base64.DEFAULT) + "')");
-	}
-
-	@Deprecated
-	public void delete(SQLiteDatabase db, int id) {
-		db.execSQL("DELETE FROM " + KEYS_TABLE + " WHERE " + ID + "=" + id);
-	}
-
+	
 	@Deprecated
 	public void deletePdu(SQLiteDatabase db, int id) {
 		db.execSQL("DELETE FROM " + SMS_TABLE + " WHERE " + ID + "=" + id);
@@ -92,17 +70,6 @@ public class OpenHelper extends SQLiteOpenHelper
 		db.execSQL("INSERT INTO " + SMS_TABLE + 
 				"(" + SMS_PDU + ")" +
 				" VALUES ('" + Base64.encodeToString(pdu, Base64.DEFAULT) + "')");
-	}
-
-	@Deprecated
-	public byte[] readKey(SQLiteDatabase db, int id) {
-		byte[] ret = null;
-		Cursor cursor = db.rawQuery("SELECT " + KEY + " FROM " + KEYS_TABLE + " WHERE " + ID + "=?" , new String[] { Integer.toString(id) } );
-		if(cursor.moveToFirst()) {
-			ret = Base64.decode(cursor.getString(cursor.getColumnIndex(KEY)), Base64.DEFAULT);
-		}
-		cursor.close();
-		return ret;
 	}
 
 	@Deprecated

@@ -24,10 +24,8 @@ import android.app.AlertDialog;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-
 import android.content.DialogInterface;
 
-import android.content.ContentValues;
 import android.content.Intent;
 import android.content.ContentResolver;
 import android.content.SharedPreferences;
@@ -42,7 +40,6 @@ import android.widget.Toast;
 import android.widget.TextView;
 import android.widget.EditText;
 
-import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import com.google.zxing.integration.android.IntentIntegrator;
 
@@ -251,7 +248,8 @@ public class CharabiaActivity extends Activity
 	};
 
 	public void add_to(View view) {
-		Intent intent = new Intent(PickContactActivity.class.getName());
+		Intent intent = new Intent(Intent.ACTION_PICK);
+		intent.setType(Tools.CONTENT_ITEM_TYPE);
 		startActivityForResult(intent, PICK_CONTACT);
 	}
 	
@@ -286,20 +284,9 @@ public class CharabiaActivity extends Activity
 		                	System.arraycopy(key_part, 0, key, size, size);		                	
 		                }
 		                
-		               ContentResolver cr = getContentResolver();
-		                
-	                	ContentValues values = new ContentValues();
-	                	values.put(OpenHelper.PHONE, PhoneNumberUtils.formatNumber(infos[0]));
-	                	values.put(OpenHelper.KEY, key);
-	                	int count = cr.update(DataProvider.CONTENT_URI, 
-		                		values,
-		                		"(" + OpenHelper.PHONE + "=?)",
-		                		new String[] { infos[0] }); 
-		                if(count <= 0) {
-		                	cr.insert(DataProvider.CONTENT_URI, values);
-		                }
-		                
-		               	Toast.makeText(this, R.string.contact_added + "\n" + PhoneNumberUtils.formatNumber(infos[0]), Toast.LENGTH_LONG).show();
+		                new Tools(this).updateOrCreateContactKey(infos[0], key);
+		                		                
+		               	Toast.makeText(this, R.string.contact_added + "\n" + infos[0], Toast.LENGTH_LONG).show();
 		                
 	            	}
 	            	catch(Exception e) {
