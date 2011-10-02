@@ -58,15 +58,16 @@ public class SmsListe extends FragmentActivity
 		
 	public static class viewBinder implements ViewBinder {
 
-		Context context;
+		private Context context;
+		private Tools tools;
 		
 		public viewBinder(Context context) {
 			this.context = context;
+			tools = new Tools(context);
 		}
 		
 		@Override
 		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
-			Tools tools = new Tools(context);
 			try {
 				TextView tv = (TextView)v;
 				
@@ -121,9 +122,6 @@ public class SmsListe extends FragmentActivity
 		
 		@Override
 		public void onListItemClick(ListView lv, View v, int position, long id) {
-			
-			Cursor cursor = mAdapter.getCursor();
-			
 			Intent intent = new Intent();
 			intent.setClassName(getActivity(), SmsViewActivity.class.getName());
 			intent.setData(ContentUris.withAppendedId(DataProvider.CONTENT_URI_PDUS, id));

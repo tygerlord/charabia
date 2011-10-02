@@ -21,6 +21,7 @@ import android.net.Uri;
 import android.os.RemoteException;
 
 import android.content.ContentProviderOperation;
+import android.content.ContentUris;
 import android.content.Intent;
 import android.content.Context;
 import android.content.ContentValues;
@@ -38,6 +39,7 @@ import android.app.NotificationManager;
 
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.ContactsContract.RawContacts;
 
@@ -192,42 +194,16 @@ public class Tools
 		}
     }
 
-	public void addContactKey(String phoneNumber, byte[] key) throws RemoteException, OperationApplicationException {
-		ArrayList<ContentProviderOperation> ops =
-				new ArrayList<ContentProviderOperation>();
-		 int rawContactInsertIndex = ops.size();
-		 ops.add(ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
-				 .withValue(RawContacts.ACCOUNT_TYPE, accountType)
-				 .withValue(RawContacts.ACCOUNT_NAME, accountName)
-				 .build());
-
-		 ops.add(ContentProviderOperation.newInsert(ContactsContract.Contacts.CONTENT_URI)
-			 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
-			 .withValue(ContactsContract.Data.MIMETYPE, CONTENT_ITEM_TYPE)
-			 .withValue(Phone.NUMBER, "0673481335")
-			 .withValue(Phone.TYPE, Phone.TYPE_MOBILE)
-			 .withValue(Phone.LABEL, "")
-			 .withValue(KEY, SmsCipher.demo_key)
-			 .build());
-
-		 context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
-		 		
-	}
-
 	public void updateOrCreateContactKey(String phoneNumber, byte[] key) throws RemoteException, OperationApplicationException {
 		 
-		 Uri rawContactUri = RawContacts.CONTENT_URI.buildUpon()
-		          .appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
-		          .appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
-		          .build();
-
 		 ContentResolver cr = context.getContentResolver();
 		 
 		 ContentValues values = new ContentValues();
 		 values.put(KEY, key);
 		 
-		 int count = cr.update(rawContactUri, values, Phone.NUMBER + "=?", 
-				 new String[] { phoneNumber });
+		 int count = cr.update(Data.CONTENT_URI, values, 
+				 Phone.NUMBER + "=? AND " + Data.MIMETYPE + "=?", 
+				 new String[] { phoneNumber, CONTENT_ITEM_TYPE });
 
 		 if(count <= 0) {
 			 ArrayList<ContentProviderOperation> ops =
@@ -240,9 +216,9 @@ public class Tools
 					 .withValue(RawContacts.ACCOUNT_NAME, accountName)
 					 .build());
 	
-			 ops.add(ContentProviderOperation.newInsert(ContactsContract.Contacts.CONTENT_URI)
-				 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
-				 .withValue(ContactsContract.Data.MIMETYPE, CONTENT_ITEM_TYPE)
+			 ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
+				 .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
+				 .withValue(Data.MIMETYPE, CONTENT_ITEM_TYPE)
 				 .withValue(Phone.NUMBER, phoneNumber)
 				 .withValue(Phone.TYPE, Phone.TYPE_MOBILE)
 				 .withValue(Phone.LABEL, "")
@@ -275,15 +251,22 @@ public class Tools
 
 	public byte[] getKey(Uri contactUri) throws Exception {
 
-		String id = contactUri.getPathSegments().get(1);
 		ContentResolver contentResolver = context.getContentResolver();
-		Uri uri = RawContacts.CONTENT_URI.buildUpon()
-				.appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
-				.appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
-				.build();
-		Cursor cursor = contentResolver.query(uri, new String[]{KEY}, 
-				RawContacts.CONTACT_ID + "=?", new String[] { id }, 
-				null);
+	
+		Uri rawUri = Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Data.CONTENT_DIRECTORY);
+		
+//		String id = contactUri.getPathSegments().get(1);
+//		Uri uri = RawContacts.CONTENT_URI.buildUpon()
+//				.appendQueryParameter(RawContacts.ACCOUNT_NAME, accountName)
+//				.appendQueryParameter(RawContacts.ACCOUNT_TYPE, accountType)
+//				.build();
+//		Cursor cursor = contentResolver.query(uri, new String[]{KEY}, 
+//				RawContacts.CONTACT_ID + "=?", new String[] { id }, 
+//				null);
+		
+		Cursor cursor = contentResolver.query(rawUri, new String[]{KEY}, 
+				Data.MIMETYPE + "=?", new String[] { CONTENT_ITEM_TYPE }, null);
+		
 		if(cursor.moveToFirst()) {
 			byte[] key;
 			key = cursor.getBlob(0);
@@ -291,7 +274,7 @@ public class Tools
 			return key;
 		}
 			
-		throw new Exception("key not found for " + uri);
+		throw new Exception("key not found for " + contactUri);
 	}
 
 	public byte[] getKey(String phoneNumber) throws Exception {
@@ -342,7 +325,9 @@ public class Tools
 
 	public String getPhoneNumber(Uri uri) {
 		ContentResolver contentResolver = context.getContentResolver();
-		Cursor cursor = contentResolver.query(uri, new String[]{Phone.NUMBER}, Phone.TYPE + "=" + Phone.TYPE_MOBILE, null, null);
+		Uri _uri = Uri.withAppendedPath(uri, ContactsContract.Contacts.Data.CONTENT_DIRECTORY);
+		
+		Cursor cursor = contentResolver.query(_uri, new String[]{Phone.NUMBER}, Phone.TYPE + "=" + Phone.TYPE_MOBILE, null, null);
 		
 		String result = null;
 		

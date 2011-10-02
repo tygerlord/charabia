@@ -23,11 +23,13 @@ import android.app.AlertDialog;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.content.DialogInterface;
 
 import android.content.Intent;
 import android.content.ContentResolver;
+import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -194,7 +196,16 @@ public class CharabiaActivity extends Activity
 				}
 				return false;
 			case QUIT_ID:
-				finish();
+				//finish();
+			try {
+				new Tools(this).updateOrCreateContactKey("5556", SmsCipher.demo_key);
+			} catch (RemoteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (OperationApplicationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 				return true;
 			default:
 				return false;
