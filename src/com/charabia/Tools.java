@@ -320,28 +320,29 @@ public class Tools
 
 	public void __updateOrCreateContactKey(String phoneNumber, byte[] key) throws RemoteException, OperationApplicationException {
 		 
-		 ContentResolver cr = context.getContentResolver();
-	 
-		 ContentValues values = new ContentValues();
-		 values.put(KEY, new String(key));
-
- 		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
-
- 		Cursor cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder)
-		 
- 		int count = -1;
-		 
- 		if(cursor.moveToFirst()) {
- 			count = cr.update(Data.CONTENT_URI, values, 
-				Contacts.LOOKUP_KEY + "=? AND " + Data.MIMETYPE + "=?", 
-				new String[] { cursor.getString(0), Phone.CONTENT_ITEM_TYPE });
-	 	}
-		 
- 		cursor.close();
-		 
- 		if(count <= 0) {
- 			ArrayList<ContentProviderOperation> ops =
+		ContentResolver cr = context.getContentResolver();
+		
+		ArrayList<ContentProviderOperation> ops =
 					new ArrayList<ContentProviderOperation>();
+
+		ContentValues backReferences = new ContentValues();
+		
+		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
+
+		ops.add(ContentProviderOperation.newAssertQuery(uri)
+				.withExpectedCount(1).build());
+		
+		ops.add(ContentProviderOperation.newUpdate(Data.CONTENT_URI)
+				.withValue(KEY, new String(key))
+				.withSelection(Contacts.LOOKUP_KEY + "=? AND " + Data.MIMETYPE + "=?", 
+						new String[] { backReferences.getAsString(Contacts.LOOKUP_KEY), CONTENT_ITEM_TYPE })
+				.withExpectedCount(1).build());
+		
+		try {
+ 			cr.applyBatch(ContactsContract.AUTHORITY, ops);
+		}
+		catch(OperationApplicationException oae) {
+			ops.clear();
  			int rawContactInsertIndex = ops.size();
 			 
 			 
