@@ -39,9 +39,11 @@ import android.app.NotificationManager;
 
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.ContactsContract.RawContacts;
+import android.provider.ContactsContract.RawContactsEntity;
 
 public class Tools
 {
@@ -194,16 +196,19 @@ public class Tools
 		}
     }
 
-	public void updateOrCreateContactKey(String phoneNumber, byte[] key) throws RemoteException, OperationApplicationException {
+	@Deprecated
+	public void _updateOrCreateContactKey(String phoneNumber, byte[] _key) throws RemoteException, OperationApplicationException {
 		 
 		 ContentResolver cr = context.getContentResolver();
+		 
+		 String key = "toto";
 		 
 		 ContentValues values = new ContentValues();
 		 values.put(KEY, key);
 		 
 		 int count = cr.update(Data.CONTENT_URI, values, 
 				 Phone.NUMBER + "=? AND " + Data.MIMETYPE + "=?", 
-				 new String[] { phoneNumber, CONTENT_ITEM_TYPE });
+				 new String[] { phoneNumber, Phone.CONTENT_ITEM_TYPE });
 
 		 if(count <= 0) {
 			 ArrayList<ContentProviderOperation> ops =
@@ -212,22 +217,156 @@ public class Tools
 			 
 			 
 			 ops.add(ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
-					 .withValue(RawContacts.ACCOUNT_TYPE, accountType)
-					 .withValue(RawContacts.ACCOUNT_NAME, accountName)
+					 .withValue(RawContacts.ACCOUNT_TYPE, null)//accountType)
+					 .withValue(RawContacts.ACCOUNT_NAME, null)//accountName)
 					 .build());
 	
 			 ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
 				 .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
-				 .withValue(Data.MIMETYPE, CONTENT_ITEM_TYPE)
+				 .withValue(Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
 				 .withValue(Phone.NUMBER, phoneNumber)
 				 .withValue(Phone.TYPE, Phone.TYPE_MOBILE)
 				 .withValue(Phone.LABEL, "")
-				 .withValue(KEY, key)
+				 .withValue(KEY, new String(key))
 				 .build());
 	
 			 cr.applyBatch(ContactsContract.AUTHORITY, ops);
 		 }
 		 		
+	}
+
+	@Deprecated
+	public void updateOrCreateContactKey(String phoneNumber, byte[] key) throws RemoteException, OperationApplicationException {
+		ContentResolver contentResolver = context.getContentResolver();
+
+		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
+		Cursor cursor = contentResolver.query(uri, null, //new String[]{ContactsContract.Contacts._ID}, 
+				null, null, null);
+		
+		String names[] = cursor.getColumnNames();
+		for(int i = 0 ; i < names.length; i ++) {
+			Log.v("CHARABIA", names[i]);
+		}
+		long contact_id = -1;
+
+		if(cursor.moveToFirst()) {
+			// one contact found with this phone number.
+			contact_id = cursor.getLong(0);
+		}
+		else {
+			// insert new contact
+		}
+		
+		cursor.close();
+
+		if(contact_id > 0) {
+			ContentValues values = new ContentValues();
+			values.put(KEY, new String(KEY));
+
+			int count = contentResolver.update(Data.CONTENT_URI, 
+					values, 
+					Data.MIMETYPE + "=? AND " + RawContacts.CONTACT_ID + "=" + contact_id,
+					new String[] { CONTENT_ITEM_TYPE });
+			
+			if(count>0) {
+				return;
+			}
+		}
+		
+		// insert new raw contact
+		
+		 ArrayList<ContentProviderOperation> ops =
+					new ArrayList<ContentProviderOperation>();
+		 
+			 int rawContactInsertIndex = ops.size();	 
+			 
+			 ops.add(ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
+					 .withValue(RawContacts.ACCOUNT_TYPE, "")
+					 .withValue(RawContacts.ACCOUNT_NAME, "")
+					 .build());
+
+			 ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
+					 .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
+					 .withValue(Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
+					 .withValue(Phone.NUMBER, phoneNumber)
+					 .withValue(Phone.TYPE, Phone.TYPE_MOBILE)
+					 .withValue(Phone.LABEL, "")
+					 .build());
+
+			 ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
+				 .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
+				 .withValue(Data.MIMETYPE, CONTENT_ITEM_TYPE)
+				 .withValue(KEY, new String(key))
+				 .build());
+	
+			 contentResolver.applyBatch(ContactsContract.AUTHORITY, ops);
+	}
+
+	public void updateOrCreateContactKey(Uri contactUri, byte[] key) {
+		ContentResolver contentResolver = context.getContentResolver();
+		Cursor cursor = contentResolver.query(contactUri, 
+				null, 
+				null, null, null);
+		
+		String[] s = cursor.getColumnNames();
+		for(int i = 0; i < s.length; i++) {
+			Log.v("CESTICI", i+"[" + s[i] + "]");
+		}
+		
+		//Log.v("test", Long.toString(cursor.getLong(cursor.getColumnIndex("display_name_source"))));
+		
+		cursor.close();
+	}
+
+	public void __updateOrCreateContactKey(String phoneNumber, byte[] key) throws RemoteException, OperationApplicationException {
+		 
+		 ContentResolver cr = context.getContentResolver();
+	 
+		 ContentValues values = new ContentValues();
+		 values.put(KEY, new String(key));
+
+ 		Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
+
+ 		Cursor cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder)
+		 
+ 		int count = -1;
+		 
+ 		if(cursor.moveToFirst()) {
+ 			count = cr.update(Data.CONTENT_URI, values, 
+				Contacts.LOOKUP_KEY + "=? AND " + Data.MIMETYPE + "=?", 
+				new String[] { cursor.getString(0), Phone.CONTENT_ITEM_TYPE });
+	 	}
+		 
+ 		cursor.close();
+		 
+ 		if(count <= 0) {
+ 			ArrayList<ContentProviderOperation> ops =
+					new ArrayList<ContentProviderOperation>();
+ 			int rawContactInsertIndex = ops.size();
+			 
+			 
+ 			ops.add(ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
+					 .withValue(RawContacts.ACCOUNT_TYPE, null)//accountType)
+					 .withValue(RawContacts.ACCOUNT_NAME, null)//accountName)
+					 .build());
+	
+ 			ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
+				 .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
+				 .withValue(Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
+				 .withValue(Phone.NUMBER, phoneNumber)
+				 .withValue(Phone.TYPE, Phone.TYPE_MOBILE)
+				 //.withValue(Phone.LABEL, "")
+				 //.withValue(KEY, new String(key))
+				 .build());
+	
+ 			ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
+					 .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
+					 .withValue(Data.MIMETYPE, CONTENT_ITEM_TYPE)
+					 .withValue(KEY, new String(key))
+					 .build());
+	
+ 			cr.applyBatch(ContactsContract.AUTHORITY, ops);
+ 		}
 	}
 
 	@Deprecated

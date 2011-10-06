@@ -25,6 +25,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract;
 import android.content.DialogInterface;
 
 import android.content.Intent;
@@ -60,6 +61,7 @@ public class CharabiaActivity extends Activity
 
 	// List of intent 
 	private static final int PICK_CONTACT = 0;
+	private static final int PICK_CONTACT_ADD_KEY = PICK_CONTACT + 1;
 	
 	private TextView to = null;
 	private EditText message = null;
@@ -197,8 +199,10 @@ public class CharabiaActivity extends Activity
 				return false;
 			case QUIT_ID:
 				//finish();
+
+				
 			try {
-				new Tools(this).updateOrCreateContactKey("5556", SmsCipher.demo_key);
+				new Tools(this).__updateOrCreateContactKey("5556", SmsCipher.demo_key);
 			} catch (RemoteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -264,6 +268,11 @@ public class CharabiaActivity extends Activity
 		startActivityForResult(intent, PICK_CONTACT);
 	}
 	
+	public void pickContact() {
+		Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+		startActivityForResult(intent, PICK_CONTACT_ADD_KEY);
+	}
+	
 	@Override
 	public void onActivityResult(int reqCode, int resultCode, Intent data) {
 		super.onActivityResult(reqCode, resultCode, data);
@@ -273,7 +282,14 @@ public class CharabiaActivity extends Activity
         		if (resultCode == RESULT_OK) {
         			addToList(data.getData());
         		}
-	          break;
+	           break;
+        	case (PICK_CONTACT_ADD_KEY):
+        		// contact to add key
+           		if (resultCode == RESULT_OK) {
+        			Uri contactUri = data.getData();
+        			new Tools(this).updateOrCreateContactKey(contactUri, key);
+        		}
+        		break;
         	case(IntentIntegrator.REQUEST_CODE):
 	            if (resultCode == RESULT_OK) {
 	                try {
