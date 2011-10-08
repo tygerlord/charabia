@@ -197,18 +197,7 @@ public class CharabiaActivity extends Activity
 				}
 				return false;
 			case QUIT_ID:
-				//finish();
-
-				
-			try {
-				new Tools(this).updateOrCreateContactKey("15555215554", SmsCipher.demo_key);
-			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (OperationApplicationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+				finish();
 				return true;
 			default:
 				return false;

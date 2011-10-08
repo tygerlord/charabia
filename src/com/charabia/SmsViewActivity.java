@@ -43,6 +43,8 @@ public class SmsViewActivity extends Activity
 	
 	private String phoneNumber = null;
 	
+	private Uri uri = null;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -57,7 +59,7 @@ public class SmsViewActivity extends Activity
 	public void onResume() {
 		super.onResume();
 	
-		Uri uri = null;
+		uri = null;
 		
 		Intent intent = getIntent();
 		
@@ -124,6 +126,11 @@ public class SmsViewActivity extends Activity
 	}
 
 	public void quit(View view) {
+		
+		//delete current view sms before quit
+		ContentResolver cr = getContentResolver();
+		cr.delete(uri, null, null);
+		
 		finish();
 	}
 
