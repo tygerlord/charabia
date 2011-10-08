@@ -82,9 +82,8 @@ public class CharabiaActivity extends Activity
 		if(uri != null) {
 			Tools tools = new Tools(this);
 			toList.add(uri);
-			String phoneNumber = tools.getPhoneNumber(uri);
-		    CharSequence temp = to.getText();
-			to.setText(tools.getDisplayName(phoneNumber)+","+phoneNumber+"\n"+temp);
+			CharSequence temp = to.getText();
+			to.setText(tools.getDisplayNameAndPhoneNumber(uri)+"\n"+temp);
 		}
 	}
 	
@@ -202,7 +201,7 @@ public class CharabiaActivity extends Activity
 
 				
 			try {
-				new Tools(this).__updateOrCreateContactKey("5556", SmsCipher.demo_key);
+				new Tools(this).updateOrCreateContactKey("15555215554", SmsCipher.demo_key);
 			} catch (RemoteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -283,18 +282,12 @@ public class CharabiaActivity extends Activity
         			addToList(data.getData());
         		}
 	           break;
-        	case (PICK_CONTACT_ADD_KEY):
-        		// contact to add key
-           		if (resultCode == RESULT_OK) {
-        			Uri contactUri = data.getData();
-        			new Tools(this).updateOrCreateContactKey(contactUri, key);
-        		}
-        		break;
         	case(IntentIntegrator.REQUEST_CODE):
 	            if (resultCode == RESULT_OK) {
 	                try {
 		            	String contents = data.getStringExtra("SCAN_RESULT");
-		                String format = data.getStringExtra("SCAN_RESULT_FORMAT");
+		                @SuppressWarnings("unused")
+						String format = data.getStringExtra("SCAN_RESULT_FORMAT");
 		                // Handle successful scan
 		                
 		                // TODO: add more tests control

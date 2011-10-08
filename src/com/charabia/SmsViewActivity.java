@@ -41,6 +41,8 @@ public class SmsViewActivity extends Activity
 	private TextView from = null;
 	private TextView message = null;
 	
+	private String phoneNumber = null;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -77,7 +79,7 @@ public class SmsViewActivity extends Activity
 			if(cursor.moveToFirst()) {
 				SmsMessage sms = SmsMessage.createFromPdu(
 						cursor.getBlob(cursor.getColumnIndex(OpenHelper.SMS_PDU)));
-				String phoneNumber = PhoneNumberUtils.formatNumber(
+				phoneNumber = PhoneNumberUtils.formatNumber(
 						sms.getDisplayOriginatingAddress());
 				from.setText(tools.getDisplayName(phoneNumber) + "," + phoneNumber);
 				
@@ -109,17 +111,16 @@ public class SmsViewActivity extends Activity
 	}
 
 	public void answer(View view) {	
-		Uri uri = null;
-		
-		Intent intent = getIntent();
-		if(intent != null) {
-			uri = intent.getData();
+		try {
+			Intent intent = new Intent(Intent.ACTION_MAIN);
+			intent.setClassName(this, CharabiaActivity.class.getName());
+			intent.setData(new Tools(this).getUriFromPhoneNumber(phoneNumber));
+			startActivity(intent);
 		}
-
-		Intent new_intent = new Intent(Intent.ACTION_MAIN);
-		new_intent.setClassName(this, CharabiaActivity.class.getName());
-		new_intent.setData(uri);
-		startActivity(intent);
+		catch(Exception e) {
+			e.printStackTrace();
+			Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+		}
 	}
 
 	public void quit(View view) {
