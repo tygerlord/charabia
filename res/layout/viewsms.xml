@@ -13,7 +13,7 @@
     		<TextView 
     			android:layout_span="2"
     			android:id="@+id/date"
-    			android:text="A"
+    			android:text="@string/at"
     		/>
     	</TableRow>
     	<TableRow>

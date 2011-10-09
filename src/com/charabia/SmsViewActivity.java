@@ -15,6 +15,8 @@
  */
 package com.charabia;
 
+import java.util.ArrayList;
+
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -28,12 +30,18 @@ import android.widget.Toast;
 import android.content.Intent;
 import android.content.ContentResolver;
 import android.database.Cursor;
+import android.gesture.Gesture;
+import android.gesture.GestureLibraries;
+import android.gesture.GestureLibrary;
+import android.gesture.GestureOverlayView;
+import android.gesture.Prediction;
+import android.gesture.GestureOverlayView.OnGesturePerformedListener;
 
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsMessage;
 
 
-public class SmsViewActivity extends Activity
+public class SmsViewActivity extends Activity implements OnGesturePerformedListener
 {
 
 	private static final String TAG = "Charabia.SmsViewActivity";
@@ -45,11 +53,28 @@ public class SmsViewActivity extends Activity
 	
 	private Uri uri = null;
 	
+	private GestureLibrary mLibrary = null;
+
 	/** Called when the activity is first created. */
+	@SuppressWarnings("unused")
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.viewsms);
+		//TODO: preference
+		if(true) {
+			setContentView(R.layout.viewsms_with_gestures);
+
+			mLibrary = GestureLibraries.fromRawResource(this, R.raw.gestures);
+			if (!mLibrary.load()) {
+			    finish();
+			}
+			
+			GestureOverlayView gestures = (GestureOverlayView) findViewById(R.id.gestures);
+			gestures.addOnGesturePerformedListener(this);
+		}
+		else {
+			setContentView(R.layout.viewsms);
+		}
 		
 		from = (TextView) findViewById(R.id.from);
 		message = (TextView) findViewById(R.id.message);
@@ -83,7 +108,7 @@ public class SmsViewActivity extends Activity
 						cursor.getBlob(cursor.getColumnIndex(OpenHelper.SMS_PDU)));
 				phoneNumber = PhoneNumberUtils.formatNumber(
 						sms.getDisplayOriginatingAddress());
-				from.setText(tools.getDisplayName(phoneNumber) + "," + phoneNumber);
+				from.setText(tools.getDisplayName(phoneNumber) + ", " + phoneNumber);
 				
 				SmsCipher cipher = new SmsCipher(this);
 				String result = cipher.decrypt(tools.getKey(phoneNumber), sms.getMessageBody());
@@ -99,7 +124,7 @@ public class SmsViewActivity extends Activity
 		}
 		catch(Exception e) {
 			//TODO details more exception
-			Log.e(TAG, e.toString());
+			e.printStackTrace();
 			Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
 		}		
 	}
@@ -132,6 +157,22 @@ public class SmsViewActivity extends Activity
 		cr.delete(uri, null, null);
 		
 		finish();
+	}
+	
+	@Override
+	public void onGesturePerformed(GestureOverlayView overlay, Gesture gesture) {
+	    ArrayList<Prediction> predictions = mLibrary.recognize(gesture);
+	    if (predictions.size() > 0 && predictions.get(0).score > 1.0) {
+	        String action = predictions.get(0).name;
+	        if ("HELP".equals(action) || "HELP2".equals(action)) {
+	            Toast.makeText(this, "HELP", Toast.LENGTH_SHORT).show();
+	        } else if ("ANSWER".equals(action)) {
+	            answer(null);
+	        } else if ("OUT".equals(action) || "QUIT".equals(action) || 
+	        		"CLEAR".equals(action) || "DELETE".equals(action)) {
+	            quit(null);
+	        }
+	    }	
 	}
 
 }

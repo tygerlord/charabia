@@ -23,17 +23,21 @@ import android.app.AlertDialog;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.content.DialogInterface;
 
 import android.content.Intent;
 import android.content.ContentResolver;
-import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.gesture.Gesture;
+import android.gesture.GestureLibraries;
+import android.gesture.GestureLibrary;
+import android.gesture.GestureOverlayView;
+import android.gesture.GestureOverlayView.OnGesturePerformedListener;
+import android.gesture.Prediction;
 import android.util.Base64;
 import android.view.View;
 import android.view.Menu;
@@ -46,7 +50,7 @@ import android.widget.EditText;
 import android.telephony.SmsManager;
 import com.google.zxing.integration.android.IntentIntegrator;
 
-public class CharabiaActivity extends Activity
+public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
 	// Menus
 	private static final int SETTINGS_ID = 1;
@@ -78,6 +82,8 @@ public class CharabiaActivity extends Activity
 	
 	private ArrayList<Uri> toList = new ArrayList<Uri>();
 	
+	private GestureLibrary mLibrary = null;
+	
 	private void addToList(Uri uri) {
 		if(uri != null) {
 			Tools tools = new Tools(this);
@@ -88,11 +94,27 @@ public class CharabiaActivity extends Activity
 	}
 	
 	/** Called when the activity is first created. */
+	@SuppressWarnings("unused")
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.main);
+		
+		//TODO: preference
+		if(true) {
+			setContentView(R.layout.main_with_gestures);
+
+			mLibrary = GestureLibraries.fromRawResource(this, R.raw.gestures);
+			if (!mLibrary.load()) {
+			    finish();
+			}
+			
+			GestureOverlayView gestures = (GestureOverlayView) findViewById(R.id.gestures);
+			gestures.addOnGesturePerformedListener(this);
+		}
+		else {
+			setContentView(R.layout.main);
+		}
 
 		to = (TextView) findViewById(R.id.to);
 		message = (EditText) findViewById(R.id.message);	
@@ -366,5 +388,24 @@ public class CharabiaActivity extends Activity
 		toList.clear();
 		to.setText("");
 		message.setText("");
+	}
+
+	@Override
+	public void onGesturePerformed(GestureOverlayView overlay, Gesture gesture) {
+	    ArrayList<Prediction> predictions = mLibrary.recognize(gesture);
+	    if (predictions.size() > 0 && predictions.get(0).score > 1.0) {
+	        String action = predictions.get(0).name;
+	        if ("HELP".equals(action) || "HELP2".equals(action)) {
+	            Toast.makeText(this, "HELP", Toast.LENGTH_SHORT).show();
+	        } else if ("ADD".equals(action)) {
+	            add_to(null);
+	        } else if ("SEND".equals(action)) {
+	            send(null);
+	        } else if ("OUT".equals(action) || "QUIT".equals(action)) {
+	            quit(null);
+	        } else if ("CLEAR".equals(action)) {
+	            clear(null);
+	        }
+	    }	
 	}
 }

@@ -339,7 +339,7 @@ public class Tools
 		String result = null;
 		
 		if(cursor.moveToFirst()) {
-			result = cursor.getString(0) + ", '" + cursor.getString(1);
+			result = cursor.getString(0) + ", " + cursor.getString(1);
 		}
 		else {	
 			result = context.getString(R.string.unknow);

@@ -34,4 +34,5 @@
 	<string name="no_message">Pas de message</string>
 	<string name="no_to">pas de destinataire spécifié</string>
 	<string name="preference_phone_number">Numéro de Téléphone</string>
+	<string name="at">A</string>
 </resources>
