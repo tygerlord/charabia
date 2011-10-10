@@ -22,7 +22,6 @@ import android.os.Bundle;
 
 import android.app.Activity;
 
-import android.util.Log;
 import android.view.View;
 
 import android.widget.TextView;
@@ -120,6 +119,10 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 					sms.getStatus(), result);
 		
 				message.setText(result);
+				
+				// Now we have a view of decrypted SMS and a copy in SMS database
+				// we can delete it.
+				cr.delete(uri, null, null);
 			}
 		}
 		catch(Exception e) {
@@ -150,12 +153,7 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 		}
 	}
 
-	public void quit(View view) {
-		
-		//delete current view sms before quit
-		ContentResolver cr = getContentResolver();
-		cr.delete(uri, null, null);
-		
+	public void quit(View view) {		
 		finish();
 	}
 	
@@ -165,7 +163,11 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 	    if (predictions.size() > 0 && predictions.get(0).score > 1.0) {
 	        String action = predictions.get(0).name;
 	        if ("HELP".equals(action) || "HELP2".equals(action)) {
-	            Toast.makeText(this, "HELP", Toast.LENGTH_SHORT).show();
+				Intent intent = new Intent(Intent.ACTION_VIEW);
+				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+				intent.setClassName(this, WebViewActivity.class.getName());
+				intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "SmsViewActivity.html")));
+				startActivity(intent);
 	        } else if ("ANSWER".equals(action)) {
 	            answer(null);
 	        } else if ("OUT".equals(action) || "QUIT".equals(action) || 

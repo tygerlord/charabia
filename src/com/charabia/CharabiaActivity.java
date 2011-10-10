@@ -39,6 +39,7 @@ import android.gesture.GestureOverlayView;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
 import android.gesture.Prediction;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -49,6 +50,14 @@ import android.widget.EditText;
 
 import android.telephony.SmsManager;
 import com.google.zxing.integration.android.IntentIntegrator;
+
+// TODO send/receive improve using intent when send and delivery 
+// see SmsManager.sendTextMessage 
+// TODO option preference to store or not message
+// TODO gesture mode choice on preference gesture only, gesture + buttons
+// TODO more help messages
+// TODO more error logs and trace
+// TODO on error on SmsViewActivity option to force remove message
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
@@ -365,6 +374,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				uri = toList.get(i);
 				phoneNumber = tools.getPhoneNumber(uri);
 		
+				Log.e("CHARABIA", "phoneNumber is " + phoneNumber);
+				
 				//TODO: preference
 				ContentResolver contentResolver = getContentResolver();
 				Tools.putSmsToDatabase(contentResolver, phoneNumber, 
@@ -382,6 +393,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				}
 			}
 			catch(Exception e) {
+				e.printStackTrace();
 				Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
 			}
 		}
@@ -396,7 +408,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	    if (predictions.size() > 0 && predictions.get(0).score > 1.0) {
 	        String action = predictions.get(0).name;
 	        if ("HELP".equals(action) || "HELP2".equals(action)) {
-	            Toast.makeText(this, "HELP", Toast.LENGTH_SHORT).show();
+				Intent intent = new Intent(Intent.ACTION_VIEW);
+				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+				intent.setClassName(this, WebViewActivity.class.getName());
+				intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "CharabiaActivity.html")));
+				startActivity(intent);
 	        } else if ("ADD".equals(action)) {
 	            add_to(null);
 	        } else if ("SEND".equals(action)) {
@@ -405,6 +421,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	            quit(null);
 	        } else if ("CLEAR".equals(action)) {
 	            clear(null);
+	        } else if ("MODE".equals(action)) {
+	        	showDialog(MODE_DIALOG);
 	        }
 	    }	
 	}

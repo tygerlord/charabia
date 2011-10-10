@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-	<PreferenceCategory android:title="general">
+	<PreferenceCategory android:title="Paramètres">
 		<EditTextPreference
 			android:key="phonenumber"
 			android:defaultValue=""
-			android:title="@string/preference_phone_number"
-			android:inputType="phone"
-		/>
+			android:title="@string/preference_phone_number" android:inputType="phone"/>
+	</PreferenceCategory>
+	<PreferenceCategory android:title="Configuration">
+		<CheckBoxPreference android:defaultValue="true" android:title="Gestures mode"></CheckBoxPreference>
 	</PreferenceCategory>
 
 </PreferenceScreen>

@@ -27,7 +27,6 @@ public final class PreferencesActivity extends PreferenceActivity
 	
 	static final String PHONE_NUMBER = "phonenumber";
 
-	@SuppressWarnings("unused")
 	private boolean containsOnlyNumbers(String  s) {
 		if(s.length()<1) {
 			return false;
