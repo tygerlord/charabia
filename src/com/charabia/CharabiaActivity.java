@@ -108,9 +108,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		
-		//TODO: preference
-		if(true) {
+	
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		if(prefs.getBoolean(PreferencesActivity.GESTURES_MODE, true)) {
 			setContentView(R.layout.main_with_gestures);
 
 			mLibrary = GestureLibraries.fromRawResource(this, R.raw.gestures);

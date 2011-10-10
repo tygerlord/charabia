@@ -19,6 +19,7 @@ import java.util.ArrayList;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 
 import android.app.Activity;
 
@@ -28,6 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.content.Intent;
 import android.content.ContentResolver;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.gesture.Gesture;
 import android.gesture.GestureLibraries;
@@ -59,8 +61,9 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		//TODO: preference
-		if(true) {
+		
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		if(prefs.getBoolean(PreferencesActivity.GESTURES_MODE, true)) {
 			setContentView(R.layout.viewsms_with_gestures);
 
 			mLibrary = GestureLibraries.fromRawResource(this, R.raw.gestures);

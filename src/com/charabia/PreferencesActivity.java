@@ -26,7 +26,8 @@ public final class PreferencesActivity extends PreferenceActivity
 	static final String TAG = "PreferencesActivity";
 	
 	static final String PHONE_NUMBER = "phonenumber";
-
+	static final String GESTURES_MODE = "gestures_mode";
+	
 	private boolean containsOnlyNumbers(String  s) {
 		if(s.length()<1) {
 			return false;

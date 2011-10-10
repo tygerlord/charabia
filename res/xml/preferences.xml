@@ -8,7 +8,7 @@
 			android:title="@string/preference_phone_number" android:inputType="phone"/>
 	</PreferenceCategory>
 	<PreferenceCategory android:title="Configuration">
-		<CheckBoxPreference android:defaultValue="true" android:title="Gestures mode"></CheckBoxPreference>
+		<CheckBoxPreference android:defaultValue="true" android:title="Gestures mode" android:key="gestures_mode"></CheckBoxPreference>
 	</PreferenceCategory>
 
 </PreferenceScreen>
