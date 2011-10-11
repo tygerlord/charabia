@@ -61,6 +61,8 @@ import com.google.zxing.integration.android.IntentIntegrator;
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
+	private static final short sms_port = 1981;
+	
 	// Menus
 	private static final int SETTINGS_ID = 1;
 	private static final int EDIT_ID = SETTINGS_ID+1;
@@ -383,9 +385,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					0, texte);
 				
 				SmsCipher cipher = new SmsCipher(this);
-				String cryptedTexte = cipher.encrypt(tools.getKey(uri), texte);
-				if(cryptedTexte != null) {
-					SmsManager.getDefault().sendTextMessage(phoneNumber, null, cryptedTexte, null, null);
+				byte[] data = cipher.encrypt(tools.getKey(uri), texte);
+				if(data != null) {
+					SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, null, null);
 					Toast.makeText(this, getString(R.string.message_send_to, phoneNumber), Toast.LENGTH_SHORT).show();
 				}
 				else {

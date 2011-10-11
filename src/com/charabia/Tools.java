@@ -45,8 +45,9 @@ import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.ContactsContract.RawContacts;
 
-public class Tools
-{
+public class Tools {
+
+	public static final byte[] magic = { 0x12, 0x45, 0x61, 0x17 };
 	
 	private static final String TAG = "Charabia_tools";
 	
@@ -128,7 +129,8 @@ public class Tools
 	
 	public void showNotification(int nbMessages, SmsMessage message) {
 		
-		String messageBody = message.getMessageBody();
+		// TODO change in date time 
+		String messageBody = "";//message.getMessageBody();
 		String phoneNumber = message.getDisplayOriginatingAddress();
 
 		// look up the notification manager service

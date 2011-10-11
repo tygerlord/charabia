@@ -67,7 +67,7 @@ public class SmsCipher
 		return generateKeyAES(256);
 	}
 	
-	public String decrypt(byte[] key_data, String texte) {
+	public String decryptTexte(byte[] key_data, String texte) {
 		
 		try {
 			byte[] data = Base64.decode(texte.substring(KEYWORD.length()), Base64.DEFAULT);
@@ -89,7 +89,7 @@ public class SmsCipher
 		return context.getString(R.string.unexpected_error);
 	}
 
-	public String encrypt(byte[] key_data, String texte) {
+	public String encryptToTexte(byte[] key_data, String texte) {
 		try {
 			Cipher c = Cipher.getInstance(CIPHER_ALGO);
 
@@ -113,4 +113,48 @@ public class SmsCipher
 		return null;
 	}
 
+	public String decrypt(byte[] key_data, byte[] data) {
+		
+		try {
+			Cipher c = Cipher.getInstance(CIPHER_ALGO);
+		
+			SecretKey key = new SecretKeySpec(key_data, "AES");
+		
+			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(data, Tools.magic.length, 16));
+
+			String result = new String(c.doFinal(data, Tools.magic.length+16, data.length-16-Tools.magic.length));
+			
+			return result;
+		}
+		catch(Exception e) {
+			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
+		}
+
+		return context.getString(R.string.unexpected_error);
+	}
+
+	public byte[] encrypt(byte[] key_data, String texte) {
+		try {
+			Cipher c = Cipher.getInstance(CIPHER_ALGO);
+
+			SecretKey key = new SecretKeySpec(key_data, "AES");
+
+			c.init(Cipher.ENCRYPT_MODE, key);
+
+			byte[] bIV = c.getIV();
+			byte[] cryptedTexte = c.doFinal(texte.getBytes());
+			byte[] data = new byte[Tools.magic.length+cryptedTexte.length+bIV.length];
+
+			System.arraycopy(Tools.magic, 0, data, 0, Tools.magic.length);
+			System.arraycopy(bIV, 0, data, Tools.magic.length, bIV.length);
+			System.arraycopy(cryptedTexte, 0, data, Tools.magic.length+bIV.length, cryptedTexte.length);
+
+			return data;
+		}
+		catch(Exception e) {
+			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
+		}
+		
+		return null;
+	}
 }

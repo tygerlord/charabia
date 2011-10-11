@@ -34,10 +34,12 @@
 				<data android:scheme="smsto" />
  			</intent-filter>
 		</activity>
-		<receiver class=".SMSReceiver"
-			android:name=".SMSReceiver">
+		<receiver class=".DataSMSReceiver"
+			android:name=".DataSMSReceiver">
 			<intent-filter android:priority="100">
-				<action android:name="android.provider.Telephony.SMS_RECEIVED" />
+				<action android:name="android.provider.Telephony.DATA_SMS_RECEIVED" />
+				<data android:scheme="sms" />
+            	<data android:port="1981" />
 			</intent-filter>
 		</receiver>
 		<receiver class=".BootReceiver"

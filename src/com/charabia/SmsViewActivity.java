@@ -113,7 +113,7 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 				from.setText(tools.getDisplayName(phoneNumber) + ", " + phoneNumber);
 				
 				SmsCipher cipher = new SmsCipher(this);
-				String result = cipher.decrypt(tools.getKey(phoneNumber), sms.getMessageBody());
+				String result = cipher.decrypt(tools.getKey(phoneNumber), sms.getUserData());
 				
 				//TODO: preference
 				ContentResolver contentResolver = getContentResolver();
