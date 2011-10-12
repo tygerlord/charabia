@@ -21,10 +21,11 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import android.telephony.SmsMessage;
+import android.util.Log;
 
 public class SMSReceiver extends BroadcastReceiver 
 {
-	private final String ACTION_RECEIVE_SMS  = "android.provider.Telephony.SMS_RECEIVED";
+	private final String ACTION_RECEIVE_SMS  = "android.intent.action.DATA_SMS_RECEIVED";
 
 	@Override
 	public void onReceive(Context context, Intent intent)
@@ -38,10 +39,18 @@ public class SMSReceiver extends BroadcastReceiver
 				for (int i = 0; i < pdus.length; i++) {
 					messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);  
 				}
+				
 				if (messages.length > -1) {
-					String messageBody = messages[0].getMessageBody();
+					byte[] data = messages[0].getUserData();
 
-					if(messageBody.startsWith(SmsCipher.KEYWORD)) {
+					Log.e("SMSRECVEIVER","data length = " + data.length);
+					
+					if(data != null && 
+							data[0] == SmsCipher.MAGIC[0] && 
+							data[1] == SmsCipher.MAGIC[1] && 
+							data[2] == SmsCipher.MAGIC[2] && 
+							data[3] == SmsCipher.MAGIC[3]) {
+
 						Tools tools = new Tools(context);
 
 						tools.putSmsToDatabases(messages[0]);

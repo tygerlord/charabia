@@ -21,14 +21,17 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import android.telephony.SmsMessage;
+import android.util.Log;
 
 public class DataSMSReceiver extends BroadcastReceiver 
 {
-	private final String ACTION_RECEIVE_SMS  = "android.provider.Telephony.SMS_RECEIVED";
+	private final String ACTION_RECEIVE_SMS  = "android.intent.action.DATA_SMS_RECEIVED";
 
 	@Override
 	public void onReceive(Context context, Intent intent)
 	{
+		Log.e("CHARABIA", "ici0 " + intent.getAction());
+		
 		if (intent.getAction().equals(ACTION_RECEIVE_SMS)) {
 			Bundle bundle = intent.getExtras();
 			if (bundle != null) {
@@ -41,13 +44,19 @@ public class DataSMSReceiver extends BroadcastReceiver
 				if (messages.length > -1) {
 					byte[] data = messages[0].getUserData();
 
-					if(data[0] == Tools.magic[0] && data[1] == Tools.magic[1] && 
-							data[2] == Tools.magic[2] && data[3] == Tools.magic[3]) {
+					Log.v("CHARABIA REVEIVE DATA_SMS", "ici1");
+					
+					if(data[0] == SmsCipher.MAGIC[0] && data[1] == SmsCipher.MAGIC[1] && 
+							data[2] == SmsCipher.MAGIC[2] && data[3] == SmsCipher.MAGIC[3]) {
 						Tools tools = new Tools(context);
 
+						Log.v("CHARABIA REVEIVE DATA_SMS", "ici2");
+						
 						tools.putSmsToDatabases(messages[0]);
 
 						tools.showNotification(tools.getNbMessages(), messages[0]);
+						
+						abortBroadcast();
 					}
 				}
 			}

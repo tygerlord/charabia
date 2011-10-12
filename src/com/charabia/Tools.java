@@ -47,8 +47,6 @@ import android.provider.ContactsContract.RawContacts;
 
 public class Tools {
 
-	public static final byte[] magic = { 0x12, 0x45, 0x61, 0x17 };
-	
 	private static final String TAG = "Charabia_tools";
 	
 	private Context context;

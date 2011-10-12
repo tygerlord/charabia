@@ -23,6 +23,7 @@
     			android:maxLines="3"
     			android:minLines="1"
     			android:background="@android:drawable/editbox_background"
+    			android:onClick="add_to"
     		/>
     	</TableRow>
     	<TableRow>

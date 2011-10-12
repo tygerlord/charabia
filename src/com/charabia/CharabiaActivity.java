@@ -23,12 +23,14 @@ import android.app.AlertDialog;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.content.DialogInterface;
 
 import android.content.Intent;
 import android.content.ContentResolver;
+import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -61,6 +63,8 @@ import com.google.zxing.integration.android.IntentIntegrator;
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
+	private static final boolean mode_test = true;
+	
 	private static final short sms_port = 1981;
 	
 	// Menus
@@ -206,6 +210,19 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				startActivity(intent);
 				return true;
 			case ADD_ID:
+				if(mode_test) {
+					Tools tools = new Tools(this);
+					try {
+						tools.updateOrCreateContactKey("15555215554", SmsCipher.demo_key);
+						tools.updateOrCreateContactKey("15555215556", SmsCipher.demo_key);					
+					} catch (RemoteException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (OperationApplicationException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 				showDialog(MODE_DIALOG);
 				return true;
 			case HELP_ID:

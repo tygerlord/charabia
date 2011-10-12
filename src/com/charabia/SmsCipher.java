@@ -16,6 +16,7 @@
 package com.charabia;
 
 import android.util.Base64;
+import android.util.Log;
 
 import android.widget.Toast;
 
@@ -32,6 +33,8 @@ public class SmsCipher
 
 	public static final String KEYWORD = "itscharabia:";
 
+	public static final byte[] MAGIC = { 0x12, 0x45, 0x61, 0x17 };
+	
 	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
 
 	public static final byte[] demo_key = new byte[] { 
@@ -114,15 +117,17 @@ public class SmsCipher
 	}
 
 	public String decrypt(byte[] key_data, byte[] data) {
-		
+
+		Log.e("DECRYPT:", "val=" + data.length);
+
 		try {
 			Cipher c = Cipher.getInstance(CIPHER_ALGO);
 		
 			SecretKey key = new SecretKeySpec(key_data, "AES");
 		
-			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(data, Tools.magic.length, 16));
+			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(data, MAGIC.length, 16));
 
-			String result = new String(c.doFinal(data, Tools.magic.length+16, data.length-16-Tools.magic.length));
+			String result = new String(c.doFinal(data, MAGIC.length+16, data.length-16-MAGIC.length));
 			
 			return result;
 		}
@@ -143,12 +148,13 @@ public class SmsCipher
 
 			byte[] bIV = c.getIV();
 			byte[] cryptedTexte = c.doFinal(texte.getBytes());
-			byte[] data = new byte[Tools.magic.length+cryptedTexte.length+bIV.length];
+			byte[] data = new byte[MAGIC.length+cryptedTexte.length+bIV.length];
 
-			System.arraycopy(Tools.magic, 0, data, 0, Tools.magic.length);
-			System.arraycopy(bIV, 0, data, Tools.magic.length, bIV.length);
-			System.arraycopy(cryptedTexte, 0, data, Tools.magic.length+bIV.length, cryptedTexte.length);
+			System.arraycopy(MAGIC, 0, data, 0, MAGIC.length);
+			System.arraycopy(bIV, 0, data, MAGIC.length, bIV.length);
+			System.arraycopy(cryptedTexte, 0, data, MAGIC.length+bIV.length, cryptedTexte.length);
 
+			Log.e("ENCRYPT:", MAGIC.length + "," + bIV.length + "," + cryptedTexte.length + "," + data.length);
 			return data;
 		}
 		catch(Exception e) {
