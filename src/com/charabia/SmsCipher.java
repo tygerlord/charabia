@@ -118,7 +118,7 @@ public class SmsCipher
 
 	public String decrypt(byte[] key_data, byte[] data) {
 
-		Log.e("DECRYPT:", "val=" + data.length);
+		Log.e("DECRYPT:", Base64.encodeToString(data, Base64.DEFAULT));
 
 		try {
 			Cipher c = Cipher.getInstance(CIPHER_ALGO);
@@ -132,6 +132,7 @@ public class SmsCipher
 			return result;
 		}
 		catch(Exception e) {
+			e.printStackTrace();
 			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
 		}
 
@@ -154,10 +155,12 @@ public class SmsCipher
 			System.arraycopy(bIV, 0, data, MAGIC.length, bIV.length);
 			System.arraycopy(cryptedTexte, 0, data, MAGIC.length+bIV.length, cryptedTexte.length);
 
-			Log.e("ENCRYPT:", MAGIC.length + "," + bIV.length + "," + cryptedTexte.length + "," + data.length);
+			Log.e("ENCRYPT:", Base64.encodeToString(data, Base64.DEFAULT));
+			
 			return data;
 		}
 		catch(Exception e) {
+			e.printStackTrace();
 			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
 		}
 		

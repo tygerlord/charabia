@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 
 import android.net.Uri;
 import android.os.Bundle;
@@ -28,8 +29,11 @@ import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.content.DialogInterface;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ContentResolver;
+import android.content.IntentFilter;
 import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -51,6 +55,8 @@ import android.widget.TextView;
 import android.widget.EditText;
 
 import android.telephony.SmsManager;
+import android.telephony.SmsMessage;
+
 import com.google.zxing.integration.android.IntentIntegrator;
 
 // TODO send/receive improve using intent when send and delivery 
@@ -60,6 +66,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 // TODO more help messages
 // TODO more error logs and trace
 // TODO on error on SmsViewActivity option to force remove message
+// TODO Management multiple send erase only contact not reatched
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
@@ -99,6 +106,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	private GestureLibrary mLibrary = null;
 	
+	private static final String SMS_SENT = "com.charabia.SMS_SENT";
+	private static final String SMS_DELIVERED = "com.charabia.SMS_DELIVERED";
+	
 	private void addToList(Uri uri) {
 		if(uri != null) {
 			Tools tools = new Tools(this);
@@ -115,6 +125,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	{
 		super.onCreate(savedInstanceState);
 	
+        registerReceiver(sendreceiver, new IntentFilter(SMS_SENT));
+        registerReceiver(deliveredreceiver, new IntentFilter(SMS_DELIVERED));
+
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		if(prefs.getBoolean(PreferencesActivity.GESTURES_MODE, true)) {
 			setContentView(R.layout.main_with_gestures);
@@ -329,7 +342,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						String format = data.getStringExtra("SCAN_RESULT_FORMAT");
 		                // Handle successful scan
 		                
-		                // TODO: add more tests control
+		        		Toast.makeText(this, "text="+contents, Toast.LENGTH_LONG).show();
+		    	        
+		        		// TODO: add more tests control
 		                
 		                String[] infos = contents.split("\n");
 		                
@@ -349,6 +364,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		                
 	            	}
 	            	catch(Exception e) {
+	            		e.printStackTrace();
 	            		Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
 	            	}
 	                
@@ -404,7 +420,13 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				SmsCipher cipher = new SmsCipher(this);
 				byte[] data = cipher.encrypt(tools.getKey(uri), texte);
 				if(data != null) {
-					SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, null, null);
+					
+					Intent iSend = new Intent(SMS_SENT);
+					Intent iDelivered = new Intent(SMS_DELIVERED);
+					PendingIntent piSend = PendingIntent.getBroadcast(this, 0, iSend, 0);
+					PendingIntent piDelivered = PendingIntent.getBroadcast(this, 0, iDelivered, 0);
+					
+					SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, piDelivered);
 					Toast.makeText(this, getString(R.string.message_send_to, phoneNumber), Toast.LENGTH_SHORT).show();
 				}
 				else {
@@ -416,9 +438,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
 			}
 		}
-		toList.clear();
-		to.setText("");
-		message.setText("");
 	}
 
 	@Override
@@ -445,4 +464,57 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	        }
 	    }	
 	}
+	
+	private BroadcastReceiver deliveredreceiver = new BroadcastReceiver()
+    {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                    String info = "Delivery information: ";
+                    
+                    switch(getResultCode())
+                    {
+                            case Activity.RESULT_OK: info += "delivered"; break;
+                            case Activity.RESULT_CANCELED: info += "not delivered"; break;
+                    }
+                    
+                    Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
+            }
+    };
+    
+    private BroadcastReceiver sendreceiver = new BroadcastReceiver()
+    {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                    String info = "Send information: ";
+                    
+                    switch(getResultCode())
+                    {
+                            case Activity.RESULT_OK: 
+                            	info += "send successful"; 
+                        		toList.clear();
+                        		to.setText("");
+                        		message.setText("");
+                            	break;
+                            case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
+                            case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
+                            case SmsManager.RESULT_ERROR_NULL_PDU: info += "send failed, null pdu"; break;
+                            case SmsManager.RESULT_ERROR_RADIO_OFF: info += "send failed, radio is off"; break;
+                    }
+                    
+                    Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
+
+            }
+    };
+
+
+    @Override
+    protected void onDestroy()
+    {
+    	unregisterReceiver(sendreceiver);
+    	unregisterReceiver(deliveredreceiver);
+        super.onDestroy();
+    }
+
 }
