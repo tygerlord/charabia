@@ -16,6 +16,7 @@
  package com.charabia;
 
 import java.util.ArrayList;
+import java.util.Vector;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -24,20 +25,21 @@ import android.app.PendingIntent;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.content.DialogInterface;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ContentResolver;
 import android.content.IntentFilter;
-import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.Cursor;
 import android.gesture.Gesture;
 import android.gesture.GestureLibraries;
 import android.gesture.GestureLibrary;
@@ -59,8 +61,6 @@ import android.telephony.SmsMessage;
 
 import com.google.zxing.integration.android.IntentIntegrator;
 
-// TODO send/receive improve using intent when send and delivery 
-// see SmsManager.sendTextMessage 
 // TODO option preference to store or not message
 // TODO gesture mode choice on preference gesture only, gesture + buttons
 // TODO more help messages
@@ -70,8 +70,6 @@ import com.google.zxing.integration.android.IntentIntegrator;
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
-	private static final boolean mode_test = true;
-	
 	private static final short sms_port = 1981;
 	
 	// Menus
@@ -102,7 +100,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	private String phonenumber = null;
 	
-	private ArrayList<Uri> toList = new ArrayList<Uri>();
+	//private ArrayList<Uri> toList = new ArrayList<Uri>();
+	private Vector<Uri> toList = new Vector<Uri>();
 	
 	private GestureLibrary mLibrary = null;
 	
@@ -223,19 +222,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				startActivity(intent);
 				return true;
 			case ADD_ID:
-				if(mode_test) {
-					Tools tools = new Tools(this);
-					try {
-						tools.updateOrCreateContactKey("15555215554", SmsCipher.demo_key);
-						tools.updateOrCreateContactKey("15555215556", SmsCipher.demo_key);					
-					} catch (RemoteException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (OperationApplicationException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
 				showDialog(MODE_DIALOG);
 				return true;
 			case HELP_ID:
@@ -409,7 +395,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				uri = toList.get(i);
 				phoneNumber = tools.getPhoneNumber(uri);
 		
-				Log.e("CHARABIA", "phoneNumber is " + phoneNumber);
+				Log.v("CHARABIA", "phoneNumber is " + phoneNumber + " and uri = " + uri.toString());
 				
 				//TODO: preference
 				ContentResolver contentResolver = getContentResolver();
@@ -426,8 +412,16 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					PendingIntent piSend = PendingIntent.getBroadcast(this, 0, iSend, 0);
 					PendingIntent piDelivered = PendingIntent.getBroadcast(this, 0, iDelivered, 0);
 					
+					ContentValues values = new ContentValues();
+					
+					values.put(OpenHelper.SEND_TO, phoneNumber);
+					values.put(OpenHelper.SEND_TEXT, texte);
+					values.put(OpenHelper.SEND_DATA, data);
+					values.put(OpenHelper.SEND_STATUS, SmsManager.STATUS_ON_ICC_UNSENT);
+					contentResolver.insert(DataProvider.CONTENT_URI_SEND, values);
+					
 					SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, piDelivered);
-					Toast.makeText(this, getString(R.string.message_send_to, phoneNumber), Toast.LENGTH_SHORT).show();
+					//Toast.makeText(this, getString(R.string.message_send_to, phoneNumber), Toast.LENGTH_SHORT).show();
 				}
 				else {
 					Toast.makeText(this, R.string.fail_send, Toast.LENGTH_LONG).show();
@@ -493,10 +487,20 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                     {
                             case Activity.RESULT_OK: 
                             	info += "send successful"; 
-                        		toList.clear();
-                        		to.setText("");
-                        		message.setText("");
-                            	break;
+                            	ContentResolver cr = getContentResolver();
+                            	
+                            	Cursor cursor = cr.query(DataProvider.CONTENT_URI_SEND, 
+                            			new String[] { OpenHelper.ID, OpenHelper.SEND_TO }, 
+                            			null, 
+                            			null, 
+                            			"LIMIT(1)");
+                            	
+                            	if(cursor.moveToFirst()) {
+                            		info += "\n" + cursor.getString(cursor.getColumnIndex(OpenHelper.SEND_TO));
+                            		cr.delete(ContentUris.withAppendedId(DataProvider.CONTENT_URI_SEND, 
+                            				cursor.getLong(cursor.getColumnIndex(OpenHelper.ID))), null, null);
+                            	}
+                                break;
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
                             case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
                             case SmsManager.RESULT_ERROR_NULL_PDU: info += "send failed, null pdu"; break;
@@ -512,9 +516,13 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
     @Override
     protected void onDestroy()
     {
+    	// TODO check unset message
     	unregisterReceiver(sendreceiver);
     	unregisterReceiver(deliveredreceiver);
         super.onDestroy();
     }
 
+    protected boolean sendBoxEmpty() {
+    	return false;
+    }
 }

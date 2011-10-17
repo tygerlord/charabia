@@ -33,9 +33,14 @@ public class DataProvider extends ContentProvider
 	public static final String PROVIDER_NAME = 
 		"com.charabia.provider.data";
 	
+	public static final Uri CONTENT_URI_SEND = 
+			Uri.parse("content://"+ PROVIDER_NAME + "/send");
+			
 	public static final Uri CONTENT_URI_PDUS = 
 			Uri.parse("content://"+ PROVIDER_NAME + "/pdus");
 
+	private static final int SEND = 1;
+	private static final int SEND_ID = 2;
 	private static final int PDUS = 3;
 	private static final int PDU_ID = 4;
 	
@@ -44,6 +49,8 @@ public class DataProvider extends ContentProvider
 		uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 		uriMatcher.addURI(PROVIDER_NAME, "pdus", PDUS);
 		uriMatcher.addURI(PROVIDER_NAME, "pdus/#", PDU_ID);
+		uriMatcher.addURI(PROVIDER_NAME, "send", SEND);
+		uriMatcher.addURI(PROVIDER_NAME, "send/#", SEND_ID);
 	}
 
 	private SQLiteDatabase db = null;
@@ -60,6 +67,13 @@ public class DataProvider extends ContentProvider
 			case PDU_ID:
 				id = uri.getPathSegments().get(1);
 				table = OpenHelper.SMS_TABLE;
+				break;
+			case SEND:
+				table = OpenHelper.SEND_TABLE;
+				break;
+			case SEND_ID:
+				id = uri.getPathSegments().get(1);
+				table = OpenHelper.SEND_TABLE;
 				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
@@ -87,6 +101,10 @@ public class DataProvider extends ContentProvider
 				return "vnd.android.cursor.dir/vnd.charabia.pdus";
 			case PDU_ID:                
 				return "vnd.android.cursor.item/vnd.charabia.pdu";
+			case SEND:
+				return "vnd.android.cursor.dir/vnd.charabia.message";
+			case SEND_ID:                
+				return "vnd.android.cursor.item/vnd.charabia.message";
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);        
 		}   
@@ -99,6 +117,9 @@ public class DataProvider extends ContentProvider
 		switch (uriMatcher.match(uri)) {
 			case PDUS:
 				table = OpenHelper.SMS_TABLE;
+				break;
+			case SEND:
+				table = OpenHelper.SEND_TABLE;
 				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
@@ -138,6 +159,13 @@ public class DataProvider extends ContentProvider
 				id = uri.getPathSegments().get(1);
 				table = OpenHelper.SMS_TABLE;
 				break;
+			case SEND:
+				table = OpenHelper.SEND_TABLE;
+				break;
+			case SEND_ID:
+				id = uri.getPathSegments().get(1);
+				table = OpenHelper.SEND_TABLE;
+				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
 		}    
@@ -175,6 +203,13 @@ public class DataProvider extends ContentProvider
 	        case PDU_ID:
 	            id = uri.getPathSegments().get(1);
 	    		table = OpenHelper.SMS_TABLE;
+	            break;
+	    	case SEND:
+	    		table = OpenHelper.SEND_TABLE;
+	    		break;
+	        case SEND_ID:
+	            id = uri.getPathSegments().get(1);
+	    		table = OpenHelper.SEND_TABLE;
 	            break;
 	        default: throw new IllegalArgumentException(
 	            "Unknown URI " + uri);    

@@ -31,13 +31,27 @@ public class OpenHelper extends SQLiteOpenHelper
 	public static final String ID = "_id";
 	public static final String SMS_PDU = "SMS_PDU";
 	public static final String SMS_TABLE = "SMS_TABLE";
-
-	private static final int DATABASE_VERSION = 1;
+	
+	public static final String SEND_TO = "SEND_TO";
+	public static final String SEND_STATUS = "SEND_STATUS";
+	public static final String SEND_DATA = "SEND_DATA";
+	public static final String SEND_TEXT = "SEND_TEXT";
+	public static final String SEND_TABLE = "SEND_TABLE";
+	
+	private static final int DATABASE_VERSION = 2;
 
 	private static final String SMS_TABLE_CREATE =
 				"CREATE TABLE " + SMS_TABLE + " (" +
 				ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
 				SMS_PDU + " BLOB);";
+
+	private static final String SEND_TABLE_CREATE =
+			"CREATE TABLE " + SEND_TABLE + " (" +
+			ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+			SEND_TO + " TEXT," +
+			SEND_STATUS + " INTEGER," +
+			SEND_TEXT + " TEXT,"
+			SEND_DATA + " BLOB);";
 
 	public OpenHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -46,13 +60,19 @@ public class OpenHelper extends SQLiteOpenHelper
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL(SMS_TABLE_CREATE);
+		db.execSQL(SEND_TABLE_CREATE);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		//TODO: keep sms
-		db.execSQL("DROP TABLE IF EXISTS " + SMS_TABLE);
-		onCreate(db);
+		//db.execSQL("DROP TABLE IF EXISTS " + SMS_TABLE);
+		//onCreate(db);
+		
+		// for version >1 only add table SEND_TABLE
+		if(oldVersion < 2) {
+			db.execSQL(SEND_TABLE_CREATE);
+		}
 	}
 
 	

@@ -14,15 +14,19 @@
  */
  package com.charabia;
 
+import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceScreen;
 
 public final class PreferencesActivity extends PreferenceActivity
 	implements OnSharedPreferenceChangeListener {
 
+	private static final boolean mode_test = false;
+	
 	static final String TAG = "PreferencesActivity";
 	
 	static final String PHONE_NUMBER = "phonenumber";
@@ -52,6 +56,17 @@ public final class PreferencesActivity extends PreferenceActivity
 
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 		if (key.equals(PHONE_NUMBER)) {
+			if(mode_test) {
+				String phoneNumber = sharedPreferences.getString(PHONE_NUMBER, null);
+				
+				try {
+					new Tools(this).updateOrCreateContactKey(phoneNumber, SmsCipher.demo_key);
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				} catch (OperationApplicationException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 }

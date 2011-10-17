@@ -118,8 +118,6 @@ public class SmsCipher
 
 	public String decrypt(byte[] key_data, byte[] data) {
 
-		Log.e("DECRYPT:", Base64.encodeToString(data, Base64.DEFAULT));
-
 		try {
 			Cipher c = Cipher.getInstance(CIPHER_ALGO);
 		
@@ -155,7 +153,6 @@ public class SmsCipher
 			System.arraycopy(bIV, 0, data, MAGIC.length, bIV.length);
 			System.arraycopy(cryptedTexte, 0, data, MAGIC.length+bIV.length, cryptedTexte.length);
 
-			Log.e("ENCRYPT:", Base64.encodeToString(data, Base64.DEFAULT));
 			
 			return data;
 		}
