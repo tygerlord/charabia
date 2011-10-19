@@ -77,6 +77,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// Dialogs
 	private static final int MODE_DIALOG = 0;
 	private static final int SEND_PROGRESS = 1;
+	private static final int SEND_ERROR = 2;
 	
 	// List of intent 
 	private static final int PICK_CONTACT = 0;
@@ -105,11 +106,19 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	private void addToList(Uri uri) {
 		if(uri != null) {
-			Tools tools = new Tools(this);
 			toList.add(uri);
 			CharSequence temp = to.getText();
 			to.setText(tools.getDisplayNameAndPhoneNumber(uri)+"\n"+temp);
 		}
+	}
+
+	private void removeFromToList(int index) {
+		toList.remove(index);
+		StringBuffer strBuf = new StringBuffer();
+		for(int i = 0; i < toList.size(); i++) {
+			strBuf.append(tools.getDisplayNameAndPhoneNumber(toList.get(i)));
+		}
+		to.setText(strBuf.toString());
 	}
 	
 	/** Called when the activity is first created. */
@@ -267,6 +276,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				dialog = new ProgressDialog(this, ProgressDialog.STYLE_SPINNER);
 				onPrepareDialog(SEND_PROGRESS,dialog);
 				break;
+			case SEND_ERROR:
+				builder = new AlertDialog.Builder(this);
+				builder.setTitle(getString(R.string.app_name));
+				dialog = builder.create();
+				break;
 			default:
 				dialog = null;
 		}
@@ -378,6 +392,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  	 * Use to send a message from list
  	 */
  	private void sendMessage() throws Exception {
+ 		
  		Uri uri = toList.get(0);
  		
 		String phoneNumber = tools.getPhoneNumber(uri);
@@ -424,46 +439,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			dismissDialog(SEND_PROGRESS);
 			Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
 		}
-		/*
-		String phoneNumber;
-		Uri uri;
-		
-		Tools tools = new Tools(this);
-		
-		for(int i = 0; i < toList.size(); i++)
-		{
-			try {
-				uri = toList.get(i);
-				phoneNumber = tools.getPhoneNumber(uri);
-		
-				Log.v("CHARABIA", "phoneNumber is " + phoneNumber + " and uri = " + uri.toString());
-				
-				//TODO: preference
-				ContentResolver contentResolver = getContentResolver();
-				Tools.putSmsToDatabase(contentResolver, phoneNumber, 
-					System.currentTimeMillis(), Tools.MESSAGE_TYPE_SENT,
-					0, texte);
-				
-				SmsCipher cipher = new SmsCipher(this);
-				byte[] data = cipher.encrypt(tools.getKey(uri), texte);
-				if(data != null) {
-					
-					Intent iSend = new Intent(SMS_SENT);
-					Intent iDelivered = new Intent(SMS_DELIVERED);
-					PendingIntent piSend = PendingIntent.getBroadcast(this, 0, iSend, 0);
-					PendingIntent piDelivered = PendingIntent.getBroadcast(this, 0, iDelivered, 0);
-					SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, piDelivered);
-				}
-				else {
-					Toast.makeText(this, R.string.fail_send, Toast.LENGTH_LONG).show();
-				}
-			}
-			catch(Exception e) {
-				e.printStackTrace();
-				Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
-			}
-		}
-		*/
 	}
 
 	@Override
@@ -519,6 +494,21 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                     {
                             case Activity.RESULT_OK: 
                             	info += "send successful"; 
+                            	removeFromToList(0);
+                            	if(toList.isEmpty()) {
+                            		message.setText("");
+                            		dismissDialog(SEND_PROGRESS);
+                            	}
+                            	else {
+                            		try {
+                            			sendMessage();
+                            		}
+                            		catch(Exception e) {
+                            			e.printStackTrace();
+                            			dismissDialog(SEND_PROGRESS);
+                            			Toast.makeText(context, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
+                            		}
+                            	}
                                 break;
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
                             case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
