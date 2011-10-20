@@ -44,6 +44,7 @@ import android.gesture.GestureOverlayView;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
 import android.gesture.Prediction;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -64,6 +65,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
+	
 	private static final short sms_port = 1981;
 	
 	// Menus
@@ -104,6 +106,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	private Tools tools = new Tools(this);
 	
+	private ProgressDialog sendProgressDialog;
+	
 	private void addToList(Uri uri) {
 		if(uri != null) {
 			toList.add(uri);
@@ -116,6 +120,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		toList.remove(index);
 		StringBuffer strBuf = new StringBuffer();
 		for(int i = 0; i < toList.size(); i++) {
+			if(i>0) strBuf.append("\n");
 			strBuf.append(tools.getDisplayNameAndPhoneNumber(toList.get(i)));
 		}
 		to.setText(strBuf.toString());
@@ -273,13 +278,20 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				dialog = builder.create();
 				break;
 			case SEND_PROGRESS:
-				dialog = new ProgressDialog(this, ProgressDialog.STYLE_SPINNER);
-				onPrepareDialog(SEND_PROGRESS,dialog);
+				dialog = sendProgressDialog = new ProgressDialog(this, 
+						ProgressDialog.STYLE_SPINNER);
+				dialog.setTitle("envoi du message");
+				onPrepareDialog(SEND_PROGRESS, dialog);
 				break;
 			case SEND_ERROR:
 				builder = new AlertDialog.Builder(this);
 				builder.setTitle(getString(R.string.app_name));
+				builder.setMessage("erreur envoi message");
+				builder.setNegativeButton("Annuler", sendErrorDialogListener);
+				builder.setNeutralButton("Annuler Tout", sendErrorDialogListener);
+				builder.setPositiveButton("Reessayer", sendErrorDialogListener);	
 				dialog = builder.create();
+				onPrepareDialog(SEND_ERROR, dialog);
 				break;
 			default:
 				dialog = null;
@@ -291,7 +303,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	protected void onPrepareDialog(int id, Dialog dialog) {
 		switch(id) {
 			case SEND_PROGRESS:
-				dialog.setTitle("envoi");
+				((ProgressDialog) dialog).setMessage(tools.getDisplayNameAndPhoneNumber(toList.get(0)));
+				break;
+			case SEND_ERROR:
+				((AlertDialog) dialog).setMessage("envoi a \n" + 
+						tools.getDisplayNameAndPhoneNumber(toList.get(0)) + 
+						"\n à echoué que voulez-vous faire?");
 				break;
 		}
 	}
@@ -322,6 +339,38 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		}
 	};
 
+	private final DialogInterface.OnClickListener sendErrorDialogListener =
+		new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialogInterface, int i) {
+				
+				Toast.makeText(getBaseContext(), "id=" + i, Toast.LENGTH_LONG).show();
+				
+				switch(i) {
+					case AlertDialog.BUTTON_NEGATIVE:
+						//pass this message and continue to send
+						removeFromToList(0);
+						break;
+					case AlertDialog.BUTTON_NEUTRAL:
+						// stop sending
+						return;
+					case AlertDialog.BUTTON_POSITIVE:
+						// try to resend message
+						break;
+				}
+				
+				showDialog(SEND_PROGRESS);
+				
+				try {
+					sendMessage();
+				}
+				catch(Exception e) {
+					e.printStackTrace();
+					dismissDialog(SEND_PROGRESS);
+					showDialog(SEND_ERROR);
+				}
+		}
+	};
+		
 	public void add_to(View view) {
 		Intent intent = new Intent(Intent.ACTION_PICK);
 		intent.setType(Tools.CONTENT_ITEM_TYPE);
@@ -397,6 +446,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  		
 		String phoneNumber = tools.getPhoneNumber(uri);
 
+		sendProgressDialog.setMessage(phoneNumber);
+		
 		String texte = message.getText().toString();
 
 		//TODO: preference
@@ -412,7 +463,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		Intent iDelivered = new Intent(SMS_DELIVERED);
 		PendingIntent piSend = PendingIntent.getBroadcast(this, 0, iSend, 0);
 		PendingIntent piDelivered = PendingIntent.getBroadcast(this, 0, iDelivered, 0);
-		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, piDelivered);
+		//TODO piDelivered?
+		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, null);
  	}
  	
 	public void send(View view) {
@@ -437,7 +489,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		catch(Exception e) {
 			e.printStackTrace();
 			dismissDialog(SEND_PROGRESS);
-			Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
+			showDialog(SEND_ERROR);
 		}
 	}
 
@@ -505,19 +557,25 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                             		}
                             		catch(Exception e) {
                             			e.printStackTrace();
-                            			dismissDialog(SEND_PROGRESS);
-                            			Toast.makeText(context, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
+                            			break;
+                            			//dismissDialog(SEND_PROGRESS);
+                            			//Toast.makeText(context, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
                             		}
                             	}
-                                break;
+                            	Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
+                            	return;
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
                             case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
                             case SmsManager.RESULT_ERROR_NULL_PDU: info += "send failed, null pdu"; break;
                             case SmsManager.RESULT_ERROR_RADIO_OFF: info += "send failed, radio is off"; break;
                     }
                     
-                    Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
-
+                    //Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
+                    Log.v("CHARABIA", info);
+                    
+                    dismissDialog(SEND_PROGRESS);
+                    showDialog(SEND_ERROR);
+                    
             }
     };
 

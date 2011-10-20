@@ -16,8 +16,6 @@
 package com.charabia;
 
 import android.util.Base64;
-import android.util.Log;
-
 import android.widget.Toast;
 
 import android.content.Context;
