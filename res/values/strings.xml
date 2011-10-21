@@ -9,7 +9,11 @@
 	<string name="keys">Clés</string>
 	<string name="master">Maitre</string>
 	<string name="slave">Esclave</string>
-	<string name="to">Destinataire(s)</string>
+	<plurals name="to">
+        <item quantity="zero">Destinataire</item>
+	    <item quantity="one">Destinataire</item>
+        <item quantity="other">Destinataires</item>
+    </plurals>
 	<string name="from">De</string>
 	<string name="message">Message</string>
 	<string name="send">Envoyer</string>
@@ -17,7 +21,11 @@
 	<string name="says">Dit</string>
 	<string name="add_to">Ajouter destinataire</string>
 	<string name="next">Suivant</string>
-	<string name="imcoming_message_ticker_text">%d message(s)</string>
+	<plurals name="incoming_message_ticker_text">
+        <item quantity="zero">pas de message</item>
+	    <item quantity="one">%d message</item>
+        <item quantity="other">%d messages</item>
+    </plurals>
 	<string name="unexpected_error">erreur inattendue</string>
 	<string name="fail_send">Echec lors de l\'envoi</string>
 	<string name="end_data">fin</string>

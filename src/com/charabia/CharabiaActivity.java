@@ -54,6 +54,9 @@ import android.widget.TextView;
 import android.widget.EditText;
 
 import android.telephony.SmsManager;
+import android.text.Editable;
+import android.text.TextWatcher;
+
 import com.google.zxing.integration.android.IntentIntegrator;
 
 // TODO option preference to store or not message
@@ -84,6 +87,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// List of intent 
 	private static final int PICK_CONTACT = 0;
 	
+	private TextView title_to = null;
 	private TextView to = null;
 	private EditText message = null;
 	
@@ -116,7 +120,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		}
 	}
 
-	private void removeFromToList(int index) {
+	/*
+	 * return true if toList is empty
+	 */
+	private boolean removeFromToList(int index) {
 		toList.remove(index);
 		StringBuffer strBuf = new StringBuffer();
 		for(int i = 0; i < toList.size(); i++) {
@@ -124,6 +131,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			strBuf.append(tools.getDisplayNameAndPhoneNumber(toList.get(i)));
 		}
 		to.setText(strBuf.toString());
+		return toList.isEmpty();
 	}
 	
 	/** Called when the activity is first created. */
@@ -152,9 +160,30 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			setContentView(R.layout.main);
 		}
 
+		title_to = (TextView) findViewById(R.id.title_to);
 		to = (TextView) findViewById(R.id.to);
 		message = (EditText) findViewById(R.id.message);	
 		
+		to.addTextChangedListener(new TextWatcher() {
+
+				@Override
+				public void afterTextChanged(Editable s) {
+				}
+	
+				@Override
+				public void beforeTextChanged(CharSequence s, int start, int count,
+						int after) {
+				}
+	
+				@Override
+				public void onTextChanged(CharSequence s, int start, int before,
+						int count) {
+					title_to.setText(getResources().getQuantityString(R.plurals.to, toList.size(), toList.size()));
+				}
+			}
+		);
+		
+		to.setText("");
 	}
 	
 	@Override
@@ -343,12 +372,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialogInterface, int i) {
 				
-				Toast.makeText(getBaseContext(), "id=" + i, Toast.LENGTH_LONG).show();
-				
 				switch(i) {
 					case AlertDialog.BUTTON_NEGATIVE:
 						//pass this message and continue to send
-						removeFromToList(0);
+						if(removeFromToList(0)) {
+							return;
+						}
 						break;
 					case AlertDialog.BUTTON_NEUTRAL:
 						// stop sending
@@ -545,7 +574,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                     switch(getResultCode())
                     {
                             case Activity.RESULT_OK: 
-                            	info += "send successful"; 
                             	removeFromToList(0);
                             	if(toList.isEmpty()) {
                             		message.setText("");
@@ -562,6 +590,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                             			//Toast.makeText(context, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
                             		}
                             	}
+                            	info += "send successful"; 
                             	Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
                             	return;
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;

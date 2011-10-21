@@ -141,7 +141,8 @@ public class Tools {
 		PendingIntent contentIntent = PendingIntent.getActivity(context, 0, intent, 0);
 
 		// The ticker text, this uses a formatted string so our message could be localized
-		String tickerText = context.getString(R.string.imcoming_message_ticker_text, nbMessages);
+		String tickerText = context.getResources().getQuantityString(
+				R.plurals.incoming_message_ticker_text, nbMessages, nbMessages);
 
 		// construct the Notification object.
 		Notification notif = new Notification(R.drawable.ic_launcher, tickerText,
@@ -171,7 +172,7 @@ public class Tools {
 		// the convention of using a resource id for a string related to
 		// the notification.  It will always be a unique number within your
 		// application.
-		nm.notify(R.string.imcoming_message_ticker_text, notif);
+		nm.notify(R.plurals.incoming_message_ticker_text, notif);
 	}
 	
 	public void showNotification() {
@@ -182,7 +183,7 @@ public class Tools {
 		int nbMessages = getNbMessages();
 
 		if(nbMessages <= 0) {
-			nm.cancel(R.string.imcoming_message_ticker_text);
+			nm.cancel(R.plurals.incoming_message_ticker_text);
 		}
 		else {
 			ContentResolver contentResolver = context.getContentResolver();

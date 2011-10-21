@@ -11,8 +11,9 @@
     	>
     	<TableRow>
     		<TextView 
+    		    android:id="@+id/title_to"
     			android:layout_span="2"
-    			android:text="@string/to"
+    			android:text=""
     		/>
     	</TableRow>
     	<TableRow>
