@@ -58,8 +58,10 @@ public class PickContactActivity extends FragmentActivity
 		
 	}
 		
-	public static class CursorLoaderListFragment extends ListFragment implements OnItemLongClickListener, LoaderManager.LoaderCallbacks<Cursor> 
+	public static class CursorLoaderListFragment extends ListFragment 
+		implements OnItemLongClickListener, LoaderManager.LoaderCallbacks<Cursor> 
 	{
+		
 		// Loader
 		private static final int CONTACTS_LOADER = 1;
 
@@ -86,6 +88,9 @@ public class PickContactActivity extends FragmentActivity
             setListShown(false);
             
             getLoaderManager().initLoader(CONTACTS_LOADER, null, this);
+            
+            getListView().setOnItemLongClickListener(this);
+            
 		}
 		
 		@Override

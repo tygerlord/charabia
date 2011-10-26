@@ -135,14 +135,6 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 		}		
 	}
 	
-	@Override
-	protected void onPause() {
-		super.onPause();
-		
-		new Tools(this).showNotification();
-		
-	}
-
 	public void answer(View view) {	
 		try {
 			Intent intent = new Intent(Intent.ACTION_MAIN);

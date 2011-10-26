@@ -152,6 +152,9 @@ public class Tools {
 		notif.setLatestEventInfo(context, phoneNumber, messageBody, contentIntent);
 
 		notif.flags |= Notification.FLAG_NO_CLEAR;
+
+		notif.defaults = Notification.DEFAULT_SOUND;
+		
 		/*
 		// On tablets, the ticker shows the sender, the first line of the message,
 		// the photo of the person and the app icon.  For our sample, we just show

@@ -56,6 +56,12 @@ public class SmsListe extends FragmentActivity
 		
 	}
 		
+	@Override
+	protected void onDestroy() {
+		new Tools(this).showNotification();
+		super.onDestroy();
+	}
+
 	public static class viewBinder implements ViewBinder {
 
 		private Context context;

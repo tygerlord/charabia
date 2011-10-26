@@ -15,8 +15,18 @@
  */
  package com.charabia;
 
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Vector;
+
+import javax.crypto.Cipher;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -97,7 +107,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 	private int mode = MODE_MAITRE;
 	
-	private byte[] key = null;
+	//private byte[] key = null;
+	private KeyPair keypair = null;
 	
 	private String phonenumber = null;
 	
@@ -178,6 +189,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				@Override
 				public void onTextChanged(CharSequence s, int start, int before,
 						int count) {
+					Log.v("CHARABIA", "toList.size = " + toList.size());
+					
 					title_to.setText(getResources().getQuantityString(R.plurals.to, toList.size(), toList.size()));
 				}
 			}
@@ -316,9 +329,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				builder = new AlertDialog.Builder(this);
 				builder.setTitle(getString(R.string.app_name));
 				builder.setMessage("erreur envoi message");
-				builder.setNegativeButton("Annuler", sendErrorDialogListener);
-				builder.setNeutralButton("Annuler Tout", sendErrorDialogListener);
-				builder.setPositiveButton("Reessayer", sendErrorDialogListener);	
+				builder.setNegativeButton("ANNULER", sendErrorDialogListener);	
+				builder.setPositiveButton("RECOMMENCER", sendErrorDialogListener);	
 				dialog = builder.create();
 				onPrepareDialog(SEND_ERROR, dialog);
 				break;
@@ -345,26 +357,45 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private final DialogInterface.OnClickListener modeListener =
 		new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialogInterface, int i) {
-				SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
-				key = cipher.generateKeyAES().getEncoded();
 				mode = i;
-				int size = key.length/2;
 				switch(mode) {
 					case MODE_ESCLAVE:
 						//Slave 
-						IntentIntegrator.shareText(CharabiaActivity.this, 
-								phonenumber + "\n" +
-								Base64.encodeToString(key,size,size,Base64.DEFAULT));
+						//SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
+						//byte[] key = cipher.generateKeyAES().getEncoded();
+						//mode = i;
+						//int size = key.length/2;
+						//IntentIntegrator.shareText(CharabiaActivity.this, 
+						//		phonenumber + "\n" +
+						//		Base64.encodeToString(key,size,size,Base64.DEFAULT));
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						break;
 					case MODE_MAITRE:
 					default:
 						//Master
+						KeyPairGenerator gen;
+						try {
+							gen = KeyPairGenerator.getInstance("RSA");
+						} catch (NoSuchAlgorithmException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
+							return;
+						}
+						//TODO preference to increase key size and so increase security
+						// but this increase amount of data to show in QRcode and can
+						// be more difficult to read
+						gen.initialize(256);
+						keypair = gen.generateKeyPair();
+						RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
+						
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						IntentIntegrator.shareText(CharabiaActivity.this, 
 								phonenumber + "\n" +
-								Base64.encodeToString(key,0,size,Base64.DEFAULT));
-				}
+								pubKey.getModulus() + "\n" + 
+								pubKey.getPublicExponent());
+			}
+
 		}
 	};
 
@@ -375,28 +406,14 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				switch(i) {
 					case AlertDialog.BUTTON_NEGATIVE:
 						//pass this message and continue to send
-						if(removeFromToList(0)) {
-							return;
-						}
+						removeFromToList(0);
 						break;
-					case AlertDialog.BUTTON_NEUTRAL:
-						// stop sending
-						return;
 					case AlertDialog.BUTTON_POSITIVE:
-						// try to resend message
+						break;
+					default:
 						break;
 				}
 				
-				showDialog(SEND_PROGRESS);
-				
-				try {
-					sendMessage();
-				}
-				catch(Exception e) {
-					e.printStackTrace();
-					dismissDialog(SEND_PROGRESS);
-					showDialog(SEND_ERROR);
-				}
 		}
 	};
 		
@@ -424,25 +441,74 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						String format = data.getStringExtra("SCAN_RESULT_FORMAT");
 		                // Handle successful scan
 		                
-		        		Toast.makeText(this, "text="+contents, Toast.LENGTH_LONG).show();
-		    	        
 		        		// TODO: add more tests control
 		                
 		                String[] infos = contents.split("\n");
 		                
-		                byte[] key_part = Base64.decode(infos[1], Base64.DEFAULT);
-		                int size = key.length/2;
+						byte[] key = null;
+						
+						Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+						
+						if(mode == MODE_ESCLAVE) {
+							// Save key and show crypted key on QRCode
+							SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
+							key = cipher.generateKeyAES().getEncoded();
+							
+							KeyFactory keyFact = KeyFactory.getInstance("RSA");
+							
+							PublicKey pubkey = keyFact.generatePublic(
+									new RSAPublicKeySpec(new BigInteger(infos[1]), 
+											new BigInteger(infos[2])));
+							
+							rsaCipher.init(Cipher.ENCRYPT_MODE, pubkey);
+							
+							int blockSize = rsaCipher.getBlockSize();
+							
+							int nbBlock = key.length/blockSize;
+							int reste = key.length%blockSize;
+							
+							byte[] cryptedKey = new byte[(nbBlock+1)*rsaCipher.getOutputSize(blockSize)];
+							
+							int offset = 0;
+							
+							for(int i = 0; i < nbBlock; i++){
+								offset += rsaCipher.doFinal(key, i*blockSize, blockSize, cryptedKey, offset);
+							}
+							
+							rsaCipher.doFinal(key, nbBlock*blockSize, reste, cryptedKey, offset);
+							
+							IntentIntegrator.shareText(CharabiaActivity.this, 
+									phonenumber + "\n" +
+									Base64.encodeToString(cryptedKey,Base64.NO_WRAP));
+							
+						}
+						else {
+							
+							// We have read crypted key, so decode it
+							rsaCipher.init(Cipher.DECRYPT_MODE, keypair.getPrivate());
+							
+							byte[] cryptedData = Base64.decode(infos[1], Base64.NO_WRAP);
+
+							int blockSize = rsaCipher.getBlockSize();
+							int nbBlock = cryptedData.length/blockSize;
+							
+							int offset = 0;
+												
+							byte[] tempKey = new byte[(nbBlock+1)*blockSize];
+							
+							for(int i = 0; i < nbBlock; i++) {
+								offset += rsaCipher.doFinal(cryptedData, i*blockSize, blockSize, tempKey, offset);
+							}
+							
+							key = new byte[offset];
+							System.arraycopy(tempKey, 0, key, 0, offset);
+						}
 		                
-		                if(mode == MODE_ESCLAVE) {
-		                	System.arraycopy(key_part, 0, key, 0, size);
-		                }
-		                else {
-		                	System.arraycopy(key_part, 0, key, size, size);		                	
-		                }
-		                
+						// store the key
+						// TODO dialog to confirm add contact in mode SLAVE
 		                new Tools(this).updateOrCreateContactKey(infos[0], key);
 		                		                
-		               	Toast.makeText(this, R.string.contact_added + "\n" + infos[0], Toast.LENGTH_LONG).show();
+		               	Toast.makeText(this, getString(R.string.contact_added) + "\n" + infos[0], Toast.LENGTH_LONG).show();
 		                
 	            	}
 	            	catch(Exception e) {
@@ -450,6 +516,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	            		Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
 	            	}
 	                
+	            }
+	            else {
+	            	// TODO: string
+	            	Toast.makeText(this, "echec lecture tag", Toast.LENGTH_LONG).show();
 	            }
         		break;
 	         	

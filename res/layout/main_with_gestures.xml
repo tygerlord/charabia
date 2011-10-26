@@ -30,6 +30,14 @@
     		android:layout_marginBottom="10dp"
     		android:inputType="text|textMultiLine|textAutoCorrect"
     		android:background="@android:drawable/editbox_background" android:layout_height="wrap_content" android:gravity="top" android:minLines="3"/>
+
+    	<Button
+    	    android:id="@+id/bsend"
+    	    android:layout_width="match_parent"
+    	    android:layout_height="wrap_content"
+    	    android:text="@string/send" 
+    	    android:onClick="send" />
+
 	</LinearLayout>
  
 </android.gesture.GestureOverlayView>
