@@ -51,13 +51,16 @@
     		/>
     	</TableRow>
     	<TableRow>
+
     		<EditText
-    			android:layout_span="2"
-    			android:id="@+id/message"
-    			android:layout_marginBottom="10dp"
-    			android:inputType="text|textMultiLine|textAutoCorrect"
-    			android:background="@android:drawable/editbox_background"
-    			android:minLines="8" android:maxLines="8"/>
+    		    android:id="@+id/message"
+    		    android:layout_marginBottom="10dp"
+    		    android:layout_span="2"
+    		    android:background="@android:drawable/editbox_background"
+    		    android:inputType="text|textAutoComplete|textAutoCorrect|textCapSentences|textMultiLine"
+    		    android:maxLines="8"
+    		    android:minLines="8" />
+
     	</TableRow>
     	<TableRow>
     		<Button

@@ -43,4 +43,12 @@
 	<string name="no_to">pas de destinataire spécifié</string>
 	<string name="preference_phone_number">Numéro de Téléphone</string>
 	<string name="at">A</string>
+	<string name="error_sending_message">Erreur pendant l\'envoi du message</string>
+	<string name="cancel">ANNULER</string>
+	<string name="try_again">REESSAYER</string>
+	<string name="fail_reading_tag">Echec de lecture du tag</string>
+	<string name="send_message">Envoi du message</string>
+	<string name="remove_to">Enlever destinataire</string>
+	<string name="error_sending_message_to">L\'envoi au destinataire\n%s\nà échoué, que voulez-vous faire?</string>
+	<string name="send_success">Envoi du message réussi</string>
 </resources>

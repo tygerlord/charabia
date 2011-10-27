@@ -58,6 +58,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View.OnLongClickListener;
 
 import android.widget.Toast;
 import android.widget.TextView;
@@ -79,6 +80,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
 	
+	//port where data sms are send
 	private static final short sms_port = 1981;
 	
 	// Menus
@@ -91,12 +93,14 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 	// Dialogs
 	private static final int MODE_DIALOG = 0;
-	private static final int SEND_PROGRESS = 1;
-	private static final int SEND_ERROR = 2;
+	private static final int SEND_PROGRESS_DIALOG = MODE_DIALOG + 1;
+	private static final int SEND_ERROR_DIALOG = SEND_PROGRESS_DIALOG + 1;
+	private static final int EDIT_TO_DIALOG = SEND_ERROR_DIALOG + 1;
 	
 	// List of intent 
 	private static final int PICK_CONTACT = 0;
 	
+	// widgets
 	private TextView title_to = null;
 	private TextView to = null;
 	private EditText message = null;
@@ -105,13 +109,15 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private static final int MODE_MAITRE = 0;
 	private static final int MODE_ESCLAVE = 1;
 
+	// store the mode of key exchange
 	private int mode = MODE_MAITRE;
-	
-	//private byte[] key = null;
+
+	// RSA keypair use to process esxchange of key 
 	private KeyPair keypair = null;
 	
 	private String phonenumber = null;
 	
+	// Vector of uris of contact to send message
 	private Vector<Uri> toList = new Vector<Uri>();
 	
 	private GestureLibrary mLibrary = null;
@@ -119,6 +125,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private static final String SMS_SENT = "com.charabia.SMS_SENT";
 	private static final String SMS_DELIVERED = "com.charabia.SMS_DELIVERED";
 	
+	// Utilities class instance
 	private Tools tools = new Tools(this);
 	
 	private ProgressDialog sendProgressDialog;
@@ -197,6 +204,17 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		);
 		
 		to.setText("");
+		
+		to.setOnLongClickListener(new OnLongClickListener() {
+			@Override
+			public boolean onLongClick(View arg0) {
+				// be sure to rebuild completly the dialog 
+				removeDialog(EDIT_TO_DIALOG);
+				showDialog(EDIT_TO_DIALOG);
+				return false;
+			}
+			
+		});
 	}
 	
 	@Override
@@ -319,20 +337,30 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					getString(R.string.slave) }, modeListener);
 				dialog = builder.create();
 				break;
-			case SEND_PROGRESS:
+			case SEND_PROGRESS_DIALOG:
 				dialog = sendProgressDialog = new ProgressDialog(this, 
 						ProgressDialog.STYLE_SPINNER);
-				dialog.setTitle("envoi du message");
-				onPrepareDialog(SEND_PROGRESS, dialog);
+				dialog.setTitle(getString(R.string.send_message));
+				onPrepareDialog(SEND_PROGRESS_DIALOG, dialog);
 				break;
-			case SEND_ERROR:
+			case SEND_ERROR_DIALOG:
 				builder = new AlertDialog.Builder(this);
 				builder.setTitle(getString(R.string.app_name));
-				builder.setMessage("erreur envoi message");
-				builder.setNegativeButton("ANNULER", sendErrorDialogListener);	
-				builder.setPositiveButton("RECOMMENCER", sendErrorDialogListener);	
+				builder.setMessage(getString(R.string.error_sending_message));
+				builder.setNegativeButton(getString(R.string.cancel), sendErrorDialogListener);	
+				builder.setPositiveButton(getString(R.string.try_again), sendErrorDialogListener);	
 				dialog = builder.create();
-				onPrepareDialog(SEND_ERROR, dialog);
+				onPrepareDialog(SEND_ERROR_DIALOG, dialog);
+				break;
+			case EDIT_TO_DIALOG:
+				builder = new AlertDialog.Builder(this);
+				builder.setTitle(getString(R.string.remove_to));
+				builder.setNeutralButton(getString(R.string.cancel), editToDialogListener);
+				String texte = to.getText().toString();
+				if(!texte.equals("")) {
+					builder.setSingleChoiceItems(to.getText().toString().split("\n"), -1, editToDialogListener);
+				}
+				dialog = builder.create();
 				break;
 			default:
 				dialog = null;
@@ -343,13 +371,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	@Override
 	protected void onPrepareDialog(int id, Dialog dialog) {
 		switch(id) {
-			case SEND_PROGRESS:
+			case SEND_PROGRESS_DIALOG:
 				((ProgressDialog) dialog).setMessage(tools.getDisplayNameAndPhoneNumber(toList.get(0)));
 				break;
-			case SEND_ERROR:
-				((AlertDialog) dialog).setMessage("envoi a \n" + 
-						tools.getDisplayNameAndPhoneNumber(toList.get(0)) + 
-						"\n à echoué que voulez-vous faire?");
+			case SEND_ERROR_DIALOG:
+				((AlertDialog) dialog).setMessage(getString(R.string.error_sending_message_to,  
+						tools.getDisplayNameAndPhoneNumber(toList.get(0))));
 				break;
 		}
 	}
@@ -360,14 +387,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				mode = i;
 				switch(mode) {
 					case MODE_ESCLAVE:
-						//Slave 
-						//SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
-						//byte[] key = cipher.generateKeyAES().getEncoded();
-						//mode = i;
-						//int size = key.length/2;
-						//IntentIntegrator.shareText(CharabiaActivity.this, 
-						//		phonenumber + "\n" +
-						//		Base64.encodeToString(key,size,size,Base64.DEFAULT));
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						break;
 					case MODE_MAITRE:
@@ -416,13 +435,30 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				
 		}
 	};
-		
+
+	private final DialogInterface.OnClickListener editToDialogListener =
+			new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialogInterface, int i) {
+					
+					switch(i) {
+						case AlertDialog.BUTTON_NEUTRAL:
+							break;
+						default:
+							//Toast.makeText(getApplicationContext(), "clicked="+i, Toast.LENGTH_LONG).show();
+							removeFromToList(i);
+							removeDialog(EDIT_TO_DIALOG);
+							break;
+					}
+					
+				}
+			};
+
 	public void add_to(View view) {
 		Intent intent = new Intent(Intent.ACTION_PICK);
 		intent.setType(Tools.CONTENT_ITEM_TYPE);
 		startActivityForResult(intent, PICK_CONTACT);
 	}
-	
+
 	@Override
 	public void onActivityResult(int reqCode, int resultCode, Intent data) {
 		super.onActivityResult(reqCode, resultCode, data);
@@ -519,7 +555,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	            }
 	            else {
 	            	// TODO: string
-	            	Toast.makeText(this, "echec lecture tag", Toast.LENGTH_LONG).show();
+	            	Toast.makeText(this, R.string.fail_reading_tag, Toast.LENGTH_LONG).show();
 	            }
         		break;
 	         	
@@ -580,15 +616,15 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			return;		
 		}
 		
-		showDialog(SEND_PROGRESS);
+		showDialog(SEND_PROGRESS_DIALOG);
 
 		try {
 			sendMessage();
 		}
 		catch(Exception e) {
 			e.printStackTrace();
-			dismissDialog(SEND_PROGRESS);
-			showDialog(SEND_ERROR);
+			dismissDialog(SEND_PROGRESS_DIALOG);
+			showDialog(SEND_ERROR_DIALOG);
 		}
 	}
 
@@ -647,7 +683,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                             	removeFromToList(0);
                             	if(toList.isEmpty()) {
                             		message.setText("");
-                            		dismissDialog(SEND_PROGRESS);
+                            		dismissDialog(SEND_PROGRESS_DIALOG);
                             	}
                             	else {
                             		try {
@@ -656,12 +692,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                             		catch(Exception e) {
                             			e.printStackTrace();
                             			break;
-                            			//dismissDialog(SEND_PROGRESS);
-                            			//Toast.makeText(context, R.string.unexpected_error, Toast.LENGTH_LONG).show();				
                             		}
                             	}
-                            	info += "send successful"; 
-                            	Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
+                            	Toast.makeText(getBaseContext(), R.string.send_success, Toast.LENGTH_SHORT).show();
                             	return;
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
                             case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
@@ -672,8 +705,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                     //Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
                     Log.v("CHARABIA", info);
                     
-                    dismissDialog(SEND_PROGRESS);
-                    showDialog(SEND_ERROR);
+                    dismissDialog(SEND_PROGRESS_DIALOG);
+                    showDialog(SEND_ERROR_DIALOG);
                     
             }
     };
