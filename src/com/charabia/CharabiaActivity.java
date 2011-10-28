@@ -355,7 +355,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			case EDIT_TO_DIALOG:
 				builder = new AlertDialog.Builder(this);
 				builder.setTitle(getString(R.string.remove_to));
-				builder.setNeutralButton(getString(R.string.cancel), editToDialogListener);
+				builder.setNegativeButton(getString(R.string.cancel), editToDialogListener);
+				builder.setPositiveButton(getString(R.string.clear_all), editToDialogListener);
 				String texte = to.getText().toString();
 				if(!texte.equals("")) {
 					builder.setSingleChoiceItems(to.getText().toString().split("\n"), -1, editToDialogListener);
@@ -441,7 +442,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				public void onClick(DialogInterface dialogInterface, int i) {
 					
 					switch(i) {
-						case AlertDialog.BUTTON_NEUTRAL:
+						case AlertDialog.BUTTON_NEGATIVE:
+							break;
+						case AlertDialog.BUTTON_POSITIVE:
+							toList.clear();
+							to.setText("");
 							break;
 						default:
 							//Toast.makeText(getApplicationContext(), "clicked="+i, Toast.LENGTH_LONG).show();

@@ -51,4 +51,5 @@
 	<string name="remove_to">Enlever destinataire</string>
 	<string name="error_sending_message_to">L\'envoi au destinataire\n%s\nà échoué, que voulez-vous faire?</string>
 	<string name="send_success">Envoi du message réussi</string>
+	<string name="clear_all">EFFACER TOUT</string>
 </resources>
