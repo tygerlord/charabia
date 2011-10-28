@@ -25,8 +25,10 @@ import android.util.Log;
 
 public class SMSReceiver extends BroadcastReceiver 
 {
-	private final String ACTION_RECEIVE_SMS  = "android.intent.action.DATA_SMS_RECEIVED";
+	private static final String ACTION_RECEIVE_SMS  = "android.intent.action.DATA_SMS_RECEIVED";
 
+	public static final String ACTION_RECEIVE_FOR_TEST = "android.provider.Telephony.SMS_RECEIVED";
+			
 	@Override
 	public void onReceive(Context context, Intent intent)
 	{
@@ -62,6 +64,27 @@ public class SMSReceiver extends BroadcastReceiver
 				}
 			}
 		}
-	}
+		else if (intent.getAction().equals(ACTION_RECEIVE_FOR_TEST)) {
+			Bundle bundle = intent.getExtras();
+			if (bundle != null) {
+				Object[] pdus = (Object[]) bundle.get("pdus");
  
+				SmsMessage[] messages = new SmsMessage[pdus.length];
+				for (int i = 0; i < pdus.length; i++) {
+					messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);  
+				}
+				
+				if (messages.length > -1) {
+					
+						Tools tools = new Tools(context);
+
+						tools.putSmsToDatabases(messages[0]);
+
+						tools.showNotification(tools.getNbMessages(), messages[0]);
+
+						abortBroadcast();
+				}
+			}
+		}
+	} 
 }

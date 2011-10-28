@@ -15,6 +15,8 @@
  */
  package com.charabia;
 
+import java.util.Date;
+
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -36,6 +38,7 @@ import android.support.v4.content.Loader;
 import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
 import android.telephony.SmsMessage;
+import android.text.format.DateFormat;
 
 /**
  * @author 
@@ -84,7 +87,8 @@ public class SmsListe extends FragmentActivity
 					String phoneNumber = sms.getOriginatingAddress();
 					String texte = tools.getDisplayName(phoneNumber) + "(" + phoneNumber + ")";
 					
-					tv.setText(context.getString(R.string.from) + " " +  texte + "\n" + sms.getDisplayMessageBody());
+					tv.setText(context.getString(R.string.from) + " " +  texte + "\n" + 
+							DateFormat.getMediumDateFormat(context).format(new Date(sms.getTimestampMillis())));
 					
 					return true;
 				}

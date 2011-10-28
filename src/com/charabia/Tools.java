@@ -16,6 +16,7 @@
 package com.charabia;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 import android.net.Uri;
 import android.os.RemoteException;
@@ -29,6 +30,7 @@ import android.content.ContentResolver;
 import android.content.OperationApplicationException;
 
 import android.telephony.SmsMessage;
+import android.text.format.DateFormat;
 import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
@@ -128,8 +130,8 @@ public class Tools {
 	public void showNotification(int nbMessages, SmsMessage message) {
 		
 		// TODO change in date time 
-		String messageBody = "";//message.getMessageBody();
-		String phoneNumber = message.getDisplayOriginatingAddress();
+		String line1 = context.getString(R.string.from) + " " + getDisplayName(message.getDisplayOriginatingAddress());
+		String line2 = DateFormat.getMediumDateFormat(context).format(new Date(message.getTimestampMillis()));
 
 		// look up the notification manager service
 		NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -149,7 +151,7 @@ public class Tools {
 			System.currentTimeMillis());
 
 		// Set the info for the views that show in the notification panel.
-		notif.setLatestEventInfo(context, phoneNumber, messageBody, contentIntent);
+		notif.setLatestEventInfo(context, line1, line2, contentIntent);
 
 		notif.flags |= Notification.FLAG_NO_CLEAR;
 
