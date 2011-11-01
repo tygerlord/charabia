@@ -140,7 +140,8 @@ public class PickContactActivity extends FragmentActivity
 	        		ContactsContract.Data.CONTENT_URI,
 	        		new String[] { 
 	        			ContactsContract.Data._ID, 
-	        			ContactsContract.Data.DISPLAY_NAME 
+	        			ContactsContract.Data.DISPLAY_NAME, 
+	        			ContactsContract.Data.CONTACT_STATUS_ICON
 	        		}, 
 	        		ContactsContract.Data.MIMETYPE + "=?", 
 	        		new String[] { Tools.CONTENT_ITEM_TYPE },

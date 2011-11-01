@@ -22,8 +22,10 @@ import android.os.Bundle;
 
 import android.database.Cursor;
 
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.util.Log;
 import android.view.View;
 
 import android.content.Context;
@@ -78,7 +80,10 @@ public class SmsListe extends FragmentActivity
 		@Override
 		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
 			try {
-				TextView tv = (TextView)v;
+				ImageView iv = (ImageView)v.findViewById(R.id.photo);
+				TextView tv = (TextView)v.findViewById(R.id.line1);
+				
+				iv.setImageResource(R.drawable.ic_launcher);
 				
 				if(cursor.getColumnIndex(OpenHelper.SMS_PDU) == columnIndex) {
 					byte[] pdu = cursor.getBlob(columnIndex);
@@ -89,6 +94,10 @@ public class SmsListe extends FragmentActivity
 					
 					tv.setText(context.getString(R.string.from) + " " +  texte + "\n" + 
 							DateFormat.getMediumDateFormat(context).format(new Date(sms.getTimestampMillis())));
+					
+					Uri uri = tools.getUriFromPhoneNumber(phoneNumber);
+					
+					Log.v("SMSLISTE", "uri = " + uri);
 					
 					return true;
 				}
@@ -116,10 +125,12 @@ public class SmsListe extends FragmentActivity
             setEmptyText(getActivity().getString(R.string.no_message));
             
             mAdapter = new SimpleCursorAdapter(getActivity(), 
-            		 android.R.layout.simple_list_item_1, null, 
-            		 new String[] { OpenHelper.SMS_PDU }, 
-            		 new int[] { android.R.id.text1 },
-            		 0);
+            		// android.R.layout.simple_list_item_1, null, 
+            		 	R.layout.sms_list_item, null,
+            			new String[] { OpenHelper.SMS_PDU }, 
+            			new int[] { R.id.item },
+            			//new int[] { android.R.id.icon },
+            			0);
             
             mAdapter.setViewBinder(new viewBinder(getActivity()));
             
