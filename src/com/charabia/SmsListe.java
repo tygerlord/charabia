@@ -83,7 +83,7 @@ public class SmsListe extends FragmentActivity
 				ImageView iv = (ImageView)v.findViewById(R.id.photo);
 				TextView tv = (TextView)v.findViewById(R.id.line1);
 				
-				iv.setImageResource(R.drawable.ic_launcher);
+				//iv.setImageResource(R.drawable.ic_launcher);
 				
 				if(cursor.getColumnIndex(OpenHelper.SMS_PDU) == columnIndex) {
 					byte[] pdu = cursor.getBlob(columnIndex);
@@ -95,9 +95,11 @@ public class SmsListe extends FragmentActivity
 					tv.setText(context.getString(R.string.from) + " " +  texte + "\n" + 
 							DateFormat.getMediumDateFormat(context).format(new Date(sms.getTimestampMillis())));
 					
-					Uri uri = tools.getUriFromPhoneNumber(phoneNumber);
+					//Uri uri = tools.getUriFromPhoneNumber(phoneNumber);
 					
-					Log.v("SMSLISTE", "uri = " + uri);
+					//Log.v("SMSLISTE", "uri = " + uri);
+					
+					iv.setImageBitmap(tools.getBitmapPhotoFromPhoneNumber(phoneNumber));
 					
 					return true;
 				}

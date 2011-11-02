@@ -15,6 +15,7 @@
  */
 package com.charabia;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -36,6 +37,8 @@ import android.util.Log;
 import android.widget.Toast;
 
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.app.PendingIntent;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -423,5 +426,41 @@ public class Tools {
         
         cursor.close();
         return result;
+	}
+	
+	public Bitmap getBitmapPhotoFromPhoneNumber(String phoneNumber) throws Exception {
+        ContentResolver cr = context.getContentResolver();
+
+        /*
+        Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
+        		Uri.encode(phoneNumber));
+      
+        Cursor cursor = cr.query(uri, new String[]{ PhoneLookup.LOOKUP_KEY }, 
+        		null, null, null);
+        
+        String lookupKey = null;
+        
+        if(cursor.moveToFirst()) {
+        	lookupKey = cursor.getString(0);
+        }
+        
+        cursor.close();
+        
+        if(lookupKey != null) {
+        	InputStream input = Contacts.openContactPhotoInputStream(cr, 
+        		Uri.withAppendedPath(Contacts.CONTENT_LOOKUP_URI, lookupKey));
+        
+        	if(input != null) {
+        		return BitmapFactory.decodeStream(input);
+        	}
+        	else {
+        		Log.v(TAG, "InputStream is null");
+        	}
+        }
+        else {
+    		Log.v(TAG, "LookupKey is null");
+        }
+        	*/	
+        return BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
 	}
 }
