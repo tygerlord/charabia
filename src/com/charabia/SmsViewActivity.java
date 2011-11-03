@@ -22,11 +22,13 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 
 import android.app.Activity;
-
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.view.View;
 
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ContentResolver;
 import android.content.SharedPreferences;
@@ -47,6 +49,9 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 
 	private static final String TAG = "Charabia.SmsViewActivity";
 	
+	// Dialogs
+	private static final int READ_ERROR_DIALOG = 0;
+
 	private TextView from = null;
 	private TextView message = null;
 	
@@ -131,7 +136,8 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 		catch(Exception e) {
 			//TODO details more exception
 			e.printStackTrace();
-			Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+			//Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+			showDialog(READ_ERROR_DIALOG);
 		}		
 	}
 	
@@ -152,6 +158,45 @@ public class SmsViewActivity extends Activity implements OnGesturePerformedListe
 		finish();
 	}
 	
+	/* Handles dialogs */
+	@Override
+	protected Dialog onCreateDialog(int id) {
+		Dialog dialog;
+		AlertDialog.Builder builder;
+		switch(id) {
+			case READ_ERROR_DIALOG:
+				builder = new AlertDialog.Builder(this);
+				builder.setTitle(getString(R.string.app_name));
+				builder.setMessage(getString(R.string.error_reading_message));
+				builder.setNegativeButton(getString(R.string.no), readErrorDialogListener);	
+				builder.setPositiveButton(getString(R.string.yes), readErrorDialogListener);	
+				dialog = builder.create();
+				break;
+			default:
+				dialog = null;
+		}
+		return dialog;
+	}
+
+	private final DialogInterface.OnClickListener readErrorDialogListener =
+		new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialogInterface, int i) {
+				
+				switch(i) {
+					case AlertDialog.BUTTON_NEGATIVE:
+						// Don't keep this message
+						getContentResolver().delete(uri, null, null);
+						break;
+					case AlertDialog.BUTTON_POSITIVE:
+						break;
+					default:
+						break;
+				}
+			
+				finish();
+			}
+		};
+
 	@Override
 	public void onGesturePerformed(GestureOverlayView overlay, Gesture gesture) {
 	    ArrayList<Prediction> predictions = mLibrary.recognize(gesture);

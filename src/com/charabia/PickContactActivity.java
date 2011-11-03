@@ -23,11 +23,14 @@ import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.database.Cursor;
 import android.widget.AdapterView;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.view.View;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ContentUris;
@@ -38,6 +41,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SimpleCursorAdapter;
+import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
 
 /**
  * @author 
@@ -58,6 +62,41 @@ public class PickContactActivity extends FragmentActivity
 		
 	}
 		
+	public static class viewBinder implements ViewBinder {
+
+		private Context context;
+		private Tools tools;
+		
+		public viewBinder(Context context) {
+			this.context = context;
+			tools = new Tools(context);
+		}
+		
+		@Override
+		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
+			try {
+				
+				if(cursor.getColumnIndex(ContactsContract.Data.DISPLAY_NAME) == columnIndex) {
+					ImageView iv = (ImageView)v.findViewById(R.id.photo);
+					TextView tv = (TextView)v.findViewById(R.id.line1);
+
+					tv.setText(cursor.getString(columnIndex));
+					
+					//iv.setImageBitmap(tools.getBitmapPhotoFromPhoneNumber(phoneNumber));
+					iv.setImageResource(R.drawable.ic_launcher);
+					
+					return true;
+				}
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+			}
+			
+			return false;
+		}
+		
+	}
+
 	public static class CursorLoaderListFragment extends ListFragment 
 		implements OnItemLongClickListener, LoaderManager.LoaderCallbacks<Cursor> 
 	{
@@ -76,12 +115,14 @@ public class PickContactActivity extends FragmentActivity
             setEmptyText(getActivity().getString(R.string.no_contact));
             
             mAdapter = new SimpleCursorAdapter(getActivity(), 
-            		android.R.layout.simple_list_item_1, null, 
+            		R.layout.list_item, null, 
             		new String[] { 
             			ContactsContract.Data.DISPLAY_NAME,
             		}, 
-            		new int[] { android.R.id.text1 },
+            		new int[] { R.id.item },
             		0);
+            
+            mAdapter.setViewBinder(new viewBinder(getActivity()));
             
             setListAdapter(mAdapter);
             

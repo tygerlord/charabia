@@ -17,8 +17,6 @@ package com.charabia;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Date;
-
 import android.net.Uri;
 import android.os.RemoteException;
 
@@ -132,9 +130,8 @@ public class Tools {
 	
 	public void showNotification(int nbMessages, SmsMessage message) {
 		
-		// TODO change in date time 
-		String line1 = context.getString(R.string.from) + " " + getDisplayName(message.getDisplayOriginatingAddress());
-		String line2 = DateFormat.getMediumDateFormat(context).format(new Date(message.getTimestampMillis()));
+		CharSequence line1 = context.getString(R.string.from) + " " + getDisplayName(message.getDisplayOriginatingAddress());
+		CharSequence line2 = DateFormat.format(context.getString(R.string.dateformat), message.getTimestampMillis());
 
 		// look up the notification manager service
 		NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -431,7 +428,7 @@ public class Tools {
 	public Bitmap getBitmapPhotoFromPhoneNumber(String phoneNumber) throws Exception {
         ContentResolver cr = context.getContentResolver();
 
-        /*
+        
         Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
         		Uri.encode(phoneNumber));
       
@@ -446,21 +443,28 @@ public class Tools {
         
         cursor.close();
         
-        if(lookupKey != null) {
-        	InputStream input = Contacts.openContactPhotoInputStream(cr, 
-        		Uri.withAppendedPath(Contacts.CONTENT_LOOKUP_URI, lookupKey));
+        Bitmap result = null;
         
-        	if(input != null) {
-        		return BitmapFactory.decodeStream(input);
+        if(lookupKey != null) {
+        	uri = Uri.withAppendedPath(Contacts.CONTENT_LOOKUP_URI, lookupKey);
+        	
+        	try {
+        		InputStream input = Contacts.openContactPhotoInputStream(cr, uri);
+        	
+        		if(input != null) {
+        			result = BitmapFactory.decodeStream(input);
+        		}
         	}
-        	else {
-        		Log.v(TAG, "InputStream is null");
+        	catch(Exception e) {
+        		e.printStackTrace();
         	}
         }
-        else {
-    		Log.v(TAG, "LookupKey is null");
+		
+        	
+        if(result == null) {
+        	result = BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
         }
-        	*/	
-        return BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_launcher);
+
+        return result; 
 	}
 }
