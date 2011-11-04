@@ -18,10 +18,13 @@
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.provider.ContactsContract.Contacts;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -71,20 +74,34 @@ public class PickContactActivity extends FragmentActivity
 			this.context = context;
 			tools = new Tools(context);
 		}
-		
+			
 		@Override
 		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
 			try {
 				
 				if(cursor.getColumnIndex(ContactsContract.Data.DISPLAY_NAME) == columnIndex) {
+					Bitmap image;
+					
 					ImageView iv = (ImageView)v.findViewById(R.id.photo);
 					TextView tv = (TextView)v.findViewById(R.id.line1);
 
 					tv.setText(cursor.getString(columnIndex));
 					
-					//iv.setImageBitmap(tools.getBitmapPhotoFromPhoneNumber(phoneNumber));
-					iv.setImageResource(R.drawable.ic_launcher);
+					java.io.InputStream input = Contacts.openContactPhotoInputStream(
+							context.getContentResolver(),
+							ContentUris.withAppendedId(Contacts.CONTENT_URI, 
+									cursor.getLong(cursor.getColumnIndex(ContactsContract.Data.CONTACT_ID)))
+				
+							);
 					
+					if(input != null) {
+						iv.setImageBitmap(BitmapFactory.decodeStream(input));
+						input.close();
+					}
+					else {
+						iv.setImageResource(R.drawable.ic_launcher);
+					}
+
 					return true;
 				}
 			}
@@ -182,7 +199,8 @@ public class PickContactActivity extends FragmentActivity
 	        		new String[] { 
 	        			ContactsContract.Data._ID, 
 	        			ContactsContract.Data.DISPLAY_NAME, 
-	        			ContactsContract.Data.CONTACT_STATUS_ICON
+	        			ContactsContract.Data.CONTACT_STATUS_ICON,
+	        			ContactsContract.Data.CONTACT_ID
 	        		}, 
 	        		ContactsContract.Data.MIMETYPE + "=?", 
 	        		new String[] { Tools.CONTENT_ITEM_TYPE },

@@ -8,10 +8,10 @@
  
     <ImageView
 		android:id="@+id/photo"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
+		android:layout_width="72dp"
+		android:layout_height="72dp"
 	   	android:layout_gravity="center_vertical"
-	   	android:padding="10px"
+	   	android:padding="15dp"
 		/>
  
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -19,22 +19,16 @@
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
 	   	android:layout_gravity="center_vertical"
-	   	android:paddingLeft="10px"
+	   	android:paddingLeft="15dp"
 	    android:layout_weight="1"
 	    >
  
 	    <TextView android:id="@+id/line1"
 	         android:layout_width="fill_parent"
 	         android:layout_height="fill_parent"
-	         android:textSize="16px"
+	         android:textSize="24dp"
 	         android:textStyle="bold"
 	         />
- <!--  
-	    <TextView android:id="@+id/line2"
-	         android:layout_width="fill_parent"
-	         android:layout_height="fill_parent"
-	         />
- -->
     </LinearLayout>
  
 </LinearLayout>

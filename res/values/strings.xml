@@ -52,7 +52,7 @@
 	<string name="error_sending_message_to">L\'envoi au destinataire\n%s\nà échoué, que voulez-vous faire?</string>
 	<string name="send_success">Envoi du message réussi</string>
 	<string name="clear_all">EFFACER TOUT</string>
-	<string name="dateformat">E dd MMM à hh:mm</string>
+	<string name="dateformat">E dd MMM à kk:mm</string>
 	<string name="error_reading_message">Erreur lors de la lecture du message, conserver ce message?</string>
 	<string name="no">NON</string>
 	<string name="yes">OUI</string>

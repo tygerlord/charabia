@@ -74,8 +74,12 @@ import com.google.zxing.integration.android.IntentIntegrator;
 // TODO gesture mode choice on preference gesture only, gesture + buttons
 // TODO more help messages
 // TODO more error logs and trace
-// TODO on error on SmsViewActivity option to force remove message
-// TODO Management multiple send erase only contact not reatched
+// TODO auto completion on writing message
+// TODO photo on contact list and sms list
+// TODO option preference to increase key size for key exchange
+// TODO menu to test key and re-exchange key (perhaps by sms/mail too)
+// TODO add lookup_key of sender in pdu sms table
+// TODO menu to add aggregation of contact if necessary
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
@@ -130,9 +134,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	private ProgressDialog sendProgressDialog;
 	
-	private boolean mode_test = true;
-	private BroadcastReceiver smsreceiver = new SMSReceiver();
-	
 	private void addToList(Uri uri) {
 		if(uri != null) {
 			toList.add(uri);
@@ -165,8 +166,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
         registerReceiver(sendreceiver, new IntentFilter(SMS_SENT));
         registerReceiver(deliveredreceiver, new IntentFilter(SMS_DELIVERED));
 
-        if(mode_test) registerReceiver(smsreceiver, new IntentFilter(SMSReceiver.ACTION_RECEIVE_FOR_TEST));
-        
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		if(prefs.getBoolean(PreferencesActivity.GESTURES_MODE, true)) {
 			setContentView(R.layout.main_with_gestures);
@@ -727,7 +726,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
     {
     	unregisterReceiver(sendreceiver);
     	unregisterReceiver(deliveredreceiver);
-    	if(mode_test) unregisterReceiver(smsreceiver);
     	
         super.onDestroy();
     }
