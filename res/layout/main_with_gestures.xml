@@ -31,7 +31,7 @@
     	    android:layout_marginBottom="10dp"
     	    android:background="@android:drawable/editbox_background"
     	    android:gravity="top"
-    	    android:inputType="text|textAutoComplete|textAutoCorrect|textCapSentences|textMultiLine"
+    	    android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
     	    android:minLines="3" />
 
     	<Button

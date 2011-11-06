@@ -121,11 +121,18 @@ public class Tools {
 			
 			ContentValues values = new ContentValues();
 			values.put(OpenHelper.SMS_PDU, sms.getPdu());
+			//values.put(OpenHelper.SMS_LOOKUP_KEY, lookupKey);
 			cr.insert(DataProvider.CONTENT_URI_PDUS, values);
 		}
 		catch(Exception e) {
 			Log.e(TAG, e.toString());
 		}
+	}
+
+	public void putSmsToDatabase(String originatingAddress, long timeStampMillis, int type, int status, String body)
+	{
+		Tools.putSmsToDatabase(context.getContentResolver(),
+			originatingAddress, timeStampMillis, type, status, body);
 	}
 	
 	public void showNotification(int nbMessages, SmsMessage message) {
@@ -217,6 +224,29 @@ public class Tools {
 		}
 		
 		return result;
+	}
+	
+	public String getLookupKeyFromPhoneNumber(String phoneNumber) throws Exception {
+       ContentResolver cr = context.getContentResolver();
+       Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
+        		Uri.encode(phoneNumber));
+      
+        Cursor cursor = cr.query(uri, new String[]{Contacts.LOOKUP_KEY}, 
+        		null, null, null);
+        
+        String lookupKey = null;
+        
+        if(cursor.moveToFirst()) {
+        	lookupKey = cursor.getString(0);
+        }
+        
+        cursor.close();
+        
+        if(lookupKey == null) {
+        	throw new Exception("No lookup key for " + phoneNumber);
+        }
+        
+        return lookupKey;
 	}
 	
 	public byte[] getKey(String phoneNumber) throws Exception {
@@ -446,7 +476,7 @@ public class Tools {
         Bitmap result = null;
         
         if(lookupKey != null) {
-        	uri = Uri.withAppendedPath(Contacts.CONTENT_LOOKUP_URI, lookupKey);
+        	uri = Contacts.lookupContact(cr, Contacts.getLookupUri(0, lookupKey));
         	
         	try {
         		InputStream input = Contacts.openContactPhotoInputStream(cr, uri);
@@ -467,4 +497,5 @@ public class Tools {
 
         return result; 
 	}
+	
 }

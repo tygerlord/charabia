@@ -30,19 +30,18 @@ public class OpenHelper extends SQLiteOpenHelper
 
 	public static final String ID = "_id";
 	public static final String SMS_PDU = "SMS_PDU";
+	public static final String SMS_LOOKUP_KEY = "SMS_LOOKUP_KEY";
+	public static final String SMS_CONTACT_ID = "SMS_CONTACT_ID";
 	public static final String SMS_TABLE = "SMS_TABLE";
 	
-	public static final String SEND_TO = "SEND_TO";
-	public static final String SEND_STATUS = "SEND_STATUS";
-	public static final String SEND_DATA = "SEND_DATA";
-	public static final String SEND_TEXT = "SEND_TEXT";
-	public static final String SEND_TABLE = "SEND_TABLE";
-	
-	private static final int DATABASE_VERSION = 1;
+	private static final int DATABASE_VERSION = 2;
 
 	private static final String SMS_TABLE_CREATE =
 				"CREATE TABLE " + SMS_TABLE + " (" +
 				ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+				SMS_PDU + " BLOB," +
+				SMS_LOOKUP_KEY + " TEXT," +
+				SMS_CONTACT_ID + " LONG" +
 				SMS_PDU + " BLOB);";
 
 	public OpenHelper(Context context) {
@@ -59,7 +58,10 @@ public class OpenHelper extends SQLiteOpenHelper
 		//TODO: keep sms
 		//db.execSQL("DROP TABLE IF EXISTS " + SMS_TABLE);
 		//onCreate(db);
-		
+		if(oldVersion == 1 && newVersion == 2) {
+			db.execSQL("DROP TABLE IF EXISTS " + SMS_TABLE);
+			onCreate(db);
+		}
 	}
 
 	

@@ -42,7 +42,6 @@ import android.content.DialogInterface;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ContentResolver;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -344,6 +343,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			case SEND_PROGRESS_DIALOG:
 				dialog = sendProgressDialog = new ProgressDialog(this, 
 						ProgressDialog.STYLE_SPINNER);
+				dialog.setCancelable(false);
 				dialog.setTitle(getString(R.string.send_message));
 				onPrepareDialog(SEND_PROGRESS_DIALOG, dialog);
 				break;
@@ -594,12 +594,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		
 		String texte = message.getText().toString();
 
-		//TODO: preference
-		ContentResolver contentResolver = getContentResolver();
-		Tools.putSmsToDatabase(contentResolver, phoneNumber, 
-			System.currentTimeMillis(), Tools.MESSAGE_TYPE_SENT,
-			0, texte);
-		
 		SmsCipher cipher = new SmsCipher(this);
 		byte[] data = cipher.encrypt(tools.getKey(uri), texte);
 
@@ -610,7 +604,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		//TODO piDelivered?
 		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, null);
  	}
- 	
+ 
 	public void send(View view) {
 
 		if(toList.isEmpty()) {
@@ -689,8 +683,15 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                     switch(getResultCode())
                     {
                             case Activity.RESULT_OK: 
-                            	removeFromToList(0);
-                            	if(toList.isEmpty()) {
+
+                            	//TODO: preference
+                        		tools.putSmsToDatabase(tools.getPhoneNumber(toList.get(0)), 
+                        				System.currentTimeMillis(), 
+                        				Tools.MESSAGE_TYPE_SENT,
+                        				0, 
+                        				message.getText().toString());
+                        		
+                            	if(removeFromToList(0)) {
                             		message.setText("");
                             		dismissDialog(SEND_PROGRESS_DIALOG);
                             	}
