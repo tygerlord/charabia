@@ -15,12 +15,19 @@
  */
 package com.charabia;
 
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
 import android.util.Base64;
 import android.widget.Toast;
 
 import android.content.Context;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
@@ -114,51 +121,34 @@ public class SmsCipher
 		return null;
 	}
 
-	public String decrypt(byte[] key_data, byte[] data) {
+	public String decrypt(byte[] key_data, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+		Cipher c = Cipher.getInstance(CIPHER_ALGO);
+	
+		SecretKey key = new SecretKeySpec(key_data, "AES");
+	
+		c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(data, MAGIC.length, 16));
 
-		try {
-			Cipher c = Cipher.getInstance(CIPHER_ALGO);
+		String result = new String(c.doFinal(data, MAGIC.length+16, data.length-16-MAGIC.length));
 		
-			SecretKey key = new SecretKeySpec(key_data, "AES");
-		
-			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(data, MAGIC.length, 16));
-
-			String result = new String(c.doFinal(data, MAGIC.length+16, data.length-16-MAGIC.length));
-			
-			return result;
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
-		}
-
-		return context.getString(R.string.unexpected_error);
+		return result;
 	}
 
-	public byte[] encrypt(byte[] key_data, String texte) {
-		try {
-			Cipher c = Cipher.getInstance(CIPHER_ALGO);
+	public byte[] encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+		Cipher c = Cipher.getInstance(CIPHER_ALGO);
 
-			SecretKey key = new SecretKeySpec(key_data, "AES");
+		SecretKey key = new SecretKeySpec(key_data, "AES");
 
-			c.init(Cipher.ENCRYPT_MODE, key);
+		c.init(Cipher.ENCRYPT_MODE, key);
 
-			byte[] bIV = c.getIV();
-			byte[] cryptedTexte = c.doFinal(texte.getBytes());
-			byte[] data = new byte[MAGIC.length+cryptedTexte.length+bIV.length];
+		byte[] bIV = c.getIV();
+		byte[] cryptedTexte = c.doFinal(texte.getBytes());
+		byte[] data = new byte[MAGIC.length+cryptedTexte.length+bIV.length];
 
-			System.arraycopy(MAGIC, 0, data, 0, MAGIC.length);
-			System.arraycopy(bIV, 0, data, MAGIC.length, bIV.length);
-			System.arraycopy(cryptedTexte, 0, data, MAGIC.length+bIV.length, cryptedTexte.length);
+		System.arraycopy(MAGIC, 0, data, 0, MAGIC.length);
+		System.arraycopy(bIV, 0, data, MAGIC.length, bIV.length);
+		System.arraycopy(cryptedTexte, 0, data, MAGIC.length+bIV.length, cryptedTexte.length);
 
-			
-			return data;
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
-		}
 		
-		return null;
+		return data;
 	}
 }

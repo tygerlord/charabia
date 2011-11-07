@@ -64,7 +64,6 @@ public class Tools {
 
 	public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/com.charabia.key";
 	
-	public static final String SMS_EXTRA_NAME = "pdus";
 	public static final String SMS_URI = "content://sms";
 	
 	public static final String ADDRESS = "address";
@@ -89,69 +88,39 @@ public class Tools {
 		this.context = context;
 	}
 	
-	public static void putSmsToDatabase(ContentResolver contentResolver, String originatingAddress, long timeStampMillis, int type, int status, String body)
+	public Uri putSmsToDatabase(String originatingAddress, long timeStampMillis, int type, int status, String body)
 	{
-		// Create SMS row
+		ContentResolver cr = context.getContentResolver();
 		ContentValues values = new ContentValues();
 		values.put( ADDRESS, originatingAddress );
 		values.put( DATE, timeStampMillis );
-		values.put( READ, MESSAGE_IS_READ );
+		//values.put( READ, MESSAGE_IS_READ );
 		values.put( STATUS, status );
 		values.put( TYPE, type );
-		values.put( SEEN, MESSAGE_IS_SEEN );
+		//values.put( SEEN, MESSAGE_IS_SEEN );
 		values.put( BODY, body );
 		// Push row into the SMS table
-		contentResolver.insert( Uri.parse( SMS_URI ), values );
-	}
-
-	public static void putSmsToDatabase(ContentResolver contentResolver, SmsMessage sms)
-	{
-		putSmsToDatabase(contentResolver, sms.getDisplayOriginatingAddress(), 
-			sms.getTimestampMillis(), MESSAGE_TYPE_INBOX, sms.getStatus(), sms.getMessageBody());
-	}
-
-	/*
-	 * @brief put sms on databases (charabia and sms base)
-	 */
-	public void putSmsToDatabases(SmsMessage sms) {
-		try {
-			ContentResolver cr = context.getContentResolver();
-			// TODO preference option
-			putSmsToDatabase(cr, sms);
-			
-			ContentValues values = new ContentValues();
-			values.put(OpenHelper.SMS_PDU, sms.getPdu());
-			//values.put(OpenHelper.SMS_LOOKUP_KEY, lookupKey);
-			cr.insert(DataProvider.CONTENT_URI_PDUS, values);
-		}
-		catch(Exception e) {
-			Log.e(TAG, e.toString());
-		}
-	}
-
-	public void putSmsToDatabase(String originatingAddress, long timeStampMillis, int type, int status, String body)
-	{
-		Tools.putSmsToDatabase(context.getContentResolver(),
-			originatingAddress, timeStampMillis, type, status, body);
+		return cr.insert( Uri.parse( SMS_URI ), values );
 	}
 	
-	public void showNotification(int nbMessages, SmsMessage message) {
+	public void showNotification(Uri uri, String originatingAddress, long timeStamp) {
 		
-		CharSequence line1 = context.getString(R.string.from) + " " + getDisplayName(message.getDisplayOriginatingAddress());
-		CharSequence line2 = DateFormat.format(context.getString(R.string.dateformat), message.getTimestampMillis());
+		CharSequence line1 = context.getString(R.string.from) + " " + getDisplayName(originatingAddress);
+		CharSequence line2 = DateFormat.format(context.getString(R.string.dateformat), timeStamp);
 
 		// look up the notification manager service
 		NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-		Intent intent = new Intent(SmsListe.class.getName());
-		intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		Intent intent = new Intent(Intent.ACTION_MAIN);
+		intent.addCategory(Intent.CATEGORY_LAUNCHER);
+		intent.setClassName("com.android.mms", "com.android.mms.ui.ConversationList");
+		
 
 		// The PendingIntent to launch our activity if the user selects this notification
 		PendingIntent contentIntent = PendingIntent.getActivity(context, 0, intent, 0);
 
 		// The ticker text, this uses a formatted string so our message could be localized
-		String tickerText = context.getResources().getQuantityString(
-				R.plurals.incoming_message_ticker_text, nbMessages, nbMessages);
+		String tickerText = context.getResources().getString(R.string.incoming_message_ticker_text);
 
 		// construct the Notification object.
 		Notification notif = new Notification(R.drawable.ic_launcher, tickerText,
@@ -160,7 +129,7 @@ public class Tools {
 		// Set the info for the views that show in the notification panel.
 		notif.setLatestEventInfo(context, line1, line2, contentIntent);
 
-		notif.flags |= Notification.FLAG_NO_CLEAR;
+		notif.flags |= Notification.FLAG_AUTO_CANCEL;
 
 		notif.defaults = Notification.DEFAULT_SOUND;
 		
@@ -184,33 +153,9 @@ public class Tools {
 		// the convention of using a resource id for a string related to
 		// the notification.  It will always be a unique number within your
 		// application.
-		nm.notify(R.plurals.incoming_message_ticker_text, notif);
+		nm.notify(R.string.incoming_message_ticker_text, notif);
 	}
 	
-	public void showNotification() {
-		
-		// look up the notification manager service
-		NotificationManager nm = (NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
-
-		int nbMessages = getNbMessages();
-
-		if(nbMessages <= 0) {
-			nm.cancel(R.plurals.incoming_message_ticker_text);
-		}
-		else {
-			ContentResolver contentResolver = context.getContentResolver();
-			Cursor cursor = contentResolver.query(DataProvider.CONTENT_URI_PDUS,
-					new String[]{OpenHelper.SMS_PDU}, null, null, null);
-			if(cursor.moveToFirst()) {
-				byte[] pdu = cursor.getBlob(cursor.getColumnIndex(OpenHelper.SMS_PDU)); 
-				showNotification(nbMessages, SmsMessage.createFromPdu(pdu));
-			}
-			else {
-				Log.e(TAG, "Erreur retreive last message");
-			}
-		}
-    }
-
 	public boolean hasKey(Uri dataUri) {		
 		ContentResolver cr = context.getContentResolver();
 
@@ -383,21 +328,6 @@ public class Tools {
 		
 		cursor.close();
 		return result;
-	}
-
-	public int getNbMessages() {
-		int count = -1;
-		ContentResolver cr = context.getContentResolver();
-		Cursor cursor = cr.query(DataProvider.CONTENT_URI_PDUS,
-				new String[] { "COUNT(*)" }, null, null, null); 
-		if(cursor.moveToFirst()) {		
-			count = cursor.getInt(0);
-		}
-		else {
-			Toast.makeText(context, "moveToNext failed", Toast.LENGTH_LONG).show();
-		}
-		cursor.close();
-		return count;
 	}
 
 	public String getDisplayName(String phoneNumber) {

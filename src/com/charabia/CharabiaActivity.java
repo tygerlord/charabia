@@ -73,11 +73,8 @@ import com.google.zxing.integration.android.IntentIntegrator;
 // TODO gesture mode choice on preference gesture only, gesture + buttons
 // TODO more help messages
 // TODO more error logs and trace
-// TODO auto completion on writing message
-// TODO photo on contact list and sms list
 // TODO option preference to increase key size for key exchange
 // TODO menu to test key and re-exchange key (perhaps by sms/mail too)
-// TODO add lookup_key of sender in pdu sms table
 // TODO menu to add aggregation of contact if necessary
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
@@ -115,7 +112,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// store the mode of key exchange
 	private int mode = MODE_MAITRE;
 
-	// RSA keypair use to process esxchange of key 
+	// RSA keypair use to process exchange of key 
 	private KeyPair keypair = null;
 	
 	private String phonenumber = null;
@@ -258,12 +255,14 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		}
 	}
 
+	/*
 	@Override
 	public void onPause() {
 		super.onPause();
 		new Tools(this).showNotification();
 	}
-
+	*/
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
@@ -588,7 +587,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  	/*
  	 * Use to send a message from list
  	 */
- 	private void sendMessage() throws Exception {
+ 	private void sendMessage() throws Throwable {
  		
  		Uri uri = toList.get(0);
  		
@@ -627,12 +626,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 		try {
 			sendMessage();
-		}
-		catch(Exception e) {
+		} catch (Throwable e) {
 			e.printStackTrace();
 			dismissDialog(SEND_PROGRESS_DIALOG);
 			showDialog(SEND_ERROR_DIALOG);
 		}
+		
 	}
 
 	@Override
@@ -702,11 +701,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                             	else {
                             		try {
                             			sendMessage();
-                            		}
-                            		catch(Exception e) {
-                            			e.printStackTrace();
-                            			break;
-                            		}
+                            		} 
+                            		catch (Throwable e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
                             	}
                             	Toast.makeText(getBaseContext(), R.string.send_success, Toast.LENGTH_SHORT).show();
                             	return;

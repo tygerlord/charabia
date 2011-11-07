@@ -21,11 +21,7 @@
 	<string name="says">Dit</string>
 	<string name="add_to">Ajouter destinataire</string>
 	<string name="next">Suivant</string>
-	<plurals name="incoming_message_ticker_text">
-        <item quantity="zero">pas de message</item>
-	    <item quantity="one">%d message</item>
-        <item quantity="other">%d messages</item>
-    </plurals>
+	<string name="incoming_message_ticker_text">message</string>
 	<string name="unexpected_error">erreur inattendue</string>
 	<string name="fail_send">Echec lors de l\'envoi</string>
 	<string name="end_data">fin</string>
@@ -56,4 +52,5 @@
 	<string name="error_reading_message">Erreur lors de la lecture du message, conserver ce message?</string>
 	<string name="no">NON</string>
 	<string name="yes">OUI</string>
+	<string name="answer_link"><small><i>Ce message était crypté, pour répondre en mode crypté cliquez sur le lien http://localhost.charabia.com:1981/%s</i></small></string>
 </resources>
