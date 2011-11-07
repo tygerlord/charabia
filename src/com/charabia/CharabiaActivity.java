@@ -251,6 +251,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			if(action.equals(Intent.ACTION_MAIN)) {
 				addToList(intent.getData());
 			}
+			else if (action.equals(Intent.ACTION_VIEW)) {
+				// call by http uri
+				message.setText(intent.getData().toString());
+			}
 		}
 	}
 

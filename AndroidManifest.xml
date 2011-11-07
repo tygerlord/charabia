@@ -33,7 +33,13 @@
 				<data android:scheme="sms" />
 				<data android:scheme="smsto" />
  			</intent-filter>
-		</activity>
+            <intent-filter>
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<category android:name="android.intent.category.BROWSABLE" />
+				<data android:scheme="http" android:host="localhost.charabia.com" android:port="1981" />
+ 			</intent-filter>
+        </activity>
 		<receiver class=".SMSReceiver"
 			android:name=".SMSReceiver">
 			<intent-filter android:priority="100">
