@@ -28,12 +28,8 @@ import android.content.ContentValues;
 import android.content.ContentResolver;
 import android.content.OperationApplicationException;
 
-import android.telephony.SmsMessage;
 import android.text.format.DateFormat;
 import android.util.Base64;
-import android.util.Log;
-import android.widget.Toast;
-
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -47,6 +43,34 @@ import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.ContactsContract.RawContacts;
+
+class NoLookupKeyException extends Exception {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	public NoLookupKeyException(String message) {
+		super(message);
+	}
+
+
+}
+
+class NoCharabiaKeyException extends Exception {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	public NoCharabiaKeyException(String message) {
+		super(message);
+	}
+
+
+}
 
 public class Tools {
 
@@ -171,7 +195,7 @@ public class Tools {
 		return result;
 	}
 	
-	public String getLookupKeyFromPhoneNumber(String phoneNumber) throws Exception {
+	public String getLookupKeyFromPhoneNumber(String phoneNumber) throws NoLookupKeyException {
        ContentResolver cr = context.getContentResolver();
        Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
         		Uri.encode(phoneNumber));
@@ -188,13 +212,13 @@ public class Tools {
         cursor.close();
         
         if(lookupKey == null) {
-        	throw new Exception("No lookup key for " + phoneNumber);
+        	throw new NoLookupKeyException("No lookup key for " + phoneNumber);
         }
         
         return lookupKey;
 	}
 	
-	public byte[] getKey(String phoneNumber) throws Exception {
+	public byte[] getKey(String phoneNumber) throws NoLookupKeyException, NoCharabiaKeyException {
         ContentResolver cr = context.getContentResolver();
 
         Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
@@ -212,7 +236,7 @@ public class Tools {
         cursor.close();
         
         if(lookupKey == null) {
-        	throw new Exception("No lookup key for " + phoneNumber);
+        	throw new NoLookupKeyException("No lookup key for " + phoneNumber);
         }
         
         cursor = cr.query(Data.CONTENT_URI, 
@@ -228,6 +252,10 @@ public class Tools {
         }
         
         cursor.close();
+        
+        if(result == null) {
+        	throw new NoCharabiaKeyException("key not found for " + phoneNumber);
+        }
         return result;
 	}
 	
@@ -275,7 +303,7 @@ public class Tools {
  		}
 	}
 
-	public byte[] getKey(Uri dataUri) throws Exception {
+	public byte[] getKey(Uri dataUri) throws NoCharabiaKeyException {
 
 		ContentResolver cr = context.getContentResolver();
 	
@@ -289,7 +317,7 @@ public class Tools {
 			return key;
 		}
 			
-		throw new Exception("key not found for " + dataUri);
+		throw new NoCharabiaKeyException("key not found for " + dataUri);
 	}
 
 	public String getPhoneNumber(Uri uri) {
@@ -348,7 +376,7 @@ public class Tools {
 		
 	}
 	
-	public Uri getUriFromPhoneNumber(String phoneNumber) throws Exception {
+	public Uri getUriFromPhoneNumber(String phoneNumber) throws NoLookupKeyException {
         ContentResolver cr = context.getContentResolver();
 
         Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
@@ -366,7 +394,7 @@ public class Tools {
         cursor.close();
         
         if(lookupKey == null) {
-        	throw new Exception("No lookup key for " + phoneNumber);
+        	throw new NoLookupKeyException("No lookup key for " + phoneNumber);
         }
         
         cursor = cr.query(Data.CONTENT_URI, 

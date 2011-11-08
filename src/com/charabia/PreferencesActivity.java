@@ -25,7 +25,7 @@ import android.preference.PreferenceScreen;
 public final class PreferencesActivity extends PreferenceActivity
 	implements OnSharedPreferenceChangeListener {
 
-	private static final boolean mode_test = false;
+	private static final boolean mode_test = true;
 	
 	static final String TAG = "PreferencesActivity";
 	

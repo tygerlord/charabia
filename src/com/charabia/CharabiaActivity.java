@@ -115,7 +115,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// RSA keypair use to process exchange of key 
 	private KeyPair keypair = null;
 	
-	private String phonenumber = null;
+	private String prefPhoneNumber = null;
 	
 	// Vector of uris of contact to send message
 	private Vector<Uri> toList = new Vector<Uri>();
@@ -222,8 +222,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		super.onResume();
 
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		phonenumber = prefs.getString(PreferencesActivity.PHONE_NUMBER, null);
-		if(phonenumber == null || phonenumber.length() <= 0) {
+		prefPhoneNumber = prefs.getString(PreferencesActivity.PHONE_NUMBER, null);
+		if(prefPhoneNumber == null || prefPhoneNumber.length() <= 0) {
 			
 			Intent intent;
 	
@@ -250,19 +250,21 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			}
 			else if (action.equals(Intent.ACTION_VIEW)) {
 				// call by http uri
-				message.setText(intent.getData().toString());
+				//message.setText(intent.getData().toString());
+				Uri uri = intent.getData();
+				if(uri != null) {
+					String phoneNumber = uri.getLastPathSegment();
+					try {
+						addToList(tools.getUriFromPhoneNumber(phoneNumber));
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 	}
 
-	/*
-	@Override
-	public void onPause() {
-		super.onPause();
-		new Tools(this).showNotification();
-	}
-	*/
-	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
@@ -418,7 +420,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						IntentIntegrator.shareText(CharabiaActivity.this, 
-								phonenumber + "\n" +
+								prefPhoneNumber + "\n" +
 								pubKey.getModulus() + "\n" + 
 								pubKey.getPublicExponent());
 			}
@@ -526,7 +528,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 							rsaCipher.doFinal(key, nbBlock*blockSize, reste, cryptedKey, offset);
 							
 							IntentIntegrator.shareText(CharabiaActivity.this, 
-									phonenumber + "\n" +
+									prefPhoneNumber + "\n" +
 									Base64.encodeToString(cryptedKey,Base64.NO_WRAP));
 							
 						}

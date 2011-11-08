@@ -30,13 +30,11 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import android.telephony.SmsMessage;
-import android.text.Html;
-import android.text.TextUtils;
 import android.util.Log;
 
 public class SMSReceiver extends BroadcastReceiver 
 {
-	private static final String ACTION_RECEIVE_SMS  = "android.intent.action.DATA_SMS_RECEIVED";
+	public static final String ACTION_RECEIVE_SMS  = "android.intent.action.DATA_SMS_RECEIVED";
 
 	@Override
 	public void onReceive(Context context, Intent intent)
@@ -67,50 +65,55 @@ public class SMSReceiver extends BroadcastReceiver
 
 							String originatingAddress = messages[0].getOriginatingAddress();
 							
+							String message = "";
+
 							byte[] key = null;
 							try {
 								key = tools.getKey(originatingAddress);
-							} catch (Exception e) {
-								// TODO Auto-generated catch block
+
+								SmsCipher cipher = new SmsCipher(context);
+								
+								try {
+									message = cipher.decrypt(key, messageBody);
+									
+									message += "\n\n" + context.getString(
+											R.string.answer_link, originatingAddress);
+									
+								} catch (InvalidKeyException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.unexpected_error);
+								} catch (NoSuchAlgorithmException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.unexpected_error);
+								} catch (NoSuchPaddingException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.unexpected_error);
+								} catch (InvalidAlgorithmParameterException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.unexpected_error);
+								} catch (IllegalBlockSizeException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.blocksize_error);
+								} catch (BadPaddingException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.padding_error);
+								}
+							} 
+							catch (NoLookupKeyException e1) {
+								e1.printStackTrace();
+								message = context.getString(R.string.unknown_user);
+							} catch (NoCharabiaKeyException e) {
 								e.printStackTrace();
+								message = context.getString(R.string.no_key_for_user);
 							}
 							
-							SmsCipher cipher = new SmsCipher(context);
-							
-							String message = "";
-							try {
-								message = cipher.decrypt(key, messageBody);
-							} catch (InvalidKeyException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (NoSuchAlgorithmException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (NoSuchPaddingException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (InvalidAlgorithmParameterException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (IllegalBlockSizeException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (BadPaddingException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-							
-							//String escapedOriginatingAddress = TextUtils.htmlEncode(originatingAddress);
-							//String texte = String.format(context.getString(R.string.answer_link), escapedOriginatingAddress);
 							
 							long timeStamp = messages[0].getTimestampMillis(); 
 							Uri uri = tools.putSmsToDatabase(originatingAddress, 
 									timeStamp, 
 									Tools.MESSAGE_TYPE_INBOX, 
 									messages[0].getStatus(), 
-									message + "\n" +
-									context.getString(R.string.answer_link, originatingAddress));
-									//Html.fromHtml(texte));
+									message);
 
 							tools.showNotification(uri, originatingAddress, timeStamp);
 
