@@ -76,8 +76,9 @@ public class SMSReceiver extends BroadcastReceiver
 								try {
 									message = cipher.decrypt(key, messageBody);
 									
-									message += "\n\n" + context.getString(
-											R.string.answer_link, originatingAddress);
+									message += "\n" + 
+											context.getString(R.string.secured_by_appname, 
+													context.getString(R.string.app_name));
 									
 								} catch (InvalidKeyException e) {
 									e.printStackTrace();

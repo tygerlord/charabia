@@ -80,6 +80,9 @@ import com.google.zxing.integration.android.IntentIntegrator;
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {
 	
+	// Tag used to log messages
+	private static final String TAG = "CHARABIA";
+
 	//port where data sms are send
 	private static final short sms_port = 1981;
 	
@@ -243,12 +246,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		Intent intent = getIntent();
 		String action = intent == null ? null : intent.getAction();
 
-		if (intent != null && action != null) 
+		if(intent != null && action != null) 
 		{
-			if(action.equals(Intent.ACTION_MAIN)) {
-				addToList(intent.getData());
-			}
-			else if (action.equals(Intent.ACTION_VIEW)) {
+			if(action.equals(Intent.ACTION_VIEW)) {
 				// call by http uri
 				//message.setText(intent.getData().toString());
 				Uri uri = intent.getData();
@@ -256,10 +256,40 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					String phoneNumber = uri.getLastPathSegment();
 					try {
 						addToList(tools.getUriFromPhoneNumber(phoneNumber));
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
+					} 
+					catch (NoLookupKeyException e) {
 						e.printStackTrace();
+						Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+						finish();
+					} 
+					catch (NoCharabiaKeyException e) {
+						e.printStackTrace();
+						Toast.makeText(this, R.string.no_key_for_user, Toast.LENGTH_LONG).show();
+						finish();
 					}
+				}
+			}
+			else if(action.equals(Intent.ACTION_SENDTO)) {
+				// uri = sms:(...)
+				Uri uri = intent.getData();
+				try {
+					Log.v(TAG, "send to uri = " + uri + ", "  + uri.getSchemeSpecificPart());
+					addToList(tools.getUriFromPhoneNumber(uri.getSchemeSpecificPart()));
+				} 
+				catch (NoLookupKeyException e) {
+					e.printStackTrace();
+					Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+					finish();
+				} 
+				catch (NoCharabiaKeyException e) {
+					e.printStackTrace();
+					Toast.makeText(this, R.string.no_key_for_user, Toast.LENGTH_LONG).show();
+					finish();
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+					Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+					finish();
 				}
 			}
 		}
@@ -313,7 +343,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
 					AlertDialog.Builder builder = new AlertDialog.Builder(this);
 					builder.setTitle(getString(R.string.app_name));
-					builder.setMessage(getString(R.string.info, pi.versionName, pi.versionCode));
+					builder.setMessage(getString(R.string.info, pi.versionName));
 					builder.setIcon(R.drawable.ic_launcher);
 					builder.setPositiveButton(R.string.quit, null);
 					builder.show();

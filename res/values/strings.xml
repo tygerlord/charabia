@@ -4,7 +4,7 @@
 	<string name="options">Options</string>
 	<string name="help">Aide</string>
 	<string name="about">A propos</string>
-	<string name="info">\nVersion %1$s\n(code %2$d)</string>
+	<string name="info">\nVersion %s</string>
 	<string name="quit">Quitter</string>
 	<string name="keys">Clés</string>
 	<string name="master">Maitre</string>
@@ -17,14 +17,10 @@
 	<string name="from">De</string>
 	<string name="message">Message</string>
 	<string name="send">Envoyer</string>
-	<string name="answer">Répondre</string>
-	<string name="says">Dit</string>
 	<string name="add_to">Ajouter destinataire</string>
-	<string name="next">Suivant</string>
 	<string name="incoming_message_ticker_text">message</string>
 	<string name="unexpected_error">erreur inattendue</string>
 	<string name="fail_send">Echec lors de l\'envoi</string>
-	<string name="end_data">fin</string>
 	<string name="unknow">inconnu</string>
 	<string name="clear">Effacer</string>
 	<string name="delete">Supprimer</string>
@@ -35,10 +31,8 @@
 	<string name="empty_message">Message vide</string>
 	<string name="no_contact">Pas de contacts d\'enregistré</string>
 	<string name="contact_added">Contact ajouté</string>
-	<string name="no_message">Pas de message</string>
 	<string name="no_to">pas de destinataire spécifié</string>
 	<string name="preference_phone_number">Numéro de Téléphone</string>
-	<string name="at">A</string>
 	<string name="error_sending_message">Erreur pendant l\'envoi du message</string>
 	<string name="cancel">ANNULER</string>
 	<string name="try_again">REESSAYER</string>
@@ -49,12 +43,9 @@
 	<string name="send_success">Envoi du message réussi</string>
 	<string name="clear_all">EFFACER TOUT</string>
 	<string name="dateformat">E dd MMM à kk:mm</string>
-	<string name="error_reading_message">Erreur lors de la lecture du message, conserver ce message?</string>
-	<string name="no">NON</string>
-	<string name="yes">OUI</string>
-	<string name="answer_link">Ce message était crypté, pour répondre en mode crypté cliquez sur le lien http://localhost.charabia.com:1981/%s</string>
 	<string name="unknown_user">Ce contact est inconnu dans la base des contacts de l\'application Charabia</string>
 	<string name="no_key_for_user">Ce contact n\'a pas de clé partagé dans l\'application Charabia</string>
 	<string name="blocksize_error">Ce contact vous a envoyé un message crypté par Charabia dont la taille n\'était pas correcte, la clé partagé est soit corrompue ou quelqu\'un à modifié le message pendant l\'envoi</string>
 	<string name="padding_error">Ce contact vous a envoyé un message crypté par Charabia dont le remplissage n\'était pas correcte, la clé partagé est soit corrompue ou quelqu\'un à modifié le message pendant l\'envoi</string>
+	<string name="secured_by_appname">(sécurisé par %s).</string>
 </resources>

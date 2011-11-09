@@ -376,7 +376,7 @@ public class Tools {
 		
 	}
 	
-	public Uri getUriFromPhoneNumber(String phoneNumber) throws NoLookupKeyException {
+	public Uri getUriFromPhoneNumber(String phoneNumber) throws NoLookupKeyException, NoCharabiaKeyException {
         ContentResolver cr = context.getContentResolver();
 
         Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
@@ -410,6 +410,11 @@ public class Tools {
         }
         
         cursor.close();
+        
+        if(result == null) {
+           	throw new NoCharabiaKeyException("key not found for " + phoneNumber);
+        }
+        
         return result;
 	}
 	
