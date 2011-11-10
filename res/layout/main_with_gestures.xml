@@ -12,9 +12,9 @@
 	    android:id="@+id/ihm"
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content" android:orientation="vertical" android:weightSum="1">
-		<TextView android:id="@+id/title_to" android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content" android:text=""></TextView>
+		<TextView android:id="@+id/title_recipients" android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content" android:text=""></TextView>
 	    <TextView
-    		android:id="@+id/to"
+    		android:id="@+id/recipients"
     		android:layout_width="fill_parent"
     		android:layout_height="wrap_content"
     		android:inputType="text|textMultiLine|textAutoCorrect"
@@ -22,8 +22,8 @@
     		android:minLines="1"
     		android:background="@android:drawable/editbox_background"
     		android:onClick="add_to"/>
-	    <TextView android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content" android:id="@+id/TextView2" android:text="@string/message"></TextView>
-    
+	    
+	    <TextView android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content" android:id="@+id/title_message" android:text="@string/message"></TextView>
     	<EditText
     	    android:id="@+id/message"
     	    android:layout_width="fill_parent"

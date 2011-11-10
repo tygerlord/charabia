@@ -104,9 +104,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private static final int PICK_CONTACT = 0;
 	
 	// widgets
-	private TextView title_to = null;
-	private TextView to = null;
-	private EditText message = null;
+	private TextView titleRecipientView = null;
+	private TextView recipientsView = null;
+	private TextView titleMessageView = null;
+	private EditText messageView = null;
 	
 	// Keys share mode
 	private static final int MODE_MAITRE = 0;
@@ -121,7 +122,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private String prefPhoneNumber = null;
 	
 	// Vector of uris of contact to send message
-	private Vector<Uri> toList = new Vector<Uri>();
+	private Vector<Uri> recipientsList = new Vector<Uri>();
 	
 	private GestureLibrary mLibrary = null;
 	
@@ -131,28 +132,51 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// Utilities class instance
 	private Tools tools = new Tools(this);
 	
-	private ProgressDialog sendProgressDialog;
+	// Manage state changes
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putInt("mode", mode);
+		outState.putString("prefPhoneNumber", prefPhoneNumber);
+		outState.putSerializable("keypair", keypair);
+		outState.putSerializable("recipientsList", recipientsList);
+		
+	}
 	
-	private void addToList(Uri uri) {
+	@SuppressWarnings("unchecked")
+	@Override 
+	protected void onRestoreInstanceState(Bundle savedInstanceState) {
+		super.onRestoreInstanceState(savedInstanceState);
+		mode = savedInstanceState.getInt("mode");
+		prefPhoneNumber = savedInstanceState.getString("prefPhoneNumber");
+		keypair = (KeyPair) savedInstanceState.getSerializable("keypair");
+		recipientsList = (Vector<Uri>) savedInstanceState.getSerializable("recipientsList");
+		addToRecipientsList(null);
+	}
+	
+	/*
+	 * use addToRecipientsList(null) to refresh
+	 */
+	private synchronized void addToRecipientsList(Uri uri) {
 		if(uri != null) {
-			toList.add(uri);
-			CharSequence temp = to.getText();
-			to.setText(tools.getDisplayNameAndPhoneNumber(uri)+"\n"+temp);
+			recipientsList.add(uri);
 		}
+		CharSequence temp = recipientsView.getText();
+		recipientsView.setText(tools.getDisplayNameAndPhoneNumber(uri)+"\n"+temp);
 	}
 
 	/*
-	 * return true if toList is empty
+	 * return true if recipientsList is empty
 	 */
-	private boolean removeFromToList(int index) {
-		toList.remove(index);
+	private synchronized boolean removeFromRecipientsList(int index) {
+		recipientsList.remove(index);
 		StringBuffer strBuf = new StringBuffer();
-		for(int i = 0; i < toList.size(); i++) {
+		for(int i = 0; i < recipientsList.size(); i++) {
 			if(i>0) strBuf.append("\n");
-			strBuf.append(tools.getDisplayNameAndPhoneNumber(toList.get(i)));
+			strBuf.append(tools.getDisplayNameAndPhoneNumber(recipientsList.get(i)));
 		}
-		to.setText(strBuf.toString());
-		return toList.isEmpty();
+		recipientsView.setText(strBuf.toString());
+		return recipientsList.isEmpty();
 	}
 	
 	/** Called when the activity is first created. */
@@ -181,11 +205,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			setContentView(R.layout.main);
 		}
 
-		title_to = (TextView) findViewById(R.id.title_to);
-		to = (TextView) findViewById(R.id.to);
-		message = (EditText) findViewById(R.id.message);	
+		titleRecipientView = (TextView) findViewById(R.id.title_recipients);
+		recipientsView = (TextView) findViewById(R.id.recipients);
+		titleMessageView = (TextView) findViewById(R.id.title_message);
+		messageView = (EditText) findViewById(R.id.message);	
 		
-		to.addTextChangedListener(new TextWatcher() {
+		recipientsView.addTextChangedListener(new TextWatcher() {
 
 				@Override
 				public void afterTextChanged(Editable s) {
@@ -199,16 +224,15 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				@Override
 				public void onTextChanged(CharSequence s, int start, int before,
 						int count) {
-					Log.v("CHARABIA", "toList.size = " + toList.size());
+					Log.v("CHARABIA", "toList.size = " + recipientsList.size());
 					
-					title_to.setText(getResources().getQuantityString(R.plurals.to, toList.size(), toList.size()));
+					titleRecipientView.setText(getResources().getQuantityString(R.plurals.to, 
+							recipientsList.size(), recipientsList.size()));
 				}
 			}
 		);
 		
-		to.setText("");
-		
-		to.setOnLongClickListener(new OnLongClickListener() {
+		recipientsView.setOnLongClickListener(new OnLongClickListener() {
 			@Override
 			public boolean onLongClick(View arg0) {
 				// be sure to rebuild completly the dialog 
@@ -218,6 +242,27 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			}
 			
 		});
+		
+		messageView.addTextChangedListener(new TextWatcher() {
+
+			@Override
+			public void afterTextChanged(Editable s) {
+			}
+
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before,
+					int count) {
+				titleMessageView.setText(getResources().getString(R.string.message) +  
+						" " + messageView.length());
+			}
+		});
+
+		addToRecipientsList(null);
 	}
 	
 	@Override
@@ -255,7 +300,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				if(uri != null) {
 					String phoneNumber = uri.getLastPathSegment();
 					try {
-						addToList(tools.getUriFromPhoneNumber(phoneNumber));
+						addToRecipientsList(tools.getUriFromPhoneNumber(phoneNumber));
 					} 
 					catch (NoLookupKeyException e) {
 						e.printStackTrace();
@@ -274,7 +319,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				Uri uri = intent.getData();
 				try {
 					Log.v(TAG, "send to uri = " + uri + ", "  + uri.getSchemeSpecificPart());
-					addToList(tools.getUriFromPhoneNumber(uri.getSchemeSpecificPart()));
+					addToRecipientsList(tools.getUriFromPhoneNumber(uri.getSchemeSpecificPart()));
 				} 
 				catch (NoLookupKeyException e) {
 					e.printStackTrace();
@@ -376,7 +421,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				dialog = builder.create();
 				break;
 			case SEND_PROGRESS_DIALOG:
-				dialog = sendProgressDialog = new ProgressDialog(this, 
+				dialog = new ProgressDialog(this, 
 						ProgressDialog.STYLE_SPINNER);
 				dialog.setCancelable(false);
 				dialog.setTitle(getString(R.string.send_message));
@@ -396,9 +441,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				builder.setTitle(getString(R.string.remove_to));
 				builder.setNegativeButton(getString(R.string.cancel), editToDialogListener);
 				builder.setPositiveButton(getString(R.string.clear_all), editToDialogListener);
-				String texte = to.getText().toString();
+				String texte = recipientsView.getText().toString();
 				if(!texte.equals("")) {
-					builder.setSingleChoiceItems(to.getText().toString().split("\n"), -1, editToDialogListener);
+					builder.setSingleChoiceItems(recipientsView.getText().toString().split("\n"), 
+							-1, editToDialogListener);
 				}
 				dialog = builder.create();
 				break;
@@ -412,11 +458,30 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	protected void onPrepareDialog(int id, Dialog dialog) {
 		switch(id) {
 			case SEND_PROGRESS_DIALOG:
-				((ProgressDialog) dialog).setMessage(tools.getDisplayNameAndPhoneNumber(toList.get(0)));
+				/*
+				 * It seems that when state is restored dialog creation is restarted
+				 * with a call to onPrepareDialog (even if onCreateDialog don't call 
+				 * onPrepareDialog) so we must check if list is not empty before get 
+				 * element 0. This happen only if dialog was previously created.
+				 * 
+				 *    This can be called when recipientsList is empty after
+				 *    onSavedInstanceState, onRestoreInstanceState sequence
+				 *    if instance of this dialog exist when onSavedInstanceState
+				 *    is called.
+				 */
+				if(!recipientsList.isEmpty()) {
+					((ProgressDialog) dialog).setMessage(tools.getDisplayNameAndPhoneNumber(
+							recipientsList.get(0)));
+				}
 				break;
 			case SEND_ERROR_DIALOG:
-				((AlertDialog) dialog).setMessage(getString(R.string.error_sending_message_to,  
-						tools.getDisplayNameAndPhoneNumber(toList.get(0))));
+				/*
+				 * see SEND_PROGRESS_DIALOG comment. 
+				 */
+				if(!recipientsList.isEmpty()) {
+					((AlertDialog) dialog).setMessage(getString(R.string.error_sending_message_to,  
+							tools.getDisplayNameAndPhoneNumber(recipientsList.get(0))));
+				}
 				break;
 		}
 	}
@@ -465,7 +530,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				switch(i) {
 					case AlertDialog.BUTTON_NEGATIVE:
 						//pass this message and continue to send
-						removeFromToList(0);
+						removeFromRecipientsList(0);
 						break;
 					case AlertDialog.BUTTON_POSITIVE:
 						break;
@@ -484,12 +549,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						case AlertDialog.BUTTON_NEGATIVE:
 							break;
 						case AlertDialog.BUTTON_POSITIVE:
-							toList.clear();
-							to.setText("");
+							recipientsList.clear();
+							recipientsView.setText("");
 							break;
 						default:
 							//Toast.makeText(getApplicationContext(), "clicked="+i, Toast.LENGTH_LONG).show();
-							removeFromToList(i);
+							removeFromRecipientsList(i);
 							removeDialog(EDIT_TO_DIALOG);
 							break;
 					}
@@ -497,7 +562,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				}
 			};
 
-	public void add_to(View view) {
+	public synchronized void add_to(View view) {
 		Intent intent = new Intent(Intent.ACTION_PICK);
 		intent.setType(Tools.CONTENT_ITEM_TYPE);
 		startActivityForResult(intent, PICK_CONTACT);
@@ -510,7 +575,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		switch (reqCode) {
         	case (PICK_CONTACT):
         		if (resultCode == RESULT_OK) {
-        			addToList(data.getData());
+        			addToRecipientsList(data.getData());
         		}
 	           break;
         	case(IntentIntegrator.REQUEST_CODE):
@@ -612,22 +677,20 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	}
  	
  	public void clear(View view) {
- 		toList.clear();
- 		to.setText("");
+ 		recipientsList.clear();
+ 		recipientsView.setText("");
  	}
  	
  	/*
  	 * Use to send a message from list
  	 */
- 	private void sendMessage() throws Throwable {
+ 	private synchronized void sendMessage() throws Throwable {
  		
- 		Uri uri = toList.get(0);
+ 		Uri uri = recipientsList.get(0);
  		
 		String phoneNumber = tools.getPhoneNumber(uri);
 
-		sendProgressDialog.setMessage(phoneNumber);
-		
-		String texte = message.getText().toString();
+		String texte = messageView.getText().toString();
 
 		SmsCipher cipher = new SmsCipher(this);
 		byte[] data = cipher.encrypt(tools.getKey(uri), texte);
@@ -640,15 +703,15 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, null);
  	}
  
-	public void send(View view) {
+	public synchronized void send(View view) {
 
-		if(toList.isEmpty()) {
+		if(recipientsList.isEmpty()) {
 			Toast.makeText(this, R.string.no_to, Toast.LENGTH_LONG).show();
 			return;
 		}
 
 		String texte;
-		texte = message.getText().toString();
+		texte = messageView.getText().toString();
 		if(texte.equals("")) {
 			Toast.makeText(this, R.string.empty_message, Toast.LENGTH_LONG).show();
 			return;		
@@ -720,15 +783,16 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                             case Activity.RESULT_OK: 
 
                             	//TODO: preference
-                        		tools.putSmsToDatabase(tools.getPhoneNumber(toList.get(0)), 
+                        		tools.putSmsToDatabase(tools.getPhoneNumber(recipientsList.get(0)), 
                         				System.currentTimeMillis(), 
                         				Tools.MESSAGE_TYPE_SENT,
                         				0, 
-                        				message.getText().toString());
+                        				messageView.getText().toString());
                         		
-                            	if(removeFromToList(0)) {
-                            		message.setText("");
+                            	if(removeFromRecipientsList(0)) {
+                            		clear(null);
                             		dismissDialog(SEND_PROGRESS_DIALOG);
+                            		messageView.setText("");
                             	}
                             	else {
                             		try {
