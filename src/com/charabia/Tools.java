@@ -78,8 +78,8 @@ public class Tools {
 	
 	private Context context;
 	
-	public static final String accountType = null;//"com.charabia";
-	public static final String accountName = null;//"keys";
+	public static final String accountType = "com.charabia";
+	public static final String accountName = "keys";
 	
 	public static final String PHONE = "data1";
 	public static final String KEY = "data2";

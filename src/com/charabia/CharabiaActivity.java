@@ -16,6 +16,7 @@
  package com.charabia;
 
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -26,7 +27,10 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Vector;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -132,6 +136,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// Utilities class instance
 	private Tools tools = new Tools(this);
 	
+	// Max length of data that can be send by sms
+	private static final int BLOCK_SIZE = 112;
+	
+	// Message part currently sending block are 112 byte length max
+	private int mFragment;
+	
 	// Manage state changes
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
@@ -140,7 +150,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		outState.putString("prefPhoneNumber", prefPhoneNumber);
 		outState.putSerializable("keypair", keypair);
 		outState.putSerializable("recipientsList", recipientsList);
-		
+		outState.putInt("mFragment", mFragment);
+		outState.putBoolean("dismissAction", dismissAction);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -151,7 +162,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		prefPhoneNumber = savedInstanceState.getString("prefPhoneNumber");
 		keypair = (KeyPair) savedInstanceState.getSerializable("keypair");
 		recipientsList = (Vector<Uri>) savedInstanceState.getSerializable("recipientsList");
-		addToRecipientsList(null);
+		mFragment = savedInstanceState.getInt("mFragment");
+		dismissAction = savedInstanceState.getBoolean("dismissAction");
 	}
 	
 	/*
@@ -160,16 +172,18 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private synchronized void addToRecipientsList(Uri uri) {
 		if(uri != null) {
 			recipientsList.add(uri);
+			CharSequence temp = recipientsView.getText();
+			recipientsView.setText(tools.getDisplayNameAndPhoneNumber(uri)+"\n"+temp);
 		}
-		CharSequence temp = recipientsView.getText();
-		recipientsView.setText(tools.getDisplayNameAndPhoneNumber(uri)+"\n"+temp);
 	}
 
 	/*
 	 * return true if recipientsList is empty
 	 */
 	private synchronized boolean removeFromRecipientsList(int index) {
-		recipientsList.remove(index);
+		if(index>=0 && index < recipientsList.size()) {
+			recipientsList.remove(index);
+		}
 		StringBuffer strBuf = new StringBuffer();
 		for(int i = 0; i < recipientsList.size(); i++) {
 			if(i>0) strBuf.append("\n");
@@ -189,10 +203,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
         registerReceiver(sendreceiver, new IntentFilter(SMS_SENT));
         registerReceiver(deliveredreceiver, new IntentFilter(SMS_DELIVERED));
 
+        setContentView(R.layout.main);
+        
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		if(prefs.getBoolean(PreferencesActivity.GESTURES_MODE, true)) {
-			setContentView(R.layout.main_with_gestures);
-
 			mLibrary = GestureLibraries.fromRawResource(this, R.raw.gestures);
 			if (!mLibrary.load()) {
 			    finish();
@@ -200,9 +214,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			
 			GestureOverlayView gestures = (GestureOverlayView) findViewById(R.id.gestures);
 			gestures.addOnGesturePerformedListener(this);
-		}
-		else {
-			setContentView(R.layout.main);
 		}
 
 		titleRecipientView = (TextView) findViewById(R.id.title_recipients);
@@ -235,7 +246,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		recipientsView.setOnLongClickListener(new OnLongClickListener() {
 			@Override
 			public boolean onLongClick(View arg0) {
-				// be sure to rebuild completly the dialog 
+				// be sure to rebuild all the dialog 
 				removeDialog(EDIT_TO_DIALOG);
 				showDialog(EDIT_TO_DIALOG);
 				return false;
@@ -257,12 +268,18 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			@Override
 			public void onTextChanged(CharSequence s, int start, int before,
 					int count) {
-				titleMessageView.setText(getResources().getString(R.string.message) +  
-						" " + messageView.length());
+				int lg = messageView.length();
+				titleMessageView.setText(getResources().getString(R.string.message,  
+						lg, (lg/BLOCK_SIZE)+1));
 			}
 		});
+		
+		titleRecipientView.setText(getResources().getQuantityString(R.plurals.to, 
+				recipientsList.size(), recipientsList.size()));
 
-		addToRecipientsList(null);
+		int lg = messageView.length();
+		titleMessageView.setText(getResources().getString(R.string.message,  
+				lg, (lg/BLOCK_SIZE)+1));
 	}
 	
 	@Override
@@ -338,6 +355,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				}
 			}
 		}
+		
+		// Convenient way to refresh list
+		removeFromRecipientsList(-1);
 	}
 
 	@Override
@@ -432,8 +452,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				builder.setTitle(getString(R.string.app_name));
 				builder.setMessage(getString(R.string.error_sending_message));
 				builder.setNegativeButton(getString(R.string.cancel), sendErrorDialogListener);	
-				builder.setPositiveButton(getString(R.string.try_again), sendErrorDialogListener);	
+				builder.setPositiveButton(getString(R.string.try_again), sendErrorDialogListener);
 				dialog = builder.create();
+				dialog.setOnDismissListener(sendErrorDismissListener);
 				onPrepareDialog(SEND_ERROR_DIALOG, dialog);
 				break;
 			case EDIT_TO_DIALOG:
@@ -478,6 +499,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				/*
 				 * see SEND_PROGRESS_DIALOG comment. 
 				 */
+				dismissAction = false;
 				if(!recipientsList.isEmpty()) {
 					((AlertDialog) dialog).setMessage(getString(R.string.error_sending_message_to,  
 							tools.getDisplayNameAndPhoneNumber(recipientsList.get(0))));
@@ -523,23 +545,43 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		}
 	};
 
+	private final DialogInterface.OnDismissListener sendErrorDismissListener =
+		new DialogInterface.OnDismissListener() {
+			public void onDismiss(DialogInterface dialogInterface) {
+				if(dismissAction) {
+					sendMessage();
+				}
+			}
+		};
+
+	/*
+	 * dismissAction set to True for continue sending
+	 */
+	protected boolean dismissAction;
+	
 	private final DialogInterface.OnClickListener sendErrorDialogListener =
 		new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialogInterface, int i) {
 				
 				switch(i) {
 					case AlertDialog.BUTTON_NEGATIVE:
-						//pass this message and continue to send
+						// Pass this message and continue to send
 						removeFromRecipientsList(0);
+						if(!recipientsList.isEmpty()) {
+							dismissAction = true;
+						}
 						break;
 					case AlertDialog.BUTTON_POSITIVE:
+						// Try again
+						dismissAction = true;
 						break;
 					default:
+						dismissAction = false;
 						break;
 				}
 				
-		}
-	};
+			}
+		};
 
 	private final DialogInterface.OnClickListener editToDialogListener =
 			new DialogInterface.OnClickListener() {
@@ -684,51 +726,63 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  	/*
  	 * Use to send a message from list
  	 */
- 	private synchronized void sendMessage() throws Throwable {
+ 	private synchronized void sendFragment() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoCharabiaKeyException {
  		
- 		Uri uri = recipientsList.get(0);
+  		Uri uri = recipientsList.get(0);
  		
 		String phoneNumber = tools.getPhoneNumber(uri);
 
 		String texte = messageView.getText().toString();
 
 		SmsCipher cipher = new SmsCipher(this);
-		byte[] data = cipher.encrypt(tools.getKey(uri), texte);
+		int start = mFragment*BLOCK_SIZE;
+		byte[] data = cipher.encrypt(tools.getKey(uri), 
+				texte.substring(start, start+BLOCK_SIZE));
 
 		Intent iSend = new Intent(SMS_SENT);
 		Intent iDelivered = new Intent(SMS_DELIVERED);
 		PendingIntent piSend = PendingIntent.getBroadcast(this, 0, iSend, 0);
-		PendingIntent piDelivered = PendingIntent.getBroadcast(this, 0, iDelivered, 0);
+		//PendingIntent piDelivered = PendingIntent.getBroadcast(this, 0, iDelivered, 0);
 		//TODO piDelivered?
 		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, null);
  	}
  
-	public synchronized void send(View view) {
+	public synchronized void sendMessage() {
 
-		if(recipientsList.isEmpty()) {
-			Toast.makeText(this, R.string.no_to, Toast.LENGTH_LONG).show();
-			return;
-		}
-
-		String texte;
-		texte = messageView.getText().toString();
-		if(texte.equals("")) {
-			Toast.makeText(this, R.string.empty_message, Toast.LENGTH_LONG).show();
-			return;		
-		}
+		Toast.makeText(this, "sendMessage", Toast.LENGTH_LONG).show();
 		
 		showDialog(SEND_PROGRESS_DIALOG);
 
 		try {
-			sendMessage();
+			sendFragment();
+			return;
 		} catch (Throwable e) {
 			e.printStackTrace();
-			dismissDialog(SEND_PROGRESS_DIALOG);
-			showDialog(SEND_ERROR_DIALOG);
 		}
+
+		dismissDialog(SEND_PROGRESS_DIALOG);
+		showDialog(SEND_ERROR_DIALOG);
 		
 	}
 
+	/*
+	 * Called by button send
+	 */
+	public void buttonSend(View view) {
+		if(recipientsList.isEmpty()) {
+			Toast.makeText(this, R.string.no_recipient, Toast.LENGTH_LONG).show();
+			return;
+		}
+
+		if(messageView.length()<=0) {
+			Toast.makeText(this, R.string.empty_message, Toast.LENGTH_LONG).show();
+			return;		
+		}
+		
+		mFragment = 0;
+		sendMessage();
+	}
+	
 	@Override
 	public void onGesturePerformed(GestureOverlayView overlay, Gesture gesture) {
 	    ArrayList<Prediction> predictions = mLibrary.recognize(gesture);
@@ -743,7 +797,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	        } else if ("ADD".equals(action)) {
 	            add_to(null);
 	        } else if ("SEND".equals(action)) {
-	            send(null);
+	            buttonSend(null);
 	        } else if ("OUT".equals(action) || "QUIT".equals(action)) {
 	            quit(null);
 	        } else if ("CLEAR".equals(action)) {
@@ -789,19 +843,18 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                         				0, 
                         				messageView.getText().toString());
                         		
-                            	if(removeFromRecipientsList(0)) {
+                        		mFragment+=1;
+                        		if(mFragment*BLOCK_SIZE < messageView.length()) {
+                        			sendMessage();
+                        		}
+                        		else if(removeFromRecipientsList(0)) {
                             		clear(null);
                             		dismissDialog(SEND_PROGRESS_DIALOG);
                             		messageView.setText("");
                             	}
                             	else {
-                            		try {
-                            			sendMessage();
-                            		} 
-                            		catch (Throwable e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
+                            		mFragment = 0;
+                            		sendMessage();
                             	}
                             	Toast.makeText(getBaseContext(), R.string.send_success, Toast.LENGTH_SHORT).show();
                             	return;

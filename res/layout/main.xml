@@ -1,88 +1,46 @@
-<?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/scrollview"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
-    <TableLayout android:orientation="vertical"
-    	android:layout_width="fill_parent"
-    	android:layout_height="fill_parent"
-    	android:stretchColumns="*"
-    	>
-    	<TableRow>
-    		<TextView 
-    		    android:id="@+id/title_recipients"
-    			android:layout_span="2"
-    			android:text=""
-    		/>
-    	</TableRow>
-    	<TableRow>
-    		<TextView
-    			android:layout_span="2"
-    			android:id="@+id/recipients"
-    			android:inputType="text|textMultiLine|textAutoCorrect"
-    			android:maxLines="3"
-    			android:minLines="1"
-    			android:background="@android:drawable/editbox_background"
-    			android:onClick="add_to"
-    		/>
-    	</TableRow>
-    	<TableRow>
-    		<Button
-    			android:layout_span="1"
-    			android:id="@+id/add_to"
-    			android:drawableLeft="@android:drawable/ic_menu_add"
-    			android:gravity="left|center_vertical"
-    			android:text="@string/add_to"
-    			android:onClick="add_to"
-    		/>
-    		<Button 
-    			android:layout_span="1"
-    			android:drawableLeft="@android:drawable/ic_menu_delete"
-    			android:gravity="left|center_vertical"
-    			android:text="@string/clear"
-    			android:onClick="clear"
-    		/>
-    	</TableRow>
-    	<TableRow>
-    		<TextView  
-    		    android:id="@+id/title_message"
-    			android:layout_span="2"
-    			android:text="@string/message"
-    		/>
-    	</TableRow>
-    	<TableRow>
+<android.gesture.GestureOverlayView
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/gestures"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+
+	android:gestureStrokeType="multiple"
+	android:eventsInterceptionEnabled="true"
+	android:orientation="vertical">
+
+	<LinearLayout
+	    android:id="@+id/ihm"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content" android:orientation="vertical" android:weightSum="1">
+		<TextView android:id="@+id/title_recipients" android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content" android:text=""></TextView>
+	    <TextView
+    		android:id="@+id/recipients"
+    		android:layout_width="fill_parent"
+    		android:layout_height="wrap_content"
+    		android:inputType="text|textMultiLine|textAutoCorrect"
+    		android:maxLines="3"
+    		android:minLines="1"
+    		android:background="@android:drawable/editbox_background"
+    		android:onClick="add_to"/>
+	    
+	    <TextView android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content" android:id="@+id/title_message" android:text="@string/message"></TextView>
+    	<EditText
+    	    android:id="@+id/message"
+    	    android:layout_width="fill_parent"
+    	    android:layout_height="wrap_content"
+    	    android:layout_marginBottom="10dp"
+    	    android:background="@android:drawable/editbox_background"
+    	    android:gravity="top"
+    	    android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
+    	    android:minLines="3" />
 
-    		<EditText
-    		    android:id="@+id/message"
-    		    android:layout_marginBottom="10dp"
-    		    android:layout_span="2"
-    		    android:background="@android:drawable/editbox_background"
-    		    android:inputType="text|textAutoComplete|textAutoCorrect|textCapSentences|textMultiLine"
-    		    android:maxLines="8"
-    		    android:minLines="8" />
+    	<Button
+    	    android:id="@+id/bsend"
+    	    android:layout_width="match_parent"
+    	    android:layout_height="wrap_content"
+    	    android:text="@string/send" 
+    	    android:onClick="buttonSend" />
 
-    	</TableRow>
-    	<TableRow>
-    		<Button
-    			android:id="@+id/envoyer"
-    			android:text="@string/send"
-    			android:drawableLeft="@android:drawable/ic_menu_send"
-    			android:gravity="left|center_vertical"
-    			android:onClick="buttonSend"
-    		/>
-    
-    		<Button
-    			android:layout_column="1"
-    			android:id="@+id/quit"
-    			android:text="@string/quit" 
-    			android:drawableLeft="@android:drawable/ic_menu_close_clear_cancel"
-    			android:gravity="left|center_vertical"
-    			android:onClick="quit"
-    		/>
-    	</TableRow>
-    		
-    </TableLayout>
-</ScrollView>
-	
-
+	</LinearLayout>
+ 
+</android.gesture.GestureOverlayView>

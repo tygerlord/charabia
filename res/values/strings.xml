@@ -15,7 +15,7 @@
         <item quantity="other">Destinataires</item>
     </plurals>
 	<string name="from">De</string>
-	<string name="message">Message</string>
+	<string name="message">Message %1$d car. %2$d sms</string>
 	<string name="send">Envoyer</string>
 	<string name="add_to">Ajouter destinataire</string>
 	<string name="incoming_message_ticker_text">message</string>
@@ -31,7 +31,7 @@
 	<string name="empty_message">Message vide</string>
 	<string name="no_contact">Pas de contacts d\'enregistré</string>
 	<string name="contact_added">Contact ajouté</string>
-	<string name="no_to">pas de destinataire spécifié</string>
+	<string name="no_recipient">pas de destinataire spécifié</string>
 	<string name="preference_phone_number">Numéro de Téléphone</string>
 	<string name="error_sending_message">Erreur pendant l\'envoi du message</string>
 	<string name="cancel">ANNULER</string>
