@@ -72,6 +72,17 @@ class NoCharabiaKeyException extends Exception {
 
 }
 
+class OperationException extends Exception {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	public OperationException(String message) {
+		super(message);
+	}	
+}
+
 public class Tools {
 
 	private static final String TAG = "Charabia_tools";
@@ -127,7 +138,7 @@ public class Tools {
 		return cr.insert( Uri.parse( SMS_URI ), values );
 	}
 	
-	public void showNotification(Uri uri, String originatingAddress, long timeStamp) {
+	public void showNotification(String originatingAddress, long timeStamp) {
 		
 		CharSequence line1 = context.getString(R.string.from) + " " + getDisplayName(originatingAddress);
 		CharSequence line2 = DateFormat.format(context.getString(R.string.dateformat), timeStamp);
@@ -180,6 +191,7 @@ public class Tools {
 		nm.notify(R.string.incoming_message_ticker_text, notif);
 	}
 	
+	@Deprecated
 	public boolean hasKey(Uri dataUri) {		
 		ContentResolver cr = context.getContentResolver();
 
@@ -195,8 +207,12 @@ public class Tools {
 		return result;
 	}
 	
-	public String getLookupKeyFromPhoneNumber(String phoneNumber) throws NoLookupKeyException {
+	/*
+	 * get lookup key of contact from the phone number
+	 */
+	public String getLookupFromPhoneNumber(String phoneNumber) throws NoLookupKeyException {
        ContentResolver cr = context.getContentResolver();
+       
        Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
         		Uri.encode(phoneNumber));
       
@@ -217,92 +233,10 @@ public class Tools {
         
         return lookupKey;
 	}
-	
-	public byte[] getKey(String phoneNumber) throws NoLookupKeyException, NoCharabiaKeyException {
-        ContentResolver cr = context.getContentResolver();
 
-        Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
-        		Uri.encode(phoneNumber));
-      
-        Cursor cursor = cr.query(uri, new String[]{Contacts.LOOKUP_KEY}, 
-        		null, null, null);
-        
-        String lookupKey = null;
-        
-        if(cursor.moveToFirst()) {
-        	lookupKey = cursor.getString(0);
-        }
-        
-        cursor.close();
-        
-        if(lookupKey == null) {
-        	throw new NoLookupKeyException("No lookup key for " + phoneNumber);
-        }
-        
-        cursor = cr.query(Data.CONTENT_URI, 
-        		new String[] { KEY }, 
-        		Data.LOOKUP_KEY + "=? AND " + Data.MIMETYPE + "=?", 
-        		new String[] { lookupKey, CONTENT_ITEM_TYPE }, 
-        		null);
-        
-        byte[] result = null;
-        
-        if(cursor.moveToFirst()) {
-        	result = Base64.decode(cursor.getString(0), Base64.DEFAULT);
-        }
-        
-        cursor.close();
-        
-        if(result == null) {
-        	throw new NoCharabiaKeyException("key not found for " + phoneNumber);
-        }
-        return result;
-	}
-	
-	public void updateOrCreateContactKey(String phoneNumber, byte[] key) throws RemoteException, OperationApplicationException {
-		 
-		ContentResolver cr = context.getContentResolver();
-		
-		ArrayList<ContentProviderOperation> ops =
-					new ArrayList<ContentProviderOperation>();
-
-		ops.add(ContentProviderOperation.newUpdate(Data.CONTENT_URI)
-				.withValue(KEY, Base64.encodeToString(key, Base64.DEFAULT))
-				.withSelection(PHONE + "=? AND " + Data.MIMETYPE + "=?", 
-						new String[] { phoneNumber, CONTENT_ITEM_TYPE })
-				.withExpectedCount(1).build());
-		
-		try {
- 			cr.applyBatch(ContactsContract.AUTHORITY, ops);
-		}
-		catch(OperationApplicationException oae) {
-			ops.clear();
- 			int rawContactInsertIndex = ops.size();
-			 
-			 
- 			ops.add(ContentProviderOperation.newInsert(RawContacts.CONTENT_URI)
-					 .withValue(RawContacts.ACCOUNT_TYPE, accountType)
-					 .withValue(RawContacts.ACCOUNT_NAME, accountName)
-					 .build());
-	
- 			ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
-				 .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
-				 .withValue(Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
-				 .withValue(Phone.NUMBER, phoneNumber)
-				 .withValue(Phone.TYPE, Phone.TYPE_MOBILE)
-				 .build());
-	
- 			ops.add(ContentProviderOperation.newInsert(Data.CONTENT_URI)
-					 .withValueBackReference(Data.RAW_CONTACT_ID, rawContactInsertIndex)
-					 .withValue(Data.MIMETYPE, CONTENT_ITEM_TYPE)
-					 .withValue(PHONE, phoneNumber)
-					 .withValue(KEY, Base64.encodeToString(key, Base64.DEFAULT))
-					 .build());
-	
- 			cr.applyBatch(ContactsContract.AUTHORITY, ops);
- 		}
-	}
-
+	/*
+	 * Get key from uri
+	 */
 	public byte[] getKey(Uri dataUri) throws NoCharabiaKeyException {
 
 		ContentResolver cr = context.getContentResolver();
@@ -310,20 +244,85 @@ public class Tools {
 		Cursor cursor = cr.query(dataUri, new String[] { KEY }, 
 			null, null, null);
 		
+		byte[] key = null;
+		
 		if(cursor.moveToFirst()) {
-			byte[] key;
-			key = Base64.decode(cursor.getString(0), Base64.DEFAULT);
-			cursor.close();
-			return key;
+			key = cursor.getBlob(0);
 		}
-			
-		throw new NoCharabiaKeyException("key not found for " + dataUri);
+
+		cursor.close();
+		
+		if(key == null) {
+			throw new NoCharabiaKeyException("key not found for " + dataUri);
+		}
+		
+		return key;
+	}
+
+
+	/*
+	 * Get key from phoneNumber
+	 */
+	public byte[] getKey(String phoneNumber) throws NoLookupKeyException, NoCharabiaKeyException  {
+        ContentResolver cr = context.getContentResolver();
+
+        String lookupKey = getLookupFromPhoneNumber(phoneNumber);
+      
+        Cursor cursor = cr.query(DataProvider.CONTENT_URI, 
+        		new String[]{OpenHelper.KEY}, 
+        		OpenHelper.LOOKUP + "=?", 
+        		new String[] { lookupKey }, null);
+        
+        byte[] key = null;
+        
+        if(cursor.moveToFirst()) {
+        	key = cursor.getBlob(0);
+        }
+        
+        cursor.close();
+        
+        if(key == null) {
+        	throw new NoCharabiaKeyException("No Charabia key for " + phoneNumber);
+        }
+        
+        return key;
+	}
+	
+	/*
+	 * Insert a key associate with a phone number and a contact 
+	 * The contact must exist in contact table to be associated with
+	 */
+	public Uri updateOrCreateContactKey(String phoneNumber, byte[] key) throws NoLookupKeyException  {
+		 
+		ContentResolver cr = context.getContentResolver();
+		
+		String lookupKey = getLookupFromPhoneNumber(phoneNumber);
+		
+		ContentValues values = new ContentValues();
+		
+		values.put(OpenHelper.PHONE, phoneNumber);
+		values.put(OpenHelper.KEY, key);
+		values.put(OpenHelper.LOOKUP, lookupKey);
+		values.put(OpenHelper.CONTACT_ID, 0);
+		
+		int count = cr.update(DataProvider.CONTENT_URI, 
+				values, 
+				OpenHelper.PHONE + " = ?", 
+				new String[] { phoneNumber } );
+		
+		Uri uri = null;
+		
+		if(count == 0) {
+			uri = cr.insert(DataProvider.CONTENT_URI, values);
+		}
+		
+		return uri;
 	}
 
 	public String getPhoneNumber(Uri uri) {
 		ContentResolver cr = context.getContentResolver();
 		
-		Cursor cursor = cr.query(uri, new String[] { PHONE }, 
+		Cursor cursor = cr.query(uri, new String[] { OpenHelper.PHONE }, 
 				null, null, null);
 		
 		String result = null;
@@ -339,26 +338,55 @@ public class Tools {
 		return result;
 	}
 
+	public Uri contactUri(Uri dataUri) {
+		ContentResolver cr = context.getContentResolver();
+
+		long contactId = 0;
+		String lookupKey = null;
+		
+		Cursor cursor = cr.query(DataProvider.CONTENT_URI, 
+				new String[] { OpenHelper.LOOKUP, OpenHelper.CONTACT_ID },
+				null, null, null);
+				
+		if(cursor.moveToFirst()) {
+			contactId = cursor.getLong(cursor.getColumnIndex(OpenHelper.CONTACT_ID));
+			lookupKey = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
+		}	
+		
+		return null;
+	}
+	
 	public String getDisplayNameAndPhoneNumber(Uri uri) {
 		ContentResolver cr = context.getContentResolver();
 		
-		Cursor cursor = cr.query(uri, new String[] { Contacts.DISPLAY_NAME, PHONE }, 
+		Cursor cursor = cr.query(uri, new String[] { OpenHelper.PHONE, OpenHelper.LOOKUP }, 
 				null, null, null);
 		
-		String result = null;
+		StringBuffer result = new StringBuffer();
+
+		long contactId = cursor.getLong(cursor.getColumnIndex(OpenHelper.CONTACT_ID));
+		String lookupKey = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
+		String phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
 		
 		if(cursor.moveToFirst()) {
-			result = cursor.getString(0) + ", " + cursor.getString(1);
+			contactId = cursor.getLong(cursor.getColumnIndex(OpenHelper.CONTACT_ID));
+			lookupKey = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
+			phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
 		}
-		else {	
-			result = context.getString(R.string.unknow);
-		}
-		
+	
 		cursor.close();
-		return result;
+
+        if(lookupKey == null) {
+        	throw new NoLookupKeyException("No lookup key for " + phoneNumber);
+        }
+
+        cursor = cr.query(, projection, selection, selectionArgs, sortOrder)
+		return result.toString();
 	}
 
 	public String getDisplayName(String phoneNumber) {
+		
+		
         Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
         ContentResolver contentResolver = context.getContentResolver();
         Cursor cursor = contentResolver.query(uri, new String[]{PhoneLookup.DISPLAY_NAME}, null, null, null);
@@ -418,6 +446,7 @@ public class Tools {
         return result;
 	}
 	
+	@Deprecated
 	public Bitmap getBitmapPhotoFromPhoneNumber(String phoneNumber) throws Exception {
         ContentResolver cr = context.getContentResolver();
 

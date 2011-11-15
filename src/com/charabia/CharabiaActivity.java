@@ -74,12 +74,10 @@ import android.text.TextWatcher;
 import com.google.zxing.integration.android.IntentIntegrator;
 
 // TODO option preference to store or not message
-// TODO gesture mode choice on preference gesture only, gesture + buttons
 // TODO more help messages
 // TODO more error logs and trace
 // TODO option preference to increase key size for key exchange
 // TODO menu to test key and re-exchange key (perhaps by sms/mail too)
-// TODO menu to add aggregation of contact if necessary
 
 public class CharabiaActivity extends Activity implements OnGesturePerformedListener
 {

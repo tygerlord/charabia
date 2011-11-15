@@ -79,20 +79,41 @@ public class PickContactActivity extends FragmentActivity
 		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
 			try {
 				
-				if(cursor.getColumnIndex(ContactsContract.Data.DISPLAY_NAME) == columnIndex) {
+				if(cursor.getColumnIndex(OpenHelper.ID) == columnIndex) {
 					Bitmap image;
 					
 					ImageView iv = (ImageView)v.findViewById(R.id.photo);
 					TextView tv = (TextView)v.findViewById(R.id.line1);
 
-					tv.setText(cursor.getString(columnIndex));
+					long contactId = cursor.getLong(cursor.getColumnIndex(OpenHelper.CONTACT_ID));
+					String lookupKey = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
+					String phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
+					
+					Uri contactUri = Contacts.lookupContact(context.getContentResolver(),  
+							Contacts.getLookupUri(contactId, lookupKey));
+					
+					Cursor cname = context.getContentResolver().query(contactUri, 
+							new String[] { Contacts.DISPLAY_NAME }, null, null, null);
+					
+					StringBuffer displayName = new StringBuffer();
+					
+					if(cname.moveToFirst()) {
+						displayName.append(cname.getString(0));
+					}
+					else {
+						displayName.append(context.getString(R.string.unknow));
+					}
+					
+					cname.close();
+					
+					displayName.append("\n");
+					displayName.append(phoneNumber);
+					
+					tv.setText(displayName);
 					
 					java.io.InputStream input = Contacts.openContactPhotoInputStream(
 							context.getContentResolver(),
-							ContentUris.withAppendedId(Contacts.CONTENT_URI, 
-									cursor.getLong(cursor.getColumnIndex(ContactsContract.Data.CONTACT_ID)))
-				
-							);
+							contactUri);
 					
 					if(input != null) {
 						iv.setImageBitmap(BitmapFactory.decodeStream(input));
@@ -134,7 +155,7 @@ public class PickContactActivity extends FragmentActivity
             mAdapter = new SimpleCursorAdapter(getActivity(), 
             		R.layout.list_item, null, 
             		new String[] { 
-            			ContactsContract.Data.DISPLAY_NAME,
+            			OpenHelper.ID,
             		}, 
             		new int[] { R.id.item },
             		0);
@@ -156,7 +177,7 @@ public class PickContactActivity extends FragmentActivity
 			
 			Intent intent = getActivity().getIntent();
 			if(intent != null) {
-				intent.setData(ContentUris.withAppendedId(ContactsContract.Data.CONTENT_URI, id));
+				intent.setData(ContentUris.withAppendedId(DataProvider.CONTENT_URI, id));
 				getActivity().setResult(Activity.RESULT_OK, intent);
 	        }
 			getActivity().finish();		
@@ -195,15 +216,14 @@ public class PickContactActivity extends FragmentActivity
 		public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 
 	        return new CursorLoader(getActivity(), 
-	        		ContactsContract.Data.CONTENT_URI,
+	        		DataProvider.CONTENT_URI,
 	        		new String[] { 
-	        			ContactsContract.Data._ID, 
-	        			ContactsContract.Data.DISPLAY_NAME, 
-	        			ContactsContract.Data.CONTACT_STATUS_ICON,
-	        			ContactsContract.Data.CONTACT_ID
+	        			OpenHelper.ID, 
+	        			OpenHelper.LOOKUP, 
+	        			OpenHelper.CONTACT_ID
 	        		}, 
-	        		ContactsContract.Data.MIMETYPE + "=?", 
-	        		new String[] { Tools.CONTENT_ITEM_TYPE },
+	        		null, 
+	        		null,
 	        		null);
 		}
 
