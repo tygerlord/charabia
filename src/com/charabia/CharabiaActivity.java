@@ -169,9 +169,16 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	 */
 	private synchronized void addToRecipientsList(Uri uri) {
 		if(uri != null) {
-			recipientsList.add(uri);
-			CharSequence temp = recipientsView.getText();
-			recipientsView.setText(tools.getDisplayNameAndPhoneNumber(uri)+"\n"+temp);
+			String texte;
+			try {
+				texte = tools.getDisplayNameAndPhoneNumber(uri);
+				recipientsList.add(uri);
+				CharSequence temp = recipientsView.getText();
+				recipientsView.setText(texte + "\n" + temp);
+			} catch (NoContactException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -183,9 +190,16 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			recipientsList.remove(index);
 		}
 		StringBuffer strBuf = new StringBuffer();
+		String texte = null;
 		for(int i = 0; i < recipientsList.size(); i++) {
-			if(i>0) strBuf.append("\n");
-			strBuf.append(tools.getDisplayNameAndPhoneNumber(recipientsList.get(i)));
+			try {
+				texte = tools.getDisplayNameAndPhoneNumber(recipientsList.get(i));
+				if(i>0) strBuf.append("\n");
+				strBuf.append(texte);
+			} catch (NoContactException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		recipientsView.setText(strBuf.toString());
 		return recipientsList.isEmpty();
@@ -489,9 +503,16 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				 *    is called.
 				 */
 				if(!recipientsList.isEmpty()) {
-					((ProgressDialog) dialog).setMessage(tools.getDisplayNameAndPhoneNumber(
-							recipientsList.get(0)));
-				}
+					String texte;
+					try {
+						texte = tools.getDisplayNameAndPhoneNumber(recipientsList.get(0));
+						((ProgressDialog) dialog).setMessage(texte);
+					} 
+					catch (NoContactException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 				break;
 			case SEND_ERROR_DIALOG:
 				/*
@@ -499,8 +520,16 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				 */
 				dismissAction = false;
 				if(!recipientsList.isEmpty()) {
-					((AlertDialog) dialog).setMessage(getString(R.string.error_sending_message_to,  
-							tools.getDisplayNameAndPhoneNumber(recipientsList.get(0))));
+					String texte;
+					try {
+						texte = tools.getDisplayNameAndPhoneNumber(recipientsList.get(0));
+						((AlertDialog) dialog).setMessage(getString(R.string.error_sending_message_to,  
+								texte));
+					} 
+					catch (NoContactException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 				break;
 		}
@@ -603,8 +632,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			};
 
 	public synchronized void add_to(View view) {
-		Intent intent = new Intent(Intent.ACTION_PICK);
-		intent.setType(Tools.CONTENT_ITEM_TYPE);
+		Intent intent = new Intent(PickContactActivity.class.getName());
 		startActivityForResult(intent, PICK_CONTACT);
 	}
 

@@ -110,13 +110,13 @@ public class SMSReceiver extends BroadcastReceiver
 							
 							
 							long timeStamp = messages[0].getTimestampMillis(); 
-							Uri uri = tools.putSmsToDatabase(originatingAddress, 
+							tools.putSmsToDatabase(originatingAddress, 
 									timeStamp, 
 									Tools.MESSAGE_TYPE_INBOX, 
 									messages[0].getStatus(), 
 									message);
 
-							tools.showNotification(uri, originatingAddress, timeStamp);
+							tools.showNotification(originatingAddress, timeStamp);
 
 							abortBroadcast();
 						 
