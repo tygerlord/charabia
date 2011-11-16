@@ -14,11 +14,9 @@
  */
  package com.charabia;
 
-import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceScreen;
 

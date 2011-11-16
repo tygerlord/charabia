@@ -34,7 +34,8 @@
 		<activity android:name=".PickContactActivity" android:label="@string/app_name"/>
 		<activity android:name=".WebViewActivity" android:label="@string/app_name"/>
 		<activity android:name=".PreferencesActivity" android:label="@string/app_name"/>
-	</application>
+		<provider android:name=".DataProvider" android:authorities="com.charabia.provider.data" /> 
+		</application>
 	<uses-permission android:name="android.permission.READ_SMS" />
 	<uses-permission android:name="android.permission.WRITE_SMS" />
 	<uses-permission android:name="android.permission.SEND_SMS" />

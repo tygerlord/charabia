@@ -146,7 +146,7 @@ public class DataProvider extends ContentProvider
 		       
 		if (id != null) {
 			sqlBuilder.appendWhere(
-		        OpenHelper.ID + " = " + uri.getPathSegments().get(1));
+		        OpenHelper.ID + " = " + id);
 		}
 		       
 		Cursor c = sqlBuilder.query(
@@ -184,7 +184,6 @@ public class DataProvider extends ContentProvider
     		count = db.update(table, values, selection, selectionArgs);	
 		}
 		else {
-            id = uri.getPathSegments().get(1);
             count = db.update(
             		table,
             		values,

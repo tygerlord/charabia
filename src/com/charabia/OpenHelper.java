@@ -26,8 +26,8 @@ public class OpenHelper extends SQLiteOpenHelper
 	public static final String DATABASE_NAME = "CHARABIA_BDD";
 
 	public static final String ID = "_id";
-	public static final String PHONE = "PHONE";
 	public static final String KEY = "KEY";
+	public static final String PHONE = "PHONE";
 	public static final String LOOKUP = "LOOKUP";
 	public static final String CONTACT_ID = "CONTACT_ID";
 	
@@ -38,10 +38,10 @@ public class OpenHelper extends SQLiteOpenHelper
 	private static final String TABLE_KEYS_CREATE =
 				"CREATE TABLE " + TABLE_KEYS + " (" +
 				ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+				LOOKUP + " TEXT UNIQUE," +
+				CONTACT_ID + " INTEGER," +
 				PHONE + " TEXT," +
-				KEY + " BLOB," +
-				LOOKUP + " TEXT," +
-				CONTACT_ID + " INTEGER);";
+				KEY + " BLOB);";
 
 	public OpenHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);

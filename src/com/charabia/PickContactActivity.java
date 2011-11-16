@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- package com.charabia;
+
+package com.charabia;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.provider.ContactsContract.Contacts;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -77,17 +77,16 @@ public class PickContactActivity extends FragmentActivity
 			
 		@Override
 		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
-			try {
+			if(cursor.getColumnIndex(OpenHelper.ID) == columnIndex) {
+				Bitmap image;
 				
-				if(cursor.getColumnIndex(OpenHelper.ID) == columnIndex) {
-					Bitmap image;
-					
-					ImageView iv = (ImageView)v.findViewById(R.id.photo);
-					TextView tv = (TextView)v.findViewById(R.id.line1);
+				ImageView iv = (ImageView)v.findViewById(R.id.photo);
+				TextView tv = (TextView)v.findViewById(R.id.line1);
+
+				try {
 
 					long contactId = cursor.getLong(cursor.getColumnIndex(OpenHelper.CONTACT_ID));
 					String lookupKey = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
-					String phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
 					
 					Uri contactUri = Contacts.lookupContact(context.getContentResolver(),  
 							Contacts.getLookupUri(contactId, lookupKey));
@@ -107,7 +106,7 @@ public class PickContactActivity extends FragmentActivity
 					cname.close();
 					
 					displayName.append("\n");
-					displayName.append(phoneNumber);
+					displayName.append(cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
 					
 					tv.setText(displayName);
 					
@@ -125,9 +124,12 @@ public class PickContactActivity extends FragmentActivity
 
 					return true;
 				}
-			}
-			catch(Exception e) {
-				e.printStackTrace();
+				catch(Exception e) {
+					e.printStackTrace();
+					iv.setImageResource(android.R.drawable.ic_secure);
+					tv.setText("erreur");
+					return true;
+				}
 			}
 			
 			return false;
@@ -175,9 +177,24 @@ public class PickContactActivity extends FragmentActivity
 		@Override
 		public void onListItemClick(ListView lv, View v, int position, long id) {
 			
+			Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
+
+			ContentResolver cr = getActivity().getContentResolver();
+			
+			Cursor cursor = cr.query(uri, 
+					new String[] { OpenHelper.PHONE }, 
+					null, null, null);
+		
+			String phoneNumber = "";
+			if(cursor.moveToFirst()) {
+				phoneNumber = cursor.getString(0);
+			}
+			
+			cursor.close();
+			
 			Intent intent = getActivity().getIntent();
 			if(intent != null) {
-				intent.setData(ContentUris.withAppendedId(DataProvider.CONTENT_URI, id));
+				intent.setData(Uri.parse("smsto:"+phoneNumber));
 				getActivity().setResult(Activity.RESULT_OK, intent);
 	        }
 			getActivity().finish();		
@@ -190,7 +207,8 @@ public class PickContactActivity extends FragmentActivity
 							case 0: //delete
 								ContentResolver cr = getActivity().getContentResolver();
 								
-								Uri uri = ContentUris.withAppendedId(ContactsContract.Data.CONTENT_URI, id);
+								Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
+								
 								cr.delete(uri, null, null);
 								break;
 							default:
@@ -220,7 +238,8 @@ public class PickContactActivity extends FragmentActivity
 	        		new String[] { 
 	        			OpenHelper.ID, 
 	        			OpenHelper.LOOKUP, 
-	        			OpenHelper.CONTACT_ID
+	        			OpenHelper.CONTACT_ID,
+	        			OpenHelper.PHONE
 	        		}, 
 	        		null, 
 	        		null,

@@ -123,8 +123,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	private String prefPhoneNumber = null;
 	
-	// Vector of uris of contact to send message
-	private Vector<Uri> recipientsList = new Vector<Uri>();
+	// Vector of lookup key of contact to send message
+	private Vector<String> recipientsList = new Vector<String>();
 	
 	private GestureLibrary mLibrary = null;
 	
@@ -159,7 +159,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		mode = savedInstanceState.getInt("mode");
 		prefPhoneNumber = savedInstanceState.getString("prefPhoneNumber");
 		keypair = (KeyPair) savedInstanceState.getSerializable("keypair");
-		recipientsList = (Vector<Uri>) savedInstanceState.getSerializable("recipientsList");
+		recipientsList = (Vector<String>) savedInstanceState.getSerializable("recipientsList");
 		mFragment = savedInstanceState.getInt("mFragment");
 		dismissAction = savedInstanceState.getBoolean("dismissAction");
 	}
@@ -167,18 +167,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	/*
 	 * use addToRecipientsList(null) to refresh
 	 */
-	private synchronized void addToRecipientsList(Uri uri) {
-		if(uri != null) {
-			String texte;
-			try {
-				texte = tools.getDisplayNameAndPhoneNumber(uri);
-				recipientsList.add(uri);
-				CharSequence temp = recipientsView.getText();
-				recipientsView.setText(texte + "\n" + temp);
-			} catch (NoContactException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	private synchronized void addToRecipientsList(String phoneNumber) {
+		if(phoneNumber != null) {
+			String texte = tools.getDisplayName(phoneNumber);
+			recipientsList.add(phoneNumber);
+			CharSequence temp = recipientsView.getText();
+			recipientsView.setText(texte + ", " + phoneNumber + "\n" + temp);
 		}
 	}
 
@@ -190,16 +184,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			recipientsList.remove(index);
 		}
 		StringBuffer strBuf = new StringBuffer();
-		String texte = null;
+		String phoneNumber = null;
 		for(int i = 0; i < recipientsList.size(); i++) {
-			try {
-				texte = tools.getDisplayNameAndPhoneNumber(recipientsList.get(i));
-				if(i>0) strBuf.append("\n");
-				strBuf.append(texte);
-			} catch (NoContactException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			if(i>0) strBuf.append("\n");
+			phoneNumber = recipientsList.get(i);
+			strBuf.append(tools.getDisplayName(phoneNumber) + "\n" + phoneNumber);
 		}
 		recipientsView.setText(strBuf.toString());
 		return recipientsList.isEmpty();
@@ -322,49 +311,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 		if(intent != null && action != null) 
 		{
-			if(action.equals(Intent.ACTION_VIEW)) {
-				// call by http uri
-				//message.setText(intent.getData().toString());
+			if(action.equals(Intent.ACTION_SENDTO)) {
+				// uri = smsto:(...)
 				Uri uri = intent.getData();
-				if(uri != null) {
-					String phoneNumber = uri.getLastPathSegment();
-					try {
-						addToRecipientsList(tools.getUriFromPhoneNumber(phoneNumber));
-					} 
-					catch (NoLookupKeyException e) {
-						e.printStackTrace();
-						Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
-						finish();
-					} 
-					catch (NoCharabiaKeyException e) {
-						e.printStackTrace();
-						Toast.makeText(this, R.string.no_key_for_user, Toast.LENGTH_LONG).show();
-						finish();
-					}
-				}
-			}
-			else if(action.equals(Intent.ACTION_SENDTO)) {
-				// uri = sms:(...)
-				Uri uri = intent.getData();
-				try {
-					Log.v(TAG, "send to uri = " + uri + ", "  + uri.getSchemeSpecificPart());
-					addToRecipientsList(tools.getUriFromPhoneNumber(uri.getSchemeSpecificPart()));
-				} 
-				catch (NoLookupKeyException e) {
-					e.printStackTrace();
-					Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
-					finish();
-				} 
-				catch (NoCharabiaKeyException e) {
-					e.printStackTrace();
-					Toast.makeText(this, R.string.no_key_for_user, Toast.LENGTH_LONG).show();
-					finish();
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-					Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
-					finish();
-				}
+				Log.v(TAG, "send to uri = " + uri + ", "  + uri.getSchemeSpecificPart());
+				addToRecipientsList(uri.getSchemeSpecificPart());
 			}
 		}
 		
@@ -503,16 +454,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				 *    is called.
 				 */
 				if(!recipientsList.isEmpty()) {
-					String texte;
-					try {
-						texte = tools.getDisplayNameAndPhoneNumber(recipientsList.get(0));
-						((ProgressDialog) dialog).setMessage(texte);
-					} 
-					catch (NoContactException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
+					String phoneNumber = recipientsList.get(0);
+					((ProgressDialog) dialog).setMessage(tools.getDisplayName(phoneNumber) + "\n" + phoneNumber);
+				}
 				break;
 			case SEND_ERROR_DIALOG:
 				/*
@@ -520,16 +464,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				 */
 				dismissAction = false;
 				if(!recipientsList.isEmpty()) {
-					String texte;
-					try {
-						texte = tools.getDisplayNameAndPhoneNumber(recipientsList.get(0));
-						((AlertDialog) dialog).setMessage(getString(R.string.error_sending_message_to,  
-								texte));
-					} 
-					catch (NoContactException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					String phoneNumber = recipientsList.get(0);
+					((AlertDialog) dialog).setMessage(getString(R.string.error_sending_message_to,  
+							tools.getDisplayName(phoneNumber) + "\n" + phoneNumber));
 				}
 				break;
 		}
@@ -632,7 +569,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			};
 
 	public synchronized void add_to(View view) {
-		Intent intent = new Intent(PickContactActivity.class.getName());
+		Intent intent = new Intent(Intent.ACTION_PICK);
+		intent.setClassName(this, PickContactActivity.class.getName());
 		startActivityForResult(intent, PICK_CONTACT);
 	}
 
@@ -643,7 +581,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		switch (reqCode) {
         	case (PICK_CONTACT):
         		if (resultCode == RESULT_OK) {
-        			addToRecipientsList(data.getData());
+        			addToRecipientsList(data.getData().getSchemeSpecificPart());
         		}
 	           break;
         	case(IntentIntegrator.REQUEST_CODE):
@@ -752,17 +690,15 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  	/*
  	 * Use to send a message from list
  	 */
- 	private synchronized void sendFragment() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoCharabiaKeyException {
+ 	private synchronized void sendFragment() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoCharabiaKeyException, NoLookupKeyException {
  		
-  		Uri uri = recipientsList.get(0);
+  		String phoneNumber = recipientsList.get(0);
  		
-		String phoneNumber = tools.getPhoneNumber(uri);
-
 		String texte = messageView.getText().toString();
 
 		SmsCipher cipher = new SmsCipher(this);
 		int start = mFragment*BLOCK_SIZE;
-		byte[] data = cipher.encrypt(tools.getKey(uri), 
+		byte[] data = cipher.encrypt(tools.getKey(phoneNumber), 
 				texte.substring(start, start+BLOCK_SIZE));
 
 		Intent iSend = new Intent(SMS_SENT);
@@ -863,7 +799,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                             case Activity.RESULT_OK: 
 
                             	//TODO: preference
-                        		tools.putSmsToDatabase(tools.getPhoneNumber(recipientsList.get(0)), 
+                        		tools.putSmsToDatabase(recipientsList.get(0), 
                         				System.currentTimeMillis(), 
                         				Tools.MESSAGE_TYPE_SENT,
                         				0, 
