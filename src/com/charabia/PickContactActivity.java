@@ -33,6 +33,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 
 import android.content.ContentResolver;
@@ -73,17 +75,14 @@ public class PickContactActivity extends FragmentActivity
 	public static class viewBinder implements ViewBinder {
 
 		private Context context;
-		private Tools tools;
 		
 		public viewBinder(Context context) {
 			this.context = context;
-			tools = new Tools(context);
 		}
 			
 		@Override
 		public boolean setViewValue(View v, Cursor cursor, int columnIndex) {
 			if(cursor.getColumnIndex(OpenHelper.ID) == columnIndex) {
-				Bitmap image;
 				
 				ImageView iv = (ImageView)v.findViewById(R.id.photo);
 				TextView tv = (TextView)v.findViewById(R.id.line1);
@@ -192,6 +191,8 @@ public class PickContactActivity extends FragmentActivity
             	id = savedInstanceState.getInt("id");
             	phoneList = savedInstanceState.getStringArray("phoneList");
             }
+            
+            setHasOptionsMenu(true);
 		}
 		
 		@Override
@@ -321,6 +322,10 @@ public class PickContactActivity extends FragmentActivity
 			mAdapter.swapCursor(null);
 		}
 
+		@Override
+		public void onCreateOptionsMenu (Menu menu, MenuInflater inflater) {
+			 inflater.inflate(R.menu.pick_contact, menu);
+		}
 	}
 	
 	
