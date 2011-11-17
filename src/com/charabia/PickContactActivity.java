@@ -16,9 +16,12 @@
 
 package com.charabia;
 
+import java.util.ArrayList;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.Contacts;
+import android.provider.ContactsContract.Data;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
@@ -33,6 +36,7 @@ import android.widget.ListView;
 import android.view.View;
 
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -52,6 +56,7 @@ import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
  */
 public class PickContactActivity extends FragmentActivity 
 {
+
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -144,9 +149,20 @@ public class PickContactActivity extends FragmentActivity
 		// Loader
 		private static final int CONTACTS_LOADER = 1;
 
+		// Id of selection for long click
 		private long id = -1;
 		
+		// Options for long click dialog, element 0 is for delete
+		private String[] phoneList = null;
+		
 		private SimpleCursorAdapter mAdapter = null;
+		
+		@Override
+		public void onSaveInstanceState(Bundle outState) {
+			super.onSaveInstanceState(outState);
+			outState.putLong("id", id);
+			outState.putStringArray("phoneList", phoneList);
+		}
 		
 		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
@@ -172,6 +188,10 @@ public class PickContactActivity extends FragmentActivity
             
             getListView().setOnItemLongClickListener(this);
             
+            if(savedInstanceState != null) {
+            	id = savedInstanceState.getInt("id");
+            	phoneList = savedInstanceState.getStringArray("phoneList");
+            }
 		}
 		
 		@Override
@@ -203,28 +223,66 @@ public class PickContactActivity extends FragmentActivity
 		private final DialogInterface.OnClickListener editListener =
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialogInterface, int i) {
+						ContentResolver cr = getActivity().getContentResolver();
+						Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
 						switch(i) {
 							case 0: //delete
-								ContentResolver cr = getActivity().getContentResolver();
-								
-								Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
-								
 								cr.delete(uri, null, null);
 								break;
 							default:
+								// Change phone number
+								ContentValues values = new ContentValues();
+								values.put(OpenHelper.PHONE, phoneList[i]);
+								cr.update(uri, values, null, null);
 						}
+						getLoaderManager().restartLoader(CONTACTS_LOADER, null, CursorLoaderListFragment.this);
 				}
 			};
 
+		/*
+		 * Dialog to delete contact or change default phone to use with this contact
+		 * @see android.widget.AdapterView.OnItemLongClickListener#onItemLongClick(android.widget.AdapterView, android.view.View, int, long)
+		 */
 		@Override
 		public boolean onItemLongClick(AdapterView<?> av, View v, int position, long id) {
 			this.id = id;
 			
+			ContentResolver cr = getActivity().getContentResolver();
+			
+			Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
+			
+			Cursor cursor = cr.query(uri, new String[] { OpenHelper.LOOKUP }, 
+					null, null, null);
+			
+			String lookup = null;
+			if(cursor.moveToFirst()) {
+				lookup = cursor.getString(0);
+			}
+			
+			cursor.close();
+			
+			ArrayList<String> options = new ArrayList<String>();
+			
+			options.add(getString(R.string.delete));
+			
+			if(lookup != null) {
+				cursor = cr.query(Data.CONTENT_URI, 
+						new String[] { Phone.NUMBER },
+						Data.MIMETYPE + "=? AND " + Data.LOOKUP_KEY + "=?",
+						new String[] { Phone.CONTENT_ITEM_TYPE, lookup },
+						null);
+				while(cursor.moveToNext()) {
+					options.add(cursor.getString(0));
+				}
+				cursor.close();
+			}
+	
+			phoneList = new String[options.size()];
+			
 			Builder builder = new AlertDialog.Builder(getActivity());
-			builder.setTitle(getString(R.string.app_name));
-			builder.setItems(new String[] { 
-				getString(R.string.delete), 
-				 }, editListener);
+			//TODO: change title
+			builder.setTitle(getString(R.string.del_or_change_number));
+			builder.setItems(options.toArray(phoneList), editListener);
 			builder.create().show();
 			return true;
 		}

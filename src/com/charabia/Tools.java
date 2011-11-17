@@ -201,22 +201,28 @@ public class Tools {
 	 * get lookup key of contact from the phone number
 	 */
 	public String getLookupFromPhoneNumber(String phoneNumber) throws NoLookupKeyException {
-       ContentResolver cr = context.getContentResolver();
-       
-       Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
-        		Uri.encode(phoneNumber));
-      
-        Cursor cursor = cr.query(uri, new String[]{Contacts.LOOKUP_KEY}, 
-        		null, null, null);
-        
         String lookupKey = null;
-        
-        if(cursor.moveToFirst()) {
-        	lookupKey = cursor.getString(0);
-        }
-        
-        cursor.close();
-        
+       
+		try {
+			ContentResolver cr = context.getContentResolver();
+	       
+			Uri uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, 
+	        		Uri.encode(phoneNumber));
+	      
+	        Cursor cursor = cr.query(uri, new String[]{Contacts.LOOKUP_KEY}, 
+	        		null, null, null);
+	        
+	        
+	        if(cursor.moveToFirst()) {
+	        	lookupKey = cursor.getString(0);
+	        }
+	        
+	        cursor.close();
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
         if(lookupKey == null) {
         	throw new NoLookupKeyException("No lookup key for " + phoneNumber);
         }
@@ -227,7 +233,8 @@ public class Tools {
 	/*
 	 * return the lookup key from table
 	 */
-	public String getLookupKey(Uri uri) throws NoLookupKeyException {
+	@Deprecated
+	public String _getLookupKey(Uri uri) throws NoLookupKeyException {
 	      ContentResolver cr = context.getContentResolver();
 	       
 	        Cursor cursor = cr.query(uri, new String[]{ OpenHelper.LOOKUP }, 
@@ -251,7 +258,8 @@ public class Tools {
 	/*
 	 * Get key from uri
 	 */
-	public byte[] getKey(Uri dataUri) throws NoCharabiaKeyException {
+	@Deprecated
+	public byte[] _getKey(Uri dataUri) throws NoCharabiaKeyException {
 
 		ContentResolver cr = context.getContentResolver();
 	
@@ -321,7 +329,7 @@ public class Tools {
 		
 		int count = cr.update(DataProvider.CONTENT_URI, 
 				values, 
-				OpenHelper.LOOKUP + " = ?", 
+				OpenHelper.LOOKUP + "=?", 
 				new String[] { lookupKey } );
 		
 		Uri uri = null;
@@ -333,7 +341,8 @@ public class Tools {
 		return uri;
 	}
 
-	public Uri getContactUri(Uri dataUri) throws NoContactException {
+	@Deprecated
+	public Uri _getContactUri(Uri dataUri) throws NoContactException {
 		ContentResolver cr = context.getContentResolver();
 
 		long contactId = 0;

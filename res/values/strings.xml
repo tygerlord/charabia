@@ -48,4 +48,5 @@
 	<string name="blocksize_error">Ce contact vous a envoyé un message crypté par Charabia dont la taille n\'était pas correcte, la clé partagé est soit corrompue ou quelqu\'un à modifié le message pendant l\'envoi</string>
 	<string name="padding_error">Ce contact vous a envoyé un message crypté par Charabia dont le remplissage n\'était pas correcte, la clé partagé est soit corrompue ou quelqu\'un à modifié le message pendant l\'envoi</string>
 	<string name="secured_by_appname">(sécurisé par %s).</string>
+	<string name="del_or_change_number">Supprimer ou changer numéro par défaut</string>
 </resources>

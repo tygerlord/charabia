@@ -16,7 +16,6 @@
  package com.charabia;
 
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -41,6 +40,7 @@ import android.app.ProgressDialog;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract.Data;
 import android.content.DialogInterface;
 
 import android.content.BroadcastReceiver;
@@ -169,11 +169,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	 */
 	private synchronized void addToRecipientsList(String phoneNumber) {
 		if(phoneNumber != null) {
-			String texte = tools.getDisplayName(phoneNumber);
 			recipientsList.add(phoneNumber);
-			CharSequence temp = recipientsView.getText();
-			recipientsView.setText(texte + ", " + phoneNumber + "\n" + temp);
 		}
+		// convenient way to refresh list view
+		removeFromRecipientsList(-1);
 	}
 
 	/*
@@ -188,7 +187,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		for(int i = 0; i < recipientsList.size(); i++) {
 			if(i>0) strBuf.append("\n");
 			phoneNumber = recipientsList.get(i);
-			strBuf.append(tools.getDisplayName(phoneNumber) + "\n" + phoneNumber);
+			strBuf.append(tools.getDisplayName(phoneNumber) + ", " + phoneNumber);
 		}
 		recipientsView.setText(strBuf.toString());
 		return recipientsList.isEmpty();
@@ -303,6 +302,28 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			intent.setClassName(this, WebViewActivity.class.getName());
 			intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "enter_phone_number.html")));
 			startActivity(intent);
+			
+			
+			//Attempt to retrieve old keys
+			
+			android.content.ContentResolver cr = getContentResolver();
+			android.database.Cursor cursor = cr.query(Data.CONTENT_URI, 
+					new String[] { Tools.PHONE, Tools.KEY },
+					Data.MIMETYPE + "=?",
+					new String[] { Tools.CONTENT_ITEM_TYPE },
+					null);
+			while(cursor.moveToNext()) {
+				try {
+					tools.updateOrCreateContactKey(
+						cursor.getString(cursor.getColumnIndex(Tools.PHONE)), 
+						Base64.decode(cursor.getString(cursor.getColumnIndex(Tools.KEY)),
+								Base64.DEFAULT));
+				} catch (NoLookupKeyException e) {
+					e.printStackTrace();
+					Toast.makeText(this, "No contact for " + cursor.getColumnIndex(Tools.PHONE), 
+							Toast.LENGTH_SHORT).show();
+				}
+			}
 		}
 
 
@@ -690,7 +711,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  	/*
  	 * Use to send a message from list
  	 */
- 	private synchronized void sendFragment() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoCharabiaKeyException, NoLookupKeyException {
+ 	private synchronized void sendFragment() throws Exception, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoLookupKeyException, NoCharabiaKeyException  {
  		
   		String phoneNumber = recipientsList.get(0);
  		
@@ -698,8 +719,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 		SmsCipher cipher = new SmsCipher(this);
 		int start = mFragment*BLOCK_SIZE;
+		int end = (start+BLOCK_SIZE)<texte.length()?(start+BLOCK_SIZE):texte.length();
 		byte[] data = cipher.encrypt(tools.getKey(phoneNumber), 
-				texte.substring(start, start+BLOCK_SIZE));
+				texte.substring(start, end));
 
 		Intent iSend = new Intent(SMS_SENT);
 		Intent iDelivered = new Intent(SMS_DELIVERED);
