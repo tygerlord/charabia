@@ -16,7 +16,10 @@
 
 package com.charabia;
 
+import java.io.IOException;
 import java.util.ArrayList;
+
+import android.R.color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
@@ -26,15 +29,17 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
+import android.widget.Toast;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 
 import android.content.ContentResolver;
@@ -43,7 +48,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ContentUris;
-
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.ListFragment;
 import android.support.v4.app.LoaderManager;
@@ -87,6 +91,8 @@ public class PickContactActivity extends FragmentActivity
 				ImageView iv = (ImageView)v.findViewById(R.id.photo);
 				TextView tv = (TextView)v.findViewById(R.id.line1);
 
+				String phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
+				
 				try {
 
 					long contactId = cursor.getLong(cursor.getColumnIndex(OpenHelper.CONTACT_ID));
@@ -110,7 +116,7 @@ public class PickContactActivity extends FragmentActivity
 					cname.close();
 					
 					displayName.append("\n");
-					displayName.append(cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE)));
+					displayName.append(phoneNumber);
 					
 					tv.setText(displayName);
 					
@@ -120,7 +126,12 @@ public class PickContactActivity extends FragmentActivity
 					
 					if(input != null) {
 						iv.setImageBitmap(BitmapFactory.decodeStream(input));
-						input.close();
+						try {
+							input.close();
+						} 
+						catch (IOException e) {
+							e.printStackTrace();
+						}
 					}
 					else {
 						iv.setImageResource(R.drawable.ic_launcher);
@@ -131,7 +142,8 @@ public class PickContactActivity extends FragmentActivity
 				catch(Exception e) {
 					e.printStackTrace();
 					iv.setImageResource(android.R.drawable.ic_secure);
-					tv.setText("erreur");
+					tv.setTextColor(Color.RED);
+					tv.setText("erreur" + "\n" + phoneNumber);
 					return true;
 				}
 			}
@@ -203,16 +215,30 @@ public class PickContactActivity extends FragmentActivity
 			ContentResolver cr = getActivity().getContentResolver();
 			
 			Cursor cursor = cr.query(uri, 
-					new String[] { OpenHelper.PHONE }, 
+					new String[] { OpenHelper.PHONE, OpenHelper.LOOKUP }, 
 					null, null, null);
 		
 			String phoneNumber = "";
+			String lookup = null;
+			
 			if(cursor.moveToFirst()) {
-				phoneNumber = cursor.getString(0);
+				phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
+				lookup = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
 			}
 			
 			cursor.close();
 			
+			try {
+				if(lookup != new Tools(getActivity()).getLookupFromPhoneNumber(phoneNumber)) {
+					Toast.makeText(getActivity(), R.string.no_contact, Toast.LENGTH_SHORT).show();
+					return;
+				}
+			} catch (NoLookupKeyException e) {
+				e.printStackTrace();
+				Toast.makeText(getActivity(), R.string.no_contact, Toast.LENGTH_SHORT).show();
+				return;
+			}
+
 			Intent intent = getActivity().getIntent();
 			if(intent != null) {
 				intent.setData(Uri.parse("smsto:"+phoneNumber));
@@ -326,7 +352,27 @@ public class PickContactActivity extends FragmentActivity
 		public void onCreateOptionsMenu (Menu menu, MenuInflater inflater) {
 			 inflater.inflate(R.menu.pick_contact, menu);
 		}
+	
+		/** 
+		 * Handles item selections 
+		 */
+		@Override
+		public boolean onOptionsItemSelected(MenuItem item) {
+			Intent intent;
+			switch (item.getItemId()) {
+				case R.id.contact_menu_refresh: 
+					// rebuild all lookupkey list of contact offer to add
+					// missing contact or to delete it on charabia
+					return true;
+				case R.id.contact_menu_save:
+					return true;
+				case R.id.contact_menu_revert:
+					return true;
+				default:
+					return super.onOptionsItemSelected(item);
+			}
+		}
+
 	}
-	
-	
+		
 }

@@ -25,7 +25,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Vector;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -44,6 +43,7 @@ import android.provider.ContactsContract.Data;
 import android.content.DialogInterface;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -58,6 +58,7 @@ import android.gesture.GestureOverlayView.OnGesturePerformedListener;
 import android.gesture.Prediction;
 import android.util.Base64;
 import android.util.Log;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -88,14 +89,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	//port where data sms are send
 	private static final short sms_port = 1981;
 	
-	// Menus
-	private static final int SETTINGS_ID = 1;
-	private static final int EDIT_ID = SETTINGS_ID+1;
-	private static final int ADD_ID = EDIT_ID + 1;
-	private static final int HELP_ID = ADD_ID + 1;
-	private static final int ABOUT_ID = HELP_ID + 1;
-	private static final int QUIT_ID = ABOUT_ID + 1;
-
 	// Dialogs
 	private static final int MODE_DIALOG = 0;
 	private static final int SEND_PROGRESS_DIALOG = MODE_DIALOG + 1;
@@ -308,7 +301,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			
 			android.content.ContentResolver cr = getContentResolver();
 			android.database.Cursor cursor = cr.query(Data.CONTENT_URI, 
-					new String[] { Tools.PHONE, Tools.KEY },
+					new String[] { Data._ID, Tools.PHONE, Tools.KEY },
 					Data.MIMETYPE + "=?",
 					new String[] { Tools.CONTENT_ITEM_TYPE },
 					null);
@@ -318,11 +311,16 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						cursor.getString(cursor.getColumnIndex(Tools.PHONE)), 
 						Base64.decode(cursor.getString(cursor.getColumnIndex(Tools.KEY)),
 								Base64.DEFAULT));
+					
+					cr.delete(ContentUris.withAppendedId(Data.CONTENT_URI, 
+							cursor.getLong(cursor.getColumnIndex(Data._ID))), 
+							null, null);
 				} catch (NoLookupKeyException e) {
 					e.printStackTrace();
 					Toast.makeText(this, "No contact for " + cursor.getColumnIndex(Tools.PHONE), 
 							Toast.LENGTH_SHORT).show();
 				}
+				
 			}
 		}
 
@@ -346,48 +344,38 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		super.onCreateOptionsMenu(menu);
-		menu.add(0, SETTINGS_ID, 0, R.string.options)
-			.setIcon(android.R.drawable.ic_menu_preferences);
-		menu.add(0, EDIT_ID, 0, R.string.edit)
-			.setIcon(android.R.drawable.ic_menu_edit);
-		menu.add(0, ADD_ID, 0, R.string.keys)
-			.setIcon(android.R.drawable.ic_menu_add);
-		menu.add(0, HELP_ID, 0, R.string.help)
-			.setIcon(android.R.drawable.ic_menu_help);
-		menu.add(0, ABOUT_ID, 0, R.string.about)
-			.setIcon(android.R.drawable.ic_menu_info_details);
-		menu.add(0, QUIT_ID, 0, R.string.quit)
-			.setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main, menu);
 		return true;
 	}
 
 	/* Handles item selections */
+	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		Intent intent;
 		switch (item.getItemId()) {
-			case SETTINGS_ID:
+			case R.id.main_menu_options: 
 				intent = new Intent(Intent.ACTION_VIEW);
 				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 				intent.setClassName(this, PreferencesActivity.class.getName());
 				startActivity(intent);
 				return true;
-			case EDIT_ID:
+			case R.id.main_menu_edit: 
 				intent = new Intent(Intent.ACTION_VIEW);
 				intent.setClassName(this, PickContactActivity.class.getName());
 				startActivity(intent);
 				return true;
-			case ADD_ID:
+			case R.id.main_menu_keys:
 				showDialog(MODE_DIALOG);
 				return true;
-			case HELP_ID:
+			case R.id.main_menu_help:
 				intent = new Intent(Intent.ACTION_VIEW);
 				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 				intent.setClassName(this, WebViewActivity.class.getName());
 				intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "index.html")));
 				startActivity(intent);
 				return true;
-			case ABOUT_ID:
+			case R.id.main_menu_about:
 				try {
 					PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
 					AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -401,11 +389,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					e.printStackTrace();
 				}
 				return false;
-			case QUIT_ID:
+			case R.id.main_menu_quit:
 				finish();
 				return true;
 			default:
-				return false;
+				return super.onOptionsItemSelected(item);
 		}
 	}
 
@@ -733,8 +721,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  
 	public synchronized void sendMessage() {
 
-		Toast.makeText(this, "sendMessage", Toast.LENGTH_LONG).show();
-		
 		showDialog(SEND_PROGRESS_DIALOG);
 
 		try {
