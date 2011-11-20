@@ -22,9 +22,11 @@ import java.util.ArrayList;
 import android.R.color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
+import android.provider.ContactsContract.Intents;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
@@ -37,6 +39,7 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.widget.Toast;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -79,9 +82,11 @@ public class PickContactActivity extends FragmentActivity
 	public static class viewBinder implements ViewBinder {
 
 		private Context context;
+		private Tools tools;
 		
 		public viewBinder(Context context) {
 			this.context = context;
+			tools = new Tools(context);
 		}
 			
 		@Override
@@ -98,9 +103,17 @@ public class PickContactActivity extends FragmentActivity
 					long contactId = cursor.getLong(cursor.getColumnIndex(OpenHelper.CONTACT_ID));
 					String lookupKey = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
 					
+					if(!lookupKey.equals(tools.getLookupFromPhoneNumber(phoneNumber))) {
+						String TAG = "CHARABIA";
+						Log.v(TAG, "lookupKey = " + lookupKey);
+						Log.v(TAG, "phoneNumber = " + phoneNumber);
+						Log.v(TAG, "getLookup = " + tools.getLookupFromPhoneNumber(phoneNumber));
+						throw new Exception("Bad lookup key");
+					}
+					
 					Uri contactUri = Contacts.lookupContact(context.getContentResolver(),  
 							Contacts.getLookupUri(contactId, lookupKey));
-					
+
 					Cursor cname = context.getContentResolver().query(contactUri, 
 							new String[] { Contacts.DISPLAY_NAME }, null, null, null);
 					
@@ -166,7 +179,12 @@ public class PickContactActivity extends FragmentActivity
 		// Options for long click dialog, element 0 is for delete
 		private String[] phoneList = null;
 		
+		// Intent result
+		private static final int ADD_CONTACT = 1;
+		
 		private SimpleCursorAdapter mAdapter = null;
+		
+		private Tools tools;
 		
 		@Override
 		public void onSaveInstanceState(Bundle outState) {
@@ -178,6 +196,8 @@ public class PickContactActivity extends FragmentActivity
 		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
             super.onActivityCreated(savedInstanceState);
+            
+            tools = new Tools(getActivity());
             
             setEmptyText(getActivity().getString(R.string.no_contact));
             
@@ -229,13 +249,18 @@ public class PickContactActivity extends FragmentActivity
 			cursor.close();
 			
 			try {
-				if(lookup != new Tools(getActivity()).getLookupFromPhoneNumber(phoneNumber)) {
-					Toast.makeText(getActivity(), R.string.no_contact, Toast.LENGTH_SHORT).show();
+				String currentLookup = new Tools(getActivity()).getLookupFromPhoneNumber(phoneNumber);
+				if(lookup != currentLookup) {
+					ContentValues values = new ContentValues();
+					values.put(OpenHelper.LOOKUP, currentLookup);
+					cr.update(uri, values, null, null);
+					getLoaderManager().restartLoader(CONTACTS_LOADER, null, CursorLoaderListFragment.this);
 					return;
 				}
 			} catch (NoLookupKeyException e) {
-				e.printStackTrace();
-				Toast.makeText(getActivity(), R.string.no_contact, Toast.LENGTH_SHORT).show();
+				Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
+				newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
+				startActivityForResult(newIntent, ADD_CONTACT);
 				return;
 			}
 
@@ -258,9 +283,17 @@ public class PickContactActivity extends FragmentActivity
 								break;
 							default:
 								// Change phone number
-								ContentValues values = new ContentValues();
-								values.put(OpenHelper.PHONE, phoneList[i]);
-								cr.update(uri, values, null, null);
+								//try {
+									//String newLookup = tools.getLookupFromPhoneNumber(phoneList[i]);
+									ContentValues values = new ContentValues();
+									//values.put(OpenHelper.LOOKUP, newLookup);
+									values.put(OpenHelper.PHONE, phoneList[i]);
+									cr.update(uri, values, null, null);
+								//} 
+								//catch (NoLookupKeyException e) {
+								//	e.printStackTrace();
+								//}
+								
 						}
 						getLoaderManager().restartLoader(CONTACTS_LOADER, null, CursorLoaderListFragment.this);
 				}
@@ -307,7 +340,6 @@ public class PickContactActivity extends FragmentActivity
 			phoneList = new String[options.size()];
 			
 			Builder builder = new AlertDialog.Builder(getActivity());
-			//TODO: change title
 			builder.setTitle(getString(R.string.del_or_change_number));
 			builder.setItems(options.toArray(phoneList), editListener);
 			builder.create().show();
@@ -358,21 +390,93 @@ public class PickContactActivity extends FragmentActivity
 		 */
 		@Override
 		public boolean onOptionsItemSelected(MenuItem item) {
-			Intent intent;
 			switch (item.getItemId()) {
-				case R.id.contact_menu_refresh: 
-					// rebuild all lookupkey list of contact offer to add
-					// missing contact or to delete it on charabia
-					return true;
 				case R.id.contact_menu_save:
+					save();
 					return true;
 				case R.id.contact_menu_revert:
+					restore();
 					return true;
 				default:
 					return super.onOptionsItemSelected(item);
 			}
 		}
 
-	}
+		@Override
+		public void onActivityResult(int reqCode, int resultCode, Intent data) {
+			super.onActivityResult(reqCode, resultCode, data);
+
+			switch (reqCode) {
+				case ADD_CONTACT:
+					getLoaderManager().restartLoader(CONTACTS_LOADER, null, this);
+					break;
+			}
+		}
 		
+		public boolean checkMediaState(boolean writeableWanted) {
+			String state = Environment.getExternalStorageState();
+			if (Environment.MEDIA_MOUNTED.equals(state)) {
+			    // We can read and write the media
+			    return true;
+			} else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+			    // We can only read the media
+				if(!writeableWanted) {
+					return true;
+				}
+			}
+		    // Something else is wrong. It may be one of many other states, but all we need
+		    //  to know is we can neither read nor write
+			return false;
+		}
+		
+		protected boolean checkData(long id, String lookup, String phoneNumber) {
+			String current_lookup;
+			
+			try {
+				current_lookup = new Tools(getActivity()).getLookupFromPhoneNumber(phoneNumber);
+				if(current_lookup == lookup) {
+					// Ok phone associate with this contact
+					return true;
+				}
+				else {
+					// Change the lookup key associate with this contact
+				}
+			}
+			catch(NoLookupKeyException e) {
+				// No contact with this phone number change the phone
+				// number needed
+			}
+			return false;
+		}
+		
+		/**
+		 * Save keys
+		 */
+		protected void save() {
+			ContentResolver cr = getActivity().getContentResolver();
+			
+			int message = R.string.unknow;
+			
+			if(checkMediaState(true)) {
+				Cursor cursor = cr.query(DataProvider.CONTENT_URI, 
+						new String[] { OpenHelper.KEY, OpenHelper.LOOKUP, OpenHelper.PHONE },
+						null, null, null);
+				
+			}
+			
+			Builder builder = new AlertDialog.Builder(getActivity());
+			builder.setTitle(getString(R.string.app_name));
+			builder.setMessage(message);
+			builder.setNeutralButton("OK", null);
+			builder.create().show();
+
+		}
+		
+		/**
+		 * Restore the keys
+		 */
+		protected void restore() {
+			
+		}
+	}
 }
