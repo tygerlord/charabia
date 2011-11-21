@@ -315,7 +315,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					cr.delete(ContentUris.withAppendedId(Data.CONTENT_URI, 
 							cursor.getLong(cursor.getColumnIndex(Data._ID))), 
 							null, null);
-				} catch (NoLookupKeyException e) {
+				} catch (NoContactException e) {
 					e.printStackTrace();
 					Toast.makeText(this, "No contact for " + cursor.getColumnIndex(Tools.PHONE), 
 							Toast.LENGTH_SHORT).show();

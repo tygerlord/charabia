@@ -200,7 +200,7 @@ public class Tools {
 	/*
 	 * get lookup key of contact from the phone number
 	 */
-	public String getLookupFromPhoneNumber(String phoneNumber) throws NoLookupKeyException {
+	public String getLookupFromPhoneNumber(String phoneNumber) throws NoContactException {
         String lookupKey = null;
        
 		try {
@@ -224,7 +224,7 @@ public class Tools {
 		}
 		
         if(lookupKey == null) {
-        	throw new NoLookupKeyException("No lookup key for " + phoneNumber);
+        	throw new NoContactException("No contact with this phone number " + phoneNumber);
         }
         
         return lookupKey;
@@ -285,7 +285,7 @@ public class Tools {
 	/*
 	 * Get key from phoneNumber
 	 */
-	public byte[] getKey(String phoneNumber) throws NoLookupKeyException, NoCharabiaKeyException  {
+	public byte[] getKey(String phoneNumber) throws NoContactException, NoCharabiaKeyException  {
         ContentResolver cr = context.getContentResolver();
 
         String lookupKey = getLookupFromPhoneNumber(phoneNumber);
@@ -314,7 +314,7 @@ public class Tools {
 	 * Insert a key associate with a phone number and a contact 
 	 * The contact must exist in contact table to be associated with
 	 */
-	public Uri updateOrCreateContactKey(String phoneNumber, byte[] key) throws NoLookupKeyException  {
+	public Uri updateOrCreateContactKey(String phoneNumber, byte[] key) throws NoContactException  {
 		 
 		ContentResolver cr = context.getContentResolver();
 		

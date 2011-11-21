@@ -99,7 +99,7 @@ public class SMSReceiver extends BroadcastReceiver
 									message = context.getString(R.string.padding_error);
 								}
 							} 
-							catch (NoLookupKeyException e1) {
+							catch (NoContactException e1) {
 								e1.printStackTrace();
 								message = context.getString(R.string.unknown_user);
 							} catch (NoCharabiaKeyException e) {

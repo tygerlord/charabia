@@ -59,7 +59,7 @@ public final class PreferencesActivity extends PreferenceActivity
 				
 				try {
 					new Tools(this).updateOrCreateContactKey(phoneNumber, SmsCipher.demo_key);
-				} catch (NoLookupKeyException e) {
+				} catch (NoContactException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}

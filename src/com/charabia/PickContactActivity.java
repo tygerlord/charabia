@@ -173,9 +173,6 @@ public class PickContactActivity extends FragmentActivity
 		// Loader
 		private static final int CONTACTS_LOADER = 1;
 
-		// Id of selection for long click
-		private long id = -1;
-		
 		// Options for long click dialog, element 0 is for delete
 		private String[] phoneList = null;
 		
@@ -189,7 +186,6 @@ public class PickContactActivity extends FragmentActivity
 		@Override
 		public void onSaveInstanceState(Bundle outState) {
 			super.onSaveInstanceState(outState);
-			outState.putLong("id", id);
 			outState.putStringArray("phoneList", phoneList);
 		}
 		
@@ -220,7 +216,6 @@ public class PickContactActivity extends FragmentActivity
             getListView().setOnItemLongClickListener(this);
             
             if(savedInstanceState != null) {
-            	id = savedInstanceState.getInt("id");
             	phoneList = savedInstanceState.getStringArray("phoneList");
             }
             
@@ -230,6 +225,7 @@ public class PickContactActivity extends FragmentActivity
 		@Override
 		public void onListItemClick(ListView lv, View v, int position, long id) {
 			
+			/*
 			Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
 
 			ContentResolver cr = getActivity().getContentResolver();
@@ -237,27 +233,40 @@ public class PickContactActivity extends FragmentActivity
 			Cursor cursor = cr.query(uri, 
 					new String[] { OpenHelper.PHONE, OpenHelper.LOOKUP }, 
 					null, null, null);
-		
+			*/
+			Cursor cursor = mAdapter.getCursor();
+	
 			String phoneNumber = "";
 			String lookup = null;
 			
-			if(cursor.moveToFirst()) {
+			if(cursor.moveToPosition(position)) {
 				phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
 				lookup = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
 			}
 			
-			cursor.close();
+			//cursor.close();
 			
 			try {
-				String currentLookup = new Tools(getActivity()).getLookupFromPhoneNumber(phoneNumber);
-				if(lookup != currentLookup) {
-					ContentValues values = new ContentValues();
-					values.put(OpenHelper.LOOKUP, currentLookup);
-					cr.update(uri, values, null, null);
-					getLoaderManager().restartLoader(CONTACTS_LOADER, null, CursorLoaderListFragment.this);
+				String newLookup = tools.getLookupFromPhoneNumber(phoneNumber);
+				if(!lookup.equals(newLookup)) {
+					/*
+					 * Current lookup don't have this phone number 
+					 * but another lookup have this phone so suppose that this
+					 * lookup is no associate with this phone. 
+					 */
+					/*Builder builder = new AlertDialog.Builder(getActivity());
+					builder.setTitle(getActivity().getString(R.string.del_or_change_number));
+					builder.setNeutralButton(getActivity().getString(R.string.ok), null);
+					builder.create().show();
 					return;
+					*/
+					ContentResolver cr = getActivity().getContentResolver();
+					Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
+					ContentValues values = new ContentValues();
+					values.put(OpenHelper.LOOKUP, newLookup);
+					cr.update(uri,  values, null, null);
 				}
-			} catch (NoLookupKeyException e) {
+			} catch (NoContactException e) {
 				Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
 				newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
 				startActivityForResult(newIntent, ADD_CONTACT);
@@ -276,7 +285,10 @@ public class PickContactActivity extends FragmentActivity
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialogInterface, int i) {
 						ContentResolver cr = getActivity().getContentResolver();
-						Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
+						Log.v("CHARABIA", "getSelectedItemId() = " + getSelectedItemId());
+						Log.v("CHARABIA", "getSelectedItemPosition() =" + getSelectedItemPosition());
+						Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, 
+								getSelectedItemId());
 						switch(i) {
 							case 0: //delete
 								cr.delete(uri, null, null);
@@ -299,38 +311,109 @@ public class PickContactActivity extends FragmentActivity
 				}
 			};
 
+		
+		protected String checkLookupKey(long id, String lookup, String phoneNumber) {
+			String newLookup = null;
+			
+			try {
+				newLookup = tools.getLookupFromPhoneNumber(phoneNumber);
+			} catch (NoContactException e) {
+				e.printStackTrace();
+				// No contact with this phone so ask for create it
+				Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
+				newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
+				startActivityForResult(newIntent, ADD_CONTACT);
+				return null;
+			}
+			
+			if(!lookup.equals(newLookup)) {
+				/*
+				 * Current lookup don't have this phone number 
+				 * but another lookup have this phone so suppose that this
+				 * lookup is no associate with this phone and change lookup key
+				 * in table. 
+				 */
+				ContentResolver cr = getActivity().getContentResolver();
+				Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
+				ContentValues values = new ContentValues();
+				values.put(OpenHelper.LOOKUP, newLookup);
+				// TODO: test change ok
+				cr.update(uri,  values, null, null);
+				return newLookup;
+			}
+			
+			return lookup;
+		}
+		
+		
 		/*
 		 * Dialog to delete contact or change default phone to use with this contact
 		 * @see android.widget.AdapterView.OnItemLongClickListener#onItemLongClick(android.widget.AdapterView, android.view.View, int, long)
 		 */
 		@Override
 		public boolean onItemLongClick(AdapterView<?> av, View v, int position, long id) {
-			this.id = id;
 			
-			ContentResolver cr = getActivity().getContentResolver();
+			/*ContentResolver cr = getActivity().getContentResolver();
 			
 			Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
 			
 			Cursor cursor = cr.query(uri, new String[] { OpenHelper.LOOKUP }, 
 					null, null, null);
-			
+			*/
+			Cursor cursor = mAdapter.getCursor();
+
 			String lookup = null;
-			if(cursor.moveToFirst()) {
-				lookup = cursor.getString(0);
+			String phoneNumber = "";
+			if(cursor.moveToPosition(position)) {
+				lookup = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
+				phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));				
+			}
+
+			String newLookup = null;
+			
+			try {
+				newLookup = tools.getLookupFromPhoneNumber(phoneNumber);
+			} catch (NoContactException e) {
+				e.printStackTrace();
+				// No contact with this phone so ask for create it
+				Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
+				newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
+				startActivityForResult(newIntent, ADD_CONTACT);
+				return;
 			}
 			
-			cursor.close();
+			if(!lookup.equals(newLookup)) {
+				/*
+				 * Current lookup don't have this phone number 
+				 * but another lookup have this phone so suppose that this
+				 * lookup is no associate with this phone and change lookup key
+				 * in table. 
+				 */
+				ContentResolver cr = getActivity().getContentResolver();
+				Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
+				ContentValues values = new ContentValues();
+				values.put(OpenHelper.LOOKUP, newLookup);
+				// TODO: test change ok
+				cr.update(uri,  values, null, null);
+				lookup = newLookup;
+			}
+				
+			//cursor.close();
 			
 			ArrayList<String> options = new ArrayList<String>();
 			
 			options.add(getString(R.string.delete));
 			
+			Log.v("CHARABIA", "lookup="+lookup);
+			
 			if(lookup != null) {
+				ContentResolver cr = getActivity().getContentResolver();
 				cursor = cr.query(Data.CONTENT_URI, 
 						new String[] { Phone.NUMBER },
 						Data.MIMETYPE + "=? AND " + Data.LOOKUP_KEY + "=?",
 						new String[] { Phone.CONTENT_ITEM_TYPE, lookup },
 						null);
+				Log.v("CHARABIA", "cursor count = "+cursor.getCount());
 				while(cursor.moveToNext()) {
 					options.add(cursor.getString(0));
 				}
@@ -426,26 +509,6 @@ public class PickContactActivity extends FragmentActivity
 			}
 		    // Something else is wrong. It may be one of many other states, but all we need
 		    //  to know is we can neither read nor write
-			return false;
-		}
-		
-		protected boolean checkData(long id, String lookup, String phoneNumber) {
-			String current_lookup;
-			
-			try {
-				current_lookup = new Tools(getActivity()).getLookupFromPhoneNumber(phoneNumber);
-				if(current_lookup == lookup) {
-					// Ok phone associate with this contact
-					return true;
-				}
-				else {
-					// Change the lookup key associate with this contact
-				}
-			}
-			catch(NoLookupKeyException e) {
-				// No contact with this phone number change the phone
-				// number needed
-			}
 			return false;
 		}
 		
