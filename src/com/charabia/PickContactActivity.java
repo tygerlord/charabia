@@ -19,7 +19,6 @@ package com.charabia;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import android.R.color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -38,7 +37,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
-import android.widget.Toast;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -225,15 +223,6 @@ public class PickContactActivity extends FragmentActivity
 		@Override
 		public void onListItemClick(ListView lv, View v, int position, long id) {
 			
-			/*
-			Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
-
-			ContentResolver cr = getActivity().getContentResolver();
-			
-			Cursor cursor = cr.query(uri, 
-					new String[] { OpenHelper.PHONE, OpenHelper.LOOKUP }, 
-					null, null, null);
-			*/
 			Cursor cursor = mAdapter.getCursor();
 	
 			String phoneNumber = "";
@@ -244,32 +233,8 @@ public class PickContactActivity extends FragmentActivity
 				lookup = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
 			}
 			
-			//cursor.close();
-			
-			try {
-				String newLookup = tools.getLookupFromPhoneNumber(phoneNumber);
-				if(!lookup.equals(newLookup)) {
-					/*
-					 * Current lookup don't have this phone number 
-					 * but another lookup have this phone so suppose that this
-					 * lookup is no associate with this phone. 
-					 */
-					/*Builder builder = new AlertDialog.Builder(getActivity());
-					builder.setTitle(getActivity().getString(R.string.del_or_change_number));
-					builder.setNeutralButton(getActivity().getString(R.string.ok), null);
-					builder.create().show();
-					return;
-					*/
-					ContentResolver cr = getActivity().getContentResolver();
-					Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
-					ContentValues values = new ContentValues();
-					values.put(OpenHelper.LOOKUP, newLookup);
-					cr.update(uri,  values, null, null);
-				}
-			} catch (NoContactException e) {
-				Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
-				newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
-				startActivityForResult(newIntent, ADD_CONTACT);
+			lookup = checkLookupKey(id, lookup, phoneNumber);
+			if(lookup == null) {
 				return;
 			}
 
@@ -285,34 +250,23 @@ public class PickContactActivity extends FragmentActivity
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialogInterface, int i) {
 						ContentResolver cr = getActivity().getContentResolver();
-						Log.v("CHARABIA", "getSelectedItemId() = " + getSelectedItemId());
-						Log.v("CHARABIA", "getSelectedItemPosition() =" + getSelectedItemPosition());
-						Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, 
-								getSelectedItemId());
+						Log.v("CHARABIA", "getId() = " + getId());
+						Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, getId());
 						switch(i) {
 							case 0: //delete
 								cr.delete(uri, null, null);
 								break;
 							default:
-								// Change phone number
-								//try {
-									//String newLookup = tools.getLookupFromPhoneNumber(phoneList[i]);
-									ContentValues values = new ContentValues();
-									//values.put(OpenHelper.LOOKUP, newLookup);
-									values.put(OpenHelper.PHONE, phoneList[i]);
-									cr.update(uri, values, null, null);
-								//} 
-								//catch (NoLookupKeyException e) {
-								//	e.printStackTrace();
-								//}
-								
+								ContentValues values = new ContentValues();
+								values.put(OpenHelper.PHONE, phoneList[i]);
+								cr.update(uri, values, null, null);
 						}
 						getLoaderManager().restartLoader(CONTACTS_LOADER, null, CursorLoaderListFragment.this);
 				}
 			};
 
 		
-		protected String checkLookupKey(long id, String lookup, String phoneNumber) {
+		private String checkLookupKey(long id, String lookup, String phoneNumber) {
 			String newLookup = null;
 			
 			try {
@@ -353,13 +307,6 @@ public class PickContactActivity extends FragmentActivity
 		@Override
 		public boolean onItemLongClick(AdapterView<?> av, View v, int position, long id) {
 			
-			/*ContentResolver cr = getActivity().getContentResolver();
-			
-			Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
-			
-			Cursor cursor = cr.query(uri, new String[] { OpenHelper.LOOKUP }, 
-					null, null, null);
-			*/
 			Cursor cursor = mAdapter.getCursor();
 
 			String lookup = null;
@@ -369,37 +316,8 @@ public class PickContactActivity extends FragmentActivity
 				phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));				
 			}
 
-			String newLookup = null;
-			
-			try {
-				newLookup = tools.getLookupFromPhoneNumber(phoneNumber);
-			} catch (NoContactException e) {
-				e.printStackTrace();
-				// No contact with this phone so ask for create it
-				Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
-				newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
-				startActivityForResult(newIntent, ADD_CONTACT);
-				return;
-			}
-			
-			if(!lookup.equals(newLookup)) {
-				/*
-				 * Current lookup don't have this phone number 
-				 * but another lookup have this phone so suppose that this
-				 * lookup is no associate with this phone and change lookup key
-				 * in table. 
-				 */
-				ContentResolver cr = getActivity().getContentResolver();
-				Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, id);
-				ContentValues values = new ContentValues();
-				values.put(OpenHelper.LOOKUP, newLookup);
-				// TODO: test change ok
-				cr.update(uri,  values, null, null);
-				lookup = newLookup;
-			}
-				
-			//cursor.close();
-			
+			lookup = checkLookupKey(id, lookup, phoneNumber);
+		
 			ArrayList<String> options = new ArrayList<String>();
 			
 			options.add(getString(R.string.delete));
@@ -448,14 +366,15 @@ public class PickContactActivity extends FragmentActivity
 
 		@Override
 		public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-	          mAdapter.swapCursor(data);
+			mAdapter.swapCursor(data);
 
-	            // The list should now be shown.
-	            if (isResumed()) {
-	                setListShown(true);
-	            } else {
-	                setListShownNoAnimation(true);
-	            }			
+			// The list should now be shown.
+            if (isResumed()) {
+                setListShown(true);
+            } 
+            else {
+                setListShownNoAnimation(true);
+            }			
 		}
 
 		@Override
