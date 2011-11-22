@@ -310,7 +310,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					tools.updateOrCreateContactKey(
 						cursor.getString(cursor.getColumnIndex(Tools.PHONE)), 
 						Base64.decode(cursor.getString(cursor.getColumnIndex(Tools.KEY)),
-								Base64.DEFAULT));
+								Base64.DEFAULT),
+								false);
 					
 					cr.delete(ContentUris.withAppendedId(Data.CONTENT_URI, 
 							cursor.getLong(cursor.getColumnIndex(Data._ID))), 

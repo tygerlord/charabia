@@ -313,12 +313,28 @@ public class Tools {
 	/*
 	 * Insert a key associate with a phone number and a contact 
 	 * The contact must exist in contact table to be associated with
+	 * 
+	 * @param overwrite true if contact key must be erased with new key
 	 */
-	public Uri updateOrCreateContactKey(String phoneNumber, byte[] key) throws NoContactException  {
+	public Uri updateOrCreateContactKey(String phoneNumber, byte[] key, boolean overwrite) throws NoContactException  {
 		 
 		ContentResolver cr = context.getContentResolver();
 		
 		String lookupKey = getLookupFromPhoneNumber(phoneNumber);
+		
+		Cursor cursor = cr.query(DataProvider.CONTENT_URI, 
+				new String[] { "COUNT(*)" }, 
+				OpenHelper.LOOKUP + "=?", 
+				new String[] { lookupKey },
+				null);
+		
+		cursor.moveToFirst();
+		int count = cursor.getInt(0);
+		cursor.close();
+		
+		if(count>0 && !overwrite) {
+			return null; 
+		}
 		
 		ContentValues values = new ContentValues();
 		
@@ -327,11 +343,11 @@ public class Tools {
 		values.put(OpenHelper.PHONE, phoneNumber);
 		values.put(OpenHelper.CONTACT_ID, 0);
 		
-		int count = cr.update(DataProvider.CONTENT_URI, 
+		count = cr.update(DataProvider.CONTENT_URI, 
 				values, 
 				OpenHelper.LOOKUP + "=?", 
 				new String[] { lookupKey } );
-		
+
 		Uri uri = null;
 		
 		if(count == 0) {
@@ -339,6 +355,10 @@ public class Tools {
 		}
 		
 		return uri;
+	}
+
+	public Uri updateOrCreateContactKey(String phoneNumber, byte[] key) throws NoContactException  {
+		return updateOrCreateContactKey(phoneNumber, key, true);
 	}
 
 	@Deprecated

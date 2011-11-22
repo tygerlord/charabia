@@ -53,4 +53,6 @@
 	<string name="save">Sauvegarder</string>
 	<string name="revert">Restorer</string>
 	<string name="ok">OK</string>
+	<string name="save_failure">Echec lors de la sauvegarde</string>
+	<string name="save_success">Sauvegarde terminée</string>
 </resources>

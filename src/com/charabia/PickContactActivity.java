@@ -16,7 +16,11 @@
 
 package com.charabia;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 
 import android.net.Uri;
@@ -29,6 +33,7 @@ import android.provider.ContactsContract.Intents;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
+import android.app.ProgressDialog;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -37,6 +42,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -129,6 +135,7 @@ public class PickContactActivity extends FragmentActivity
 					displayName.append("\n");
 					displayName.append(phoneNumber);
 					
+					tv.setTextColor(Color.GREEN);
 					tv.setText(displayName);
 					
 					java.io.InputStream input = Contacts.openContactPhotoInputStream(
@@ -181,10 +188,24 @@ public class PickContactActivity extends FragmentActivity
 		
 		private Tools tools;
 		
+		/*
+		 * Use this to store clicked id on edit listener
+		 */
+		private long index;
+		
+		private void setIndex(long id) {
+			index = id;
+		}
+		
+		private long getIndex() {
+			return index;
+		}
+		
 		@Override
 		public void onSaveInstanceState(Bundle outState) {
 			super.onSaveInstanceState(outState);
 			outState.putStringArray("phoneList", phoneList);
+			outState.putLong("index", index);
 		}
 		
 		@Override
@@ -215,6 +236,7 @@ public class PickContactActivity extends FragmentActivity
             
             if(savedInstanceState != null) {
             	phoneList = savedInstanceState.getStringArray("phoneList");
+            	index = savedInstanceState.getLong("index");
             }
             
             setHasOptionsMenu(true);
@@ -233,8 +255,15 @@ public class PickContactActivity extends FragmentActivity
 				lookup = cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP));
 			}
 			
-			lookup = checkLookupKey(id, lookup, phoneNumber);
-			if(lookup == null) {
+			try {
+				lookup = checkLookupKey(id, lookup, phoneNumber);
+			} 
+			catch (NoContactException e) {
+				e.printStackTrace();
+				// No contact with this phone so ask for create it
+				Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
+				newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
+				startActivityForResult(newIntent, ADD_CONTACT);
 				return;
 			}
 
@@ -250,8 +279,7 @@ public class PickContactActivity extends FragmentActivity
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialogInterface, int i) {
 						ContentResolver cr = getActivity().getContentResolver();
-						Log.v("CHARABIA", "getId() = " + getId());
-						Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, getId());
+						Uri uri = ContentUris.withAppendedId(DataProvider.CONTENT_URI, getIndex());
 						switch(i) {
 							case 0: //delete
 								cr.delete(uri, null, null);
@@ -266,19 +294,10 @@ public class PickContactActivity extends FragmentActivity
 			};
 
 		
-		private String checkLookupKey(long id, String lookup, String phoneNumber) {
+		private String checkLookupKey(long id, String lookup, String phoneNumber) throws NoContactException {
 			String newLookup = null;
 			
-			try {
-				newLookup = tools.getLookupFromPhoneNumber(phoneNumber);
-			} catch (NoContactException e) {
-				e.printStackTrace();
-				// No contact with this phone so ask for create it
-				Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
-				newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
-				startActivityForResult(newIntent, ADD_CONTACT);
-				return null;
-			}
+			newLookup = tools.getLookupFromPhoneNumber(phoneNumber);
 			
 			if(!lookup.equals(newLookup)) {
 				/*
@@ -307,6 +326,8 @@ public class PickContactActivity extends FragmentActivity
 		@Override
 		public boolean onItemLongClick(AdapterView<?> av, View v, int position, long id) {
 			
+			setIndex(id);
+			
 			Cursor cursor = mAdapter.getCursor();
 
 			String lookup = null;
@@ -316,7 +337,11 @@ public class PickContactActivity extends FragmentActivity
 				phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));				
 			}
 
-			lookup = checkLookupKey(id, lookup, phoneNumber);
+			try {
+				lookup = checkLookupKey(id, lookup, phoneNumber);
+			} catch (NoContactException e) {
+				e.printStackTrace();
+			}
 		
 			ArrayList<String> options = new ArrayList<String>();
 			
@@ -417,6 +442,7 @@ public class PickContactActivity extends FragmentActivity
 		
 		public boolean checkMediaState(boolean writeableWanted) {
 			String state = Environment.getExternalStorageState();
+			Log.v("CHARABIA", "media state is " + state);
 			if (Environment.MEDIA_MOUNTED.equals(state)) {
 			    // We can read and write the media
 			    return true;
@@ -435,15 +461,59 @@ public class PickContactActivity extends FragmentActivity
 		 * Save keys
 		 */
 		protected void save() {
-			ContentResolver cr = getActivity().getContentResolver();
-			
-			int message = R.string.unknow;
+			int message = R.string.save_failure;
 			
 			if(checkMediaState(true)) {
-				Cursor cursor = cr.query(DataProvider.CONTENT_URI, 
-						new String[] { OpenHelper.KEY, OpenHelper.LOOKUP, OpenHelper.PHONE },
-						null, null, null);
+				ProgressDialog dialog = new ProgressDialog(getActivity());
 				
+				dialog.show();
+				
+				Cursor cursor = mAdapter.getCursor();
+				FileWriter fw = null;
+				try {
+					File file = new File(Environment.getExternalStorageDirectory(), "Charabia");
+					
+					file.mkdir();
+					
+					File filename = new File(file,"keys.dat");
+					
+					filename.createNewFile();
+					
+					fw = new FileWriter(filename);
+					
+					String phoneNumber;
+					if(cursor.moveToFirst()) {
+						do {
+							StringBuffer buf = new StringBuffer();
+							phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
+							buf.append(cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP)));
+							buf.append(cursor.getString(cursor.getColumnIndex(OpenHelper.CONTACT_ID)));
+							buf.append(phoneNumber);
+							try {
+								buf.append(Base64.encodeToString(tools.getKey(phoneNumber), Base64.DEFAULT));
+								fw.write(buf.toString());
+							} catch (NoContactException e) {
+								e.printStackTrace();
+							} catch (NoCharabiaKeyException e) {
+								e.printStackTrace();
+							}
+						}while(cursor.moveToNext());
+					}					
+					message = R.string.save_success;
+				}
+				catch(IOException e) {
+					e.printStackTrace();
+				}
+
+				if(fw != null) {
+					try {
+						fw.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				dialog.dismiss();
 			}
 			
 			Builder builder = new AlertDialog.Builder(getActivity());
