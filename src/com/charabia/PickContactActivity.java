@@ -18,8 +18,10 @@ package com.charabia;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
@@ -35,6 +37,8 @@ import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.ProgressDialog;
 import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteConstraintException;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.widget.AdapterView;
@@ -174,6 +178,8 @@ public class PickContactActivity extends FragmentActivity
 	public static class CursorLoaderListFragment extends ListFragment 
 		implements OnItemLongClickListener, LoaderManager.LoaderCallbacks<Cursor> 
 	{
+		
+		private static final String TAG = "CHARABIA";
 		
 		// Loader
 		private static final int CONTACTS_LOADER = 1;
@@ -456,7 +462,13 @@ public class PickContactActivity extends FragmentActivity
 		    //  to know is we can neither read nor write
 			return false;
 		}
-		
+
+		/*
+		 * Use this separator between elements
+		 */
+		private static final String SEPARATOR = ";";
+		private static final String FILENAME = "keys.dat";
+
 		/**
 		 * Save keys
 		 */
@@ -471,11 +483,12 @@ public class PickContactActivity extends FragmentActivity
 				Cursor cursor = mAdapter.getCursor();
 				FileWriter fw = null;
 				try {
-					File file = new File(Environment.getExternalStorageDirectory(), "Charabia");
+					File file = new File(Environment.getExternalStorageDirectory(), 
+							getString(R.string.app_name));
 					
 					file.mkdir();
 					
-					File filename = new File(file,"keys.dat");
+					File filename = new File(file, FILENAME);
 					
 					filename.createNewFile();
 					
@@ -487,10 +500,14 @@ public class PickContactActivity extends FragmentActivity
 							StringBuffer buf = new StringBuffer();
 							phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
 							buf.append(cursor.getString(cursor.getColumnIndex(OpenHelper.LOOKUP)));
+							buf.append(SEPARATOR);
 							buf.append(cursor.getString(cursor.getColumnIndex(OpenHelper.CONTACT_ID)));
+							buf.append(SEPARATOR);
 							buf.append(phoneNumber);
+							buf.append(SEPARATOR);
 							try {
-								buf.append(Base64.encodeToString(tools.getKey(phoneNumber), Base64.DEFAULT));
+								buf.append(Base64.encodeToString(tools.getKey(phoneNumber), Base64.NO_WRAP));
+								buf.append("\n");
 								fw.write(buf.toString());
 							} catch (NoContactException e) {
 								e.printStackTrace();
@@ -528,7 +545,75 @@ public class PickContactActivity extends FragmentActivity
 		 * Restore the keys
 		 */
 		protected void restore() {
+			ContentResolver cr = getActivity().getContentResolver();
 			
+			int message = R.string.revert_failure;
+			
+			if(checkMediaState(false)) {
+				ProgressDialog dialog = new ProgressDialog(getActivity());
+				
+				dialog.show();
+				
+				LineNumberReader lnr = null;
+				try {
+					File file = new File(Environment.getExternalStorageDirectory(), 
+							getString(R.string.app_name));
+					File filename = new File(file, FILENAME);
+					
+					Log.v("CHARABIA", "filename = " + filename);
+					
+					lnr = new LineNumberReader(new FileReader(filename));
+					
+					ContentValues values = new ContentValues();
+
+					String line;
+					String[] infos;
+					while((line = lnr.readLine()) != null) {
+						Log.v("CHARABIA", "line=" + line);
+						infos = line.split(SEPARATOR);
+						Log.v("CHARABIA", "infos = " + infos[0] + "," + infos[1] + "," + infos[2] + "," + infos[3]);
+						if(infos.length == 4) {
+							values.clear();
+							values.put(OpenHelper.LOOKUP, infos[0]);
+							values.put(OpenHelper.ID, Long.parseLong(infos[1]));
+							values.put(OpenHelper.PHONE, infos[2]);
+							values.put(OpenHelper.KEY, Base64.decode(infos[3], Base64.NO_WRAP));
+							try {
+								cr.insert(DataProvider.CONTENT_URI, values);
+							}
+							catch(SQLException e) {
+								Log.v(TAG, "line " + lnr.getLineNumber() + " not inserted, already present?" );
+							}
+						}
+						else {
+							Log.v(TAG, "Bad file format line " + lnr.getLineNumber());
+						}
+					}
+					
+					message = R.string.revert_success;
+				}
+				catch(IOException e) {
+					e.printStackTrace();
+				}
+
+				if(lnr != null) {
+					try {
+						lnr.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				dialog.dismiss();
+			}
+			
+			//getLoaderManager().restartLoader(CONTACTS_LOADER, null, this);
+			
+			Builder builder = new AlertDialog.Builder(getActivity());
+			builder.setTitle(getString(R.string.app_name));
+			builder.setMessage(message);
+			builder.setNeutralButton("OK", null);
+			builder.create().show();
 		}
 	}
 }
