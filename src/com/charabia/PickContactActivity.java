@@ -17,12 +17,10 @@
 package com.charabia;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
-import java.io.OutputStream;
 import java.util.ArrayList;
 
 import android.net.Uri;
@@ -38,7 +36,6 @@ import android.app.AlertDialog.Builder;
 import android.app.ProgressDialog;
 import android.database.Cursor;
 import android.database.SQLException;
-import android.database.sqlite.SQLiteConstraintException;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.widget.AdapterView;
@@ -194,6 +191,8 @@ public class PickContactActivity extends FragmentActivity
 		
 		private Tools tools;
 		
+		private boolean mode_save = false;
+		
 		/*
 		 * Use this to store clicked id on edit listener
 		 */
@@ -212,6 +211,7 @@ public class PickContactActivity extends FragmentActivity
 			super.onSaveInstanceState(outState);
 			outState.putStringArray("phoneList", phoneList);
 			outState.putLong("index", index);
+			outState.putBoolean("mode_save", mode_save);
 		}
 		
 		@Override
@@ -243,6 +243,7 @@ public class PickContactActivity extends FragmentActivity
             if(savedInstanceState != null) {
             	phoneList = savedInstanceState.getStringArray("phoneList");
             	index = savedInstanceState.getLong("index");
+            	mode_save = savedInstanceState.getBoolean("mode_save");
             }
             
             setHasOptionsMenu(true);
@@ -425,14 +426,22 @@ public class PickContactActivity extends FragmentActivity
 		public boolean onOptionsItemSelected(MenuItem item) {
 			switch (item.getItemId()) {
 				case R.id.contact_menu_save:
-					save();
-					return true;
-				case R.id.contact_menu_revert:
-					restore();
-					return true;
+					mode_save = true;
+					break;
+				case R.id.contact_menu_restore:
+					mode_save = false;
+					break;
 				default:
 					return super.onOptionsItemSelected(item);
 			}
+			
+			// Start dialog to get file password
+			Builder builder = new AlertDialog.Builder(getActivity());
+			//builder.setTitle(getString(R.string.password));
+			//builder.setE;
+			builder.setNeutralButton("OK", null);
+			builder.create().show();
+			return true;
 		}
 
 		@Override
@@ -547,7 +556,7 @@ public class PickContactActivity extends FragmentActivity
 		protected void restore() {
 			ContentResolver cr = getActivity().getContentResolver();
 			
-			int message = R.string.revert_failure;
+			int message = R.string.restore_failure;
 			
 			if(checkMediaState(false)) {
 				ProgressDialog dialog = new ProgressDialog(getActivity());
@@ -590,7 +599,7 @@ public class PickContactActivity extends FragmentActivity
 						}
 					}
 					
-					message = R.string.revert_success;
+					message = R.string.restore_success;
 				}
 				catch(IOException e) {
 					e.printStackTrace();
@@ -607,7 +616,7 @@ public class PickContactActivity extends FragmentActivity
 				dialog.dismiss();
 			}
 			
-			//getLoaderManager().restartLoader(CONTACTS_LOADER, null, this);
+			getLoaderManager().restartLoader(CONTACTS_LOADER, null, this);
 			
 			Builder builder = new AlertDialog.Builder(getActivity());
 			builder.setTitle(getString(R.string.app_name));

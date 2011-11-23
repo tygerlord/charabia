@@ -22,7 +22,9 @@ import android.content.Context;
 import android.content.ContentValues;
 import android.content.ContentResolver;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.app.PendingIntent;
@@ -318,24 +320,11 @@ public class Tools {
 	 */
 	public Uri updateOrCreateContactKey(String phoneNumber, byte[] key, boolean overwrite) throws NoContactException  {
 		 
-		ContentResolver cr = context.getContentResolver();
 		
 		String lookupKey = getLookupFromPhoneNumber(phoneNumber);
 		
-		Cursor cursor = cr.query(DataProvider.CONTENT_URI, 
-				new String[] { "COUNT(*)" }, 
-				OpenHelper.LOOKUP + "=?", 
-				new String[] { lookupKey },
-				null);
-		
-		cursor.moveToFirst();
-		int count = cursor.getInt(0);
-		cursor.close();
-		
-		if(count>0 && !overwrite) {
-			return null; 
-		}
-		
+		ContentResolver cr = context.getContentResolver();
+
 		ContentValues values = new ContentValues();
 		
 		values.put(OpenHelper.KEY, key);
@@ -343,15 +332,22 @@ public class Tools {
 		values.put(OpenHelper.PHONE, phoneNumber);
 		values.put(OpenHelper.CONTACT_ID, 0);
 		
-		count = cr.update(DataProvider.CONTENT_URI, 
-				values, 
-				OpenHelper.LOOKUP + "=?", 
-				new String[] { lookupKey } );
-
 		Uri uri = null;
 		
-		if(count == 0) {
+		try {
 			uri = cr.insert(DataProvider.CONTENT_URI, values);
+		}
+		catch(SQLException e) {
+			Log.v(TAG, phoneNumber + " not inserted, already present?" );
+		}
+		
+		if(overwrite) {
+			int count = cr.update(DataProvider.CONTENT_URI, 
+					values, 
+					OpenHelper.LOOKUP + "=?", 
+					new String[] { lookupKey } );
+	
+			Log.v("CHARABIA", "update count " + count);
 		}
 		
 		return uri;
