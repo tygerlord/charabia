@@ -21,7 +21,19 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import android.net.Uri;
 import android.os.Bundle;
@@ -39,12 +51,14 @@ import android.database.SQLException;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -193,6 +207,7 @@ public class PickContactActivity extends FragmentActivity
 		
 		private boolean mode_save = false;
 		
+		private EditText editTextPassword;
 		/*
 		 * Use this to store clicked id on edit listener
 		 */
@@ -419,6 +434,24 @@ public class PickContactActivity extends FragmentActivity
 			 inflater.inflate(R.menu.pick_contact, menu);
 		}
 	
+		private Cipher getCipher(String password, byte[] iv) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException {
+			MessageDigest digester = MessageDigest.getInstance("SHA256");
+			
+			SecretKey key = new SecretKeySpec(digester.digest(password.getBytes()), "AES");
+			
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			
+			if(iv == null) {
+				cipher.init(Cipher.ENCRYPT_MODE, key);
+			}
+			else {
+				cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
+			}
+			
+			return cipher;
+		}
+		
+		
 		/** 
 		 * Handles item selections 
 		 */
@@ -436,10 +469,26 @@ public class PickContactActivity extends FragmentActivity
 			}
 			
 			// Start dialog to get file password
+	        LayoutInflater factory = LayoutInflater.from(getActivity());
+	        View dialogView = factory.inflate(R.layout.dialog_password_entry, null);
+			
+	        editTextPassword = (EditText) dialogView.findViewById(R.id.edittext_password);
+	        
 			Builder builder = new AlertDialog.Builder(getActivity());
-			//builder.setTitle(getString(R.string.password));
-			//builder.setE;
-			builder.setNeutralButton("OK", null);
+			builder.setTitle(getString(R.string.app_name));
+			builder.setView(dialogView);
+			builder.setPositiveButton(getString(R.string.ok), 
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int whichButton) {
+						String password = editTextPassword.getText().toString();
+						if(mode_save) {
+							save(password);
+						}
+						else {
+							restore(password);
+						}
+					}	
+             	});
 			builder.create().show();
 			return true;
 		}
@@ -459,19 +508,35 @@ public class PickContactActivity extends FragmentActivity
 			String state = Environment.getExternalStorageState();
 			Log.v("CHARABIA", "media state is " + state);
 			if (Environment.MEDIA_MOUNTED.equals(state)) {
-			    // We can read and write the media
 			    return true;
 			} else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-			    // We can only read the media
 				if(!writeableWanted) {
 					return true;
 				}
 			}
-		    // Something else is wrong. It may be one of many other states, but all we need
-		    //  to know is we can neither read nor write
 			return false;
 		}
 
+		public void popup(String message, String title) {
+			Builder builder = new AlertDialog.Builder(getActivity());
+			builder.setTitle(title);
+			builder.setMessage(message);
+			builder.setNeutralButton("OK", null);
+			builder.create().show();
+		}
+		
+		public void popup(String message) {
+			popup(message, getActivity().getString(R.string.app_name));
+		}
+		
+		public void popup(int resid, int titleid) {
+			popup(getActivity().getString(resid), getActivity().getString(titleid));
+		}
+		
+		void popup(int resid) {
+			popup(getActivity().getString(resid));
+		}
+		
 		/*
 		 * Use this separator between elements
 		 */
@@ -481,8 +546,29 @@ public class PickContactActivity extends FragmentActivity
 		/**
 		 * Save keys
 		 */
-		protected void save() {
+		protected void save(String password) {
 			int message = R.string.save_failure;
+			
+			Cipher cipher = null;
+			try {
+				cipher = getCipher(password, null);
+			} catch (InvalidKeyException e1) {
+				e1.printStackTrace();
+				popup(R.string.unexpected_error);
+				return;
+			} catch (NoSuchAlgorithmException e1) {
+				e1.printStackTrace();
+				popup(R.string.unexpected_error);
+				return;
+			} catch (NoSuchPaddingException e1) {
+				e1.printStackTrace();
+				popup(R.string.unexpected_error);
+				return;
+			} catch (InvalidAlgorithmParameterException e1) {
+				e1.printStackTrace();
+				popup(R.string.unexpected_error);
+				return;
+			}
 			
 			if(checkMediaState(true)) {
 				ProgressDialog dialog = new ProgressDialog(getActivity());
@@ -505,6 +591,7 @@ public class PickContactActivity extends FragmentActivity
 					
 					String phoneNumber;
 					if(cursor.moveToFirst()) {
+						fw.write(Base64.encodeToString(cipher.getIV(), Base64.NO_WRAP) + "\n");
 						do {
 							StringBuffer buf = new StringBuffer();
 							phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
@@ -516,19 +603,27 @@ public class PickContactActivity extends FragmentActivity
 							buf.append(SEPARATOR);
 							try {
 								buf.append(Base64.encodeToString(tools.getKey(phoneNumber), Base64.NO_WRAP));
-								buf.append("\n");
-								fw.write(buf.toString());
+								fw.write(Base64.encodeToString(cipher.doFinal(buf.toString().getBytes()), 
+										Base64.NO_WRAP) + "\n");
 							} catch (NoContactException e) {
 								e.printStackTrace();
 							} catch (NoCharabiaKeyException e) {
 								e.printStackTrace();
-							}
+							} 
 						}while(cursor.moveToNext());
 					}					
 					message = R.string.save_success;
 				}
 				catch(IOException e) {
 					e.printStackTrace();
+				}
+				catch (IllegalBlockSizeException e) {
+					e.printStackTrace();
+					message = R.string.unexpected_error;
+				} 
+				catch (BadPaddingException e) {
+					e.printStackTrace();
+					message = R.string.unexpected_error;
 				}
 
 				if(fw != null) {
@@ -542,18 +637,13 @@ public class PickContactActivity extends FragmentActivity
 				dialog.dismiss();
 			}
 			
-			Builder builder = new AlertDialog.Builder(getActivity());
-			builder.setTitle(getString(R.string.app_name));
-			builder.setMessage(message);
-			builder.setNeutralButton("OK", null);
-			builder.create().show();
-
+			popup(message);
 		}
 		
 		/**
 		 * Restore the keys
 		 */
-		protected void restore() {
+		protected void restore(String password) {
 			ContentResolver cr = getActivity().getContentResolver();
 			
 			int message = R.string.restore_failure;
@@ -572,14 +662,42 @@ public class PickContactActivity extends FragmentActivity
 					Log.v("CHARABIA", "filename = " + filename);
 					
 					lnr = new LineNumberReader(new FileReader(filename));
-					
+
 					ContentValues values = new ContentValues();
 
-					String line;
+					String line, clearLine;
 					String[] infos;
+					Cipher cipher = null;
 					while((line = lnr.readLine()) != null) {
+						
 						Log.v("CHARABIA", "line=" + line);
-						infos = line.split(SEPARATOR);
+						
+						if(cipher == null) {
+							try {
+								cipher = getCipher(password, Base64.decode(line, Base64.NO_WRAP));
+								continue;
+							} catch (InvalidKeyException e1) {
+								e1.printStackTrace();
+								popup(R.string.bad_password);
+								return;
+							} catch (NoSuchAlgorithmException e1) {
+								e1.printStackTrace();
+								popup(R.string.unexpected_error);
+								return;
+							} catch (NoSuchPaddingException e1) {
+								e1.printStackTrace();
+								popup(R.string.bad_password);
+								return;
+							} catch (InvalidAlgorithmParameterException e1) {
+								e1.printStackTrace();
+								popup(R.string.unexpected_error);
+								return;
+							}
+							
+						}
+						
+						clearLine = new String(cipher.doFinal(Base64.decode(line, Base64.NO_WRAP)));
+						infos = clearLine.split(SEPARATOR);
 						Log.v("CHARABIA", "infos = " + infos[0] + "," + infos[1] + "," + infos[2] + "," + infos[3]);
 						if(infos.length == 4) {
 							values.clear();
@@ -603,6 +721,15 @@ public class PickContactActivity extends FragmentActivity
 				}
 				catch(IOException e) {
 					e.printStackTrace();
+					message = R.string.error_read_file;
+				} 
+				catch (IllegalBlockSizeException e) {
+					e.printStackTrace();
+					message = R.string.error_decrypt_file;
+				} 
+				catch (BadPaddingException e) {
+					e.printStackTrace();
+					message = R.string.error_decrypt_file;
 				}
 
 				if(lnr != null) {
@@ -618,11 +745,7 @@ public class PickContactActivity extends FragmentActivity
 			
 			getLoaderManager().restartLoader(CONTACTS_LOADER, null, this);
 			
-			Builder builder = new AlertDialog.Builder(getActivity());
-			builder.setTitle(getString(R.string.app_name));
-			builder.setMessage(message);
-			builder.setNeutralButton("OK", null);
-			builder.create().show();
+			popup(message);
 		}
 	}
 }
