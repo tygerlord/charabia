@@ -40,6 +40,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract.Data;
+import android.provider.ContactsContract.Intents;
 import android.content.DialogInterface;
 
 import android.content.BroadcastReceiver;
@@ -96,7 +97,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private static final int EDIT_TO_DIALOG = SEND_ERROR_DIALOG + 1;
 	
 	// List of intent 
-	private static final int PICK_CONTACT = 0;
+	private static final int PICK_CONTACT = 1;
+	private static final int ADD_CONTACT = PICK_CONTACT + 1;
 	
 	// widgets
 	private TextView titleRecipientView = null;
@@ -133,6 +135,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// Message part currently sending block are 112 byte length max
 	private int mFragment;
 	
+	private byte[] key = null;
+	private String phoneNumber = null;
+	
+
 	// Manage state changes
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
@@ -143,6 +149,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		outState.putSerializable("recipientsList", recipientsList);
 		outState.putInt("mFragment", mFragment);
 		outState.putBoolean("dismissAction", dismissAction);
+		outState.putByteArray("key", key);
+		outState.putString("phoneNumber", phoneNumber);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -155,6 +163,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		recipientsList = (Vector<String>) savedInstanceState.getSerializable("recipientsList");
 		mFragment = savedInstanceState.getInt("mFragment");
 		dismissAction = savedInstanceState.getBoolean("dismissAction");
+		key = savedInstanceState.getByteArray("key");
+		phoneNumber = savedInstanceState.getString("phoneNumber");
 	}
 	
 	/*
@@ -594,6 +604,16 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
         			addToRecipientsList(data.getData().getSchemeSpecificPart());
         		}
 	           break;
+        	case (ADD_CONTACT):
+                try {
+  					new Tools(this).updateOrCreateContactKey(phoneNumber, key);
+  		           	Toast.makeText(this, getString(R.string.contact_added) + "\n" + phoneNumber, Toast.LENGTH_LONG).show();
+  		    	} 
+  		        catch (NoContactException e) {
+  					e.printStackTrace();
+  	        		Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
+  		        }
+  	    		break;
         	case(IntentIntegrator.REQUEST_CODE):
 	            if (resultCode == RESULT_OK) {
 	                try {
@@ -606,8 +626,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		                
 		                String[] infos = contents.split("\n");
 		                
-						byte[] key = null;
-						
 						Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 						
 						if(mode == MODE_ESCLAVE) {
@@ -665,11 +683,23 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 							System.arraycopy(tempKey, 0, key, 0, offset);
 						}
 		                
+						phoneNumber = infos[0];
+						
 						// store the key
 						// TODO dialog to confirm add contact in mode SLAVE
-		                new Tools(this).updateOrCreateContactKey(infos[0], key);
+		                try {
+							new Tools(this).updateOrCreateContactKey(phoneNumber, key);
+						} 
+		                catch (NoContactException e) {
+							e.printStackTrace();
+							// propose to add contact
+							Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
+							newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
+							startActivityForResult(newIntent, ADD_CONTACT);
+							return;
+		                }
 		                		                
-		               	Toast.makeText(this, getString(R.string.contact_added) + "\n" + infos[0], Toast.LENGTH_LONG).show();
+		               	Toast.makeText(this, getString(R.string.contact_added) + "\n" + phoneNumber, Toast.LENGTH_LONG).show();
 		                
 	            	}
 	            	catch(Exception e) {
