@@ -90,6 +90,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	//port where data sms are send
 	private static final short sms_port = 1981;
 	
+	// Extra text data share by sms
+	public static final String SMS_BODY = "sms_body";
+	
 	// Dialogs
 	private static final int MODE_DIALOG = 0;
 	private static final int SEND_PROGRESS_DIALOG = MODE_DIALOG + 1;
@@ -344,8 +347,54 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			if(action.equals(Intent.ACTION_SENDTO)) {
 				// uri = smsto:(...)
 				Uri uri = intent.getData();
-				Log.v(TAG, "send to uri = " + uri + ", "  + uri.getSchemeSpecificPart());
-				addToRecipientsList(uri.getSchemeSpecificPart());
+				
+				String texte = null;
+				
+				if(uri != null) {
+					texte = uri.getSchemeSpecificPart();
+				}
+				
+				Log.v(TAG, "send to uri = " + uri + ", "  + texte);
+				
+				if(texte != null && texte.length()>0) {
+					try {
+						tools.getKey(texte);
+					} 
+					catch (NoContactException e) {
+						e.printStackTrace();
+						Toast.makeText(this, R.string.no_contact, Toast.LENGTH_SHORT).show();
+						finish();
+					} 
+					catch (NoCharabiaKeyException e) {
+						e.printStackTrace();
+						Toast.makeText(this, R.string.no_key_for_user, Toast.LENGTH_SHORT).show();
+						finish();
+					}
+	
+					addToRecipientsList(texte);
+				}
+				
+				if(intent.hasExtra(Intent.EXTRA_TEXT)) {
+					messageView.setText(intent.getCharSequenceExtra(Intent.EXTRA_TEXT));
+				}
+				else if(intent.hasExtra(SMS_BODY)) {
+					messageView.setText(intent.getCharSequenceExtra(SMS_BODY));
+				}
+				
+				StringBuffer s = new StringBuffer();
+				Bundle extras = intent.getExtras();
+				
+				java.util.Set<String> set = extras.keySet();
+				
+				String[] result =new String[set.size()]; 
+				set.toArray(result);
+
+				StringBuffer buf = new StringBuffer();
+				for(int i = 0; i < result.length; i++) {
+					if(i>0) buf.append("\n");
+					buf.append(result[i]);
+				}
+				Log.v(TAG, buf.toString());
 			}
 		}
 		
