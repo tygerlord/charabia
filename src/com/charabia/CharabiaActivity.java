@@ -380,21 +380,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				else if(intent.hasExtra(SMS_BODY)) {
 					messageView.setText(intent.getCharSequenceExtra(SMS_BODY));
 				}
-				
-				StringBuffer s = new StringBuffer();
-				Bundle extras = intent.getExtras();
-				
-				java.util.Set<String> set = extras.keySet();
-				
-				String[] result =new String[set.size()]; 
-				set.toArray(result);
-
-				StringBuffer buf = new StringBuffer();
-				for(int i = 0; i < result.length; i++) {
-					if(i>0) buf.append("\n");
-					buf.append(result[i]);
-				}
-				Log.v(TAG, buf.toString());
 			}
 		}
 		
