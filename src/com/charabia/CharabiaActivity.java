@@ -35,15 +35,19 @@ import android.app.Dialog;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.app.AlertDialog.Builder;
 
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.Intents;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.content.DialogInterface;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
@@ -51,6 +55,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.Cursor;
 import android.gesture.Gesture;
 import android.gesture.GestureLibraries;
 import android.gesture.GestureLibrary;
@@ -102,6 +107,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// List of intent 
 	private static final int PICK_CONTACT = 1;
 	private static final int ADD_CONTACT = PICK_CONTACT + 1;
+	private static final int SMS_KEY_CONTACT = ADD_CONTACT + 1;
 	
 	// widgets
 	private TextView titleRecipientView = null;
@@ -111,7 +117,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	// Keys share mode
 	private static final int MODE_MAITRE = 0;
-	private static final int MODE_ESCLAVE = 1;
+	private static final int MODE_ESCLAVE = MODE_MAITRE + 1;
+	private static final int MODE_SMS = MODE_ESCLAVE + 1;
 
 	// store the mode of key exchange
 	private int mode = MODE_MAITRE;
@@ -141,6 +148,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private byte[] key = null;
 	private String phoneNumber = null;
 	
+	private String[] phoneList = null;
 
 	// Manage state changes
 	@Override
@@ -453,8 +461,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				builder = new AlertDialog.Builder(this);
 				builder.setTitle(getString(R.string.app_name));
 				builder.setItems(new String[] { 
-					getString(R.string.master), 
-					getString(R.string.slave) }, modeListener);
+						getString(R.string.master), 
+						getString(R.string.slave), 
+						getString(R.string.by_sms) 
+					}, modeListener);
 				dialog = builder.create();
 				break;
 			case SEND_PROGRESS_DIALOG:
@@ -531,6 +541,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			public void onClick(DialogInterface dialogInterface, int i) {
 				mode = i;
 				switch(mode) {
+					case MODE_SMS:
+						//sms
+						Intent intent = new Intent(Intent.ACTION_PICK, Contacts.CONTENT_URI);  
+						startActivityForResult(intent, SMS_KEY_CONTACT);  						
+						break;
 					case MODE_ESCLAVE:
 						IntentIntegrator.initiateScan(CharabiaActivity.this);							
 						break;
@@ -633,12 +648,69 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		super.onActivityResult(reqCode, resultCode, data);
 
 		switch (reqCode) {
-        	case (PICK_CONTACT):
+			case SMS_KEY_CONTACT:
+				Uri uri = data.getData();
+				
+				ContentResolver cr = getContentResolver();
+				
+				Cursor cursor =  cr.query(uri, new String[] { Contacts.LOOKUP_KEY }, 
+						null, null, null);
+				
+				String lookup = null;
+				
+				if(cursor.moveToFirst()) {
+					lookup = cursor.getString(0);
+				}
+				
+				cursor.close();
+
+				if(lookup == null) {
+					Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+					return;
+				}
+				
+				cursor = cr.query(Data.CONTENT_URI, 
+						new String[] { Phone.NUMBER },
+						Data.MIMETYPE + "=? AND " + Data.LOOKUP_KEY + "=?",
+						new String[] { Phone.CONTENT_ITEM_TYPE, lookup },
+						null);
+
+				ArrayList<String> options = new ArrayList<String>();
+				
+				while(cursor.moveToNext()) {
+					options.add(cursor.getString(0));
+				}
+					
+				cursor.close();
+				
+				phoneList = new String[options.size()];
+
+				KeyPairGenerator gen;
+				try {
+					gen = KeyPairGenerator.getInstance("RSA");
+				} 
+				catch (NoSuchAlgorithmException e) {
+					e.printStackTrace();
+					Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
+					return;
+				}
+				//TODO preference to increase key size and so increase security
+				gen.initialize(1024);
+				keypair = gen.generateKeyPair();
+				RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
+				
+				Builder builder = new AlertDialog.Builder(this);
+				builder.setTitle(getString(R.string.del_or_change_number));
+				builder.setItems(options.toArray(phoneList), null);//editListener);
+				builder.create().show();
+			
+				break;
+        	case PICK_CONTACT:
         		if (resultCode == RESULT_OK) {
         			addToRecipientsList(data.getData().getSchemeSpecificPart());
         		}
-	           break;
-        	case (ADD_CONTACT):
+	            break;
+        	case ADD_CONTACT:
                 try {
   					new Tools(this).updateOrCreateContactKey(phoneNumber, key);
   		           	Toast.makeText(this, getString(R.string.contact_added) + "\n" + phoneNumber, Toast.LENGTH_LONG).show();
@@ -648,7 +720,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
   	        		Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
   		        }
   	    		break;
-        	case(IntentIntegrator.REQUEST_CODE):
+        	case IntentIntegrator.REQUEST_CODE:
 	            if (resultCode == RESULT_OK) {
 	                try {
 		            	String contents = data.getStringExtra("SCAN_RESULT");

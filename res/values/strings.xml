@@ -61,4 +61,5 @@
 	<string name="bad_password">Erreur de mot de passe</string>
 	<string name="error_read_file">Erreur lecture fichier</string>
 	<string name="error_decrypt_file">Erreur decryptage fichier\nmauvais mot de passe?</string>
+	<string name="by_sms">Par SMS</string>
 </resources>
