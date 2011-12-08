@@ -20,10 +20,13 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.Vector;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -294,6 +297,37 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		int lg = messageView.length();
 		titleMessageView.setText(getResources().getString(R.string.message,  
 				lg, (lg/BLOCK_SIZE)+1));
+		
+		
+		KeyPairGenerator gen;
+		try {
+			gen = KeyPairGenerator.getInstance("DH");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
+		} 
+		
+		Log.v("CHARABIA", "ici");
+		
+		Set<String> algo = Security.getAlgorithms("KeyPairGenerator");
+		
+		for(String t : algo) {
+			Log.v("CHARABIA", "KeyPairGenerator=" + t);
+		}
+		
+		algo = Security.getAlgorithms("Cipher");
+		
+		for(String t : algo) {
+			Log.v("CHARABIA", "Cipher=" + t);
+		}
+		
+		
+
+		//keypair = gen.generat;
+		//eKeyPair();
+		//RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
+		
 	}
 	
 	@Override
