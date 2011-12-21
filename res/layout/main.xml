@@ -8,38 +8,100 @@
 	android:eventsInterceptionEnabled="true"
 	android:orientation="vertical">
 
+
 	<LinearLayout
-	    android:id="@+id/ihm"
-	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content" android:orientation="vertical" android:weightSum="1">
-		<TextView android:id="@+id/title_recipients" android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content" android:text=""></TextView>
-	    <TextView
-    		android:id="@+id/recipients"
-    		android:layout_width="fill_parent"
-    		android:layout_height="wrap_content"
-    		android:inputType="text|textMultiLine|textAutoCorrect"
-    		android:maxLines="3"
-    		android:minLines="1"
-    		android:background="@android:drawable/editbox_background"
-    		android:onClick="add_to"/>
-	    
-	    <TextView android:layout_height="wrap_content" android:textAppearance="?android:attr/textAppearanceLarge" android:layout_width="wrap_content" android:id="@+id/title_message" android:text="@string/message"></TextView>
-    	<EditText
-    	    android:id="@+id/message"
-    	    android:layout_width="fill_parent"
-    	    android:layout_height="wrap_content"
-    	    android:layout_marginBottom="10dp"
-    	    android:background="@android:drawable/editbox_background"
-    	    android:gravity="top"
-    	    android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
-    	    android:minLines="3" />
-
-    	<Button
-    	    android:id="@+id/bsend"
-    	    android:layout_width="match_parent"
-    	    android:layout_height="wrap_content"
-    	    android:text="@string/send" 
-    	    android:onClick="buttonSend" />
+	    android:id="@+id/linearLayout2"
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	    android:orientation="vertical" >
+
+
+		<LinearLayout
+		    android:id="@+id/linearLayout1"
+		    android:layout_width="match_parent"
+		    android:layout_height="match_parent"
+		    android:layout_margin="0dp"
+		    android:gravity="right" 
+			<!--android:background="@android:drawable/status_bar_item_background"-->
+			>
+
+			<ImageButton
+			    android:id="@+id/button4"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+				android:src="@android:drawable/ic_menu_more"
+			/>
+
+			<ImageButton
+			    android:id="@+id/button3"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+				android:src="@android:drawable/ic_menu_preferences"
+			/>
+
+			<ImageButton
+			    android:id="@+id/button2"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+				android:src="@android:drawable/ic_menu_sort_alphabetically"
+			/>
+
+			<ImageButton
+			    android:id="@+id/button1"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:src="@android:drawable/ic_menu_send" 
+			/>
+
+		</LinearLayout>
+
+		<LinearLayout
+		    android:id="@+id/ihm"
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		    android:orientation="vertical"
+		    android:weightSum="1" >
+
+		    <TextView
+		        android:id="@+id/title_recipients"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+		    <TextView
+		        android:id="@+id/recipients"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"
+		        android:background="@android:drawable/editbox_background"
+		        android:inputType="text|textMultiLine|textAutoCorrect"
+		        android:maxLines="3"
+		        android:minLines="1"
+		        android:onClick="add_to" />
+
+		    <TextView
+		        android:id="@+id/title_message"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:text="@string/message"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+		    <EditText
+		        android:id="@+id/message"
+		        android:layout_width="fill_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_marginBottom="10dp"
+		        android:background="@android:drawable/editbox_background"
+		        android:gravity="top"
+		        android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
+		        android:minLines="3" />
+
+		    <Button
+		        android:id="@+id/bsend"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:onClick="buttonSend"
+		        android:text="@string/send" />
+		</LinearLayout>
 
 	</LinearLayout>
  
