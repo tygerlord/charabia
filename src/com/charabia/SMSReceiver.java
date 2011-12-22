@@ -66,6 +66,7 @@ public class SMSReceiver extends BroadcastReceiver
 							
 							String message = "";
 
+							/*
 							byte[] key = null;
 							try {
 								key = tools.getKey(originatingAddress);
@@ -106,7 +107,7 @@ public class SMSReceiver extends BroadcastReceiver
 								e.printStackTrace();
 								message = context.getString(R.string.no_key_for_user);
 							}
-							
+							*/
 							
 							long timeStamp = messages[0].getTimestampMillis(); 
 							tools.putSmsToDatabase(originatingAddress, 
@@ -127,22 +128,25 @@ public class SMSReceiver extends BroadcastReceiver
 							messageBody[2] == SmsCipher.MAGIC2[2] && 
 							messageBody[3] == SmsCipher.MAGIC2[3]) {
 
+							Tools tools = new Tools(context);
+						
+							String originatingAddress = messages[0].getOriginatingAddress();
+							
+							SmsCipher cipher = new SmsCipher(context);
+
 							if(messageBody[4] == 0x00) {
+								//Receive a crypted key from originatingAdress, 
+								
 								abortBroadcast();							
 							}
 							
-							Tools tools = new Tools(context);
-			
-							String originatingAddress = messages[0].getOriginatingAddress();
 							
 							String message = "";
 			
 							byte[] key = null;
 							try {
 								key = tools.getKey(originatingAddress);
-			
-								SmsCipher cipher = new SmsCipher(context);
-								
+				
 								try {
 									message = cipher.decrypt(key, messageBody);
 									

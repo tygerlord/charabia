@@ -18,6 +18,7 @@ package com.charabia;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 import android.util.Base64;
 import android.widget.Toast;
@@ -36,18 +37,28 @@ import javax.crypto.spec.IvParameterSpec;
 public class SmsCipher
 {
 
+	public static final String KEYWORD = "itscharabia:";
+	
 	public static final byte[] MAGIC = { 0x12, 0x45, 0x61, 0x17 };
 
 	public static final byte[] MAGIC2 = { (byte)0x84, (byte)0x15, (byte)0x61, (byte)0xB7 };
 	
 	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
 
+	public static final byte KEY = 0x00;
+	public static final byte OTHER = 0x01;
+	
 	public static final byte[] demo_key = new byte[] { 
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 
 		};
+
+	public byte[] iv_base = new byte[] { 
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 
+	};
 
 	private Context context = null;
 	
@@ -75,6 +86,7 @@ public class SmsCipher
 		return generateKeyAES(256);
 	}
 	
+	@Deprecated
 	public String decryptTexte(byte[] key_data, String texte) {
 		
 		try {
@@ -97,6 +109,7 @@ public class SmsCipher
 		return context.getString(R.string.unexpected_error);
 	}
 
+	@Deprecated
 	public String encryptToTexte(byte[] key_data, String texte) {
 		try {
 			Cipher c = Cipher.getInstance(CIPHER_ALGO);
@@ -121,6 +134,39 @@ public class SmsCipher
 		return null;
 	}
 
+	@Deprecated
+	public String _decrypt(byte[] key_data, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+		Cipher c = Cipher.getInstance(CIPHER_ALGO);
+	
+		SecretKey key = new SecretKeySpec(key_data, "AES");
+	
+		c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(data, MAGIC.length, 16));
+
+		String result = new String(c.doFinal(data, MAGIC.length+16, data.length-16-MAGIC.length));
+		
+		return result;
+	}
+
+	@Deprecated
+	public byte[] _encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+		Cipher c = Cipher.getInstance(CIPHER_ALGO);
+
+		SecretKey key = new SecretKeySpec(key_data, "AES");
+
+		c.init(Cipher.ENCRYPT_MODE, key);
+
+		byte[] bIV = c.getIV();
+		byte[] cryptedTexte = c.doFinal(texte.getBytes());
+		byte[] data = new byte[MAGIC.length+cryptedTexte.length+bIV.length];
+
+		System.arraycopy(MAGIC, 0, data, 0, MAGIC.length);
+		System.arraycopy(bIV, 0, data, MAGIC.length, bIV.length);
+		System.arraycopy(cryptedTexte, 0, data, MAGIC.length+bIV.length, cryptedTexte.length);
+
+		
+		return data;
+	}
+
 	public String decrypt(byte[] key_data, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
 		Cipher c = Cipher.getInstance(CIPHER_ALGO);
 	
@@ -138,15 +184,19 @@ public class SmsCipher
 
 		SecretKey key = new SecretKeySpec(key_data, "AES");
 
-		c.init(Cipher.ENCRYPT_MODE, key);
+		SecureRandom sr = new SecureRandom();
+		
+		byte[] bIV = sr.generateSeed(16);
+		sr.
+		
+		c.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(bIV));
 
-		byte[] bIV = c.getIV();
 		byte[] cryptedTexte = c.doFinal(texte.getBytes());
 		byte[] data = new byte[MAGIC.length+cryptedTexte.length+bIV.length];
 
-		System.arraycopy(MAGIC, 0, data, 0, MAGIC.length);
-		System.arraycopy(bIV, 0, data, MAGIC.length, bIV.length);
-		System.arraycopy(cryptedTexte, 0, data, MAGIC.length+bIV.length, cryptedTexte.length);
+		System.arraycopy(MAGIC2, 0, data, 0, MAGIC2.length);
+		System.arraycopy(bIV, 0, data, MAGIC2.length, bIV.length);
+		System.arraycopy(cryptedTexte, 0, data, MAGIC2.length+bIV.length, cryptedTexte.length);
 
 		
 		return data;
