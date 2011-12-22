@@ -3,55 +3,64 @@
 	android:id="@+id/gestures"
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
-
 	android:gestureStrokeType="multiple"
 	android:eventsInterceptionEnabled="true"
 	android:orientation="vertical">
 
-
 	<LinearLayout
-	    android:id="@+id/linearLayout2"
+	    android:id="@+id/mainLayout"
 	    android:layout_width="match_parent"
 	    android:layout_height="wrap_content"
 	    android:orientation="vertical" >
 
-
 		<LinearLayout
-		    android:id="@+id/linearLayout1"
+		    android:id="@+id/menuLayout"
 		    android:layout_width="match_parent"
 		    android:layout_height="match_parent"
 		    android:layout_margin="0dp"
-		    android:gravity="right" 
-			<!--android:background="@android:drawable/status_bar_item_background"-->
-			>
+		    android:background="@android:color/darker_gray"
+		    android:baselineAligned="false"
+		    android:gravity="left|right" >
 
-			<ImageButton
-			    android:id="@+id/button4"
-			    android:layout_width="wrap_content"
-			    android:layout_height="wrap_content"
-				android:src="@android:drawable/ic_menu_more"
-			/>
+		    <TextView
+		        android:id="@+id/textView1"
+		        android:layout_width="wrap_content"
+		        android:layout_height="match_parent"
+		        android:gravity="center_vertical|left"
+		        android:text="@string/app_name"
+		        android:layout_marginLeft="5dp"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
 
-			<ImageButton
-			    android:id="@+id/button3"
-			    android:layout_width="wrap_content"
-			    android:layout_height="wrap_content"
-				android:src="@android:drawable/ic_menu_preferences"
-			/>
+		    <LinearLayout
+		        android:id="@+id/buttonsLayout"
+		        android:layout_width="fill_parent"
+		        android:layout_height="match_parent"
+		        android:gravity="right" >
 
-			<ImageButton
-			    android:id="@+id/button2"
-			    android:layout_width="wrap_content"
-			    android:layout_height="wrap_content"
-				android:src="@android:drawable/ic_menu_sort_alphabetically"
-			/>
+		        <ImageView
+		            android:id="@+id/image2"
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:clickable="true"
+		            android:onClick="addRecipient"
+		            android:src="@android:drawable/ic_menu_sort_alphabetically" />
 
-			<ImageButton
-			    android:id="@+id/button1"
-			    android:layout_width="wrap_content"
-			    android:layout_height="wrap_content"
-			    android:src="@android:drawable/ic_menu_send" 
-			/>
+		        <ImageView
+		            android:id="@+id/image3"
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:clickable="true"
+		            android:src="@android:drawable/ic_menu_preferences" />
+
+		        <ImageView
+		            android:id="@+id/image1"
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:clickable="true"
+		            android:focusable="true"
+		            android:onClick="buttonSend"
+		            android:src="@android:drawable/ic_menu_send" />
+		    </LinearLayout>
 
 		</LinearLayout>
 
@@ -60,6 +69,7 @@
 		    android:layout_width="fill_parent"
 		    android:layout_height="wrap_content"
 		    android:orientation="vertical"
+		    android:isScrollContainer="true"
 		    android:weightSum="1" >
 
 		    <TextView
@@ -76,7 +86,7 @@
 		        android:inputType="text|textMultiLine|textAutoCorrect"
 		        android:maxLines="3"
 		        android:minLines="1"
-		        android:onClick="add_to" />
+		        android:onClick="addRecipient" />
 
 		    <TextView
 		        android:id="@+id/title_message"
@@ -95,12 +105,6 @@
 		        android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
 		        android:minLines="3" />
 
-		    <Button
-		        android:id="@+id/bsend"
-		        android:layout_width="match_parent"
-		        android:layout_height="wrap_content"
-		        android:onClick="buttonSend"
-		        android:text="@string/send" />
 		</LinearLayout>
 
 	</LinearLayout>

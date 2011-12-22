@@ -671,7 +671,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				}
 			};
 
-	public synchronized void add_to(View view) {
+	public synchronized void addRecipient(View view) {
 		Intent intent = new Intent(Intent.ACTION_PICK);
 		intent.setClassName(this, PickContactActivity.class.getName());
 		startActivityForResult(intent, PICK_CONTACT);
@@ -936,7 +936,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "CharabiaActivity.html")));
 				startActivity(intent);
 	        } else if ("ADD".equals(action)) {
-	            add_to(null);
+	            addRecipient(null);
 	        } else if ("SEND".equals(action)) {
 	            buttonSend(null);
 	        } else if ("OUT".equals(action) || "QUIT".equals(action)) {
