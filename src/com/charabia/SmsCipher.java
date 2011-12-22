@@ -36,9 +36,9 @@ import javax.crypto.spec.IvParameterSpec;
 public class SmsCipher
 {
 
-	public static final String KEYWORD = "itscharabia:";
-
 	public static final byte[] MAGIC = { 0x12, 0x45, 0x61, 0x17 };
+
+	public static final byte[] MAGIC2 = { (byte)0x84, (byte)0x15, (byte)0x61, (byte)0xB7 };
 	
 	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
 

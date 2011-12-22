@@ -51,15 +51,15 @@ public class SMSReceiver extends BroadcastReceiver
 				if (messages.length > -1) {
 					byte[] messageBody = messages[0].getUserData();
 
-					Log.v("CHARABIA SMSRECVEIVER","data length = " + messageBody.length);
+					Log.v("CHARABIA SMSRECEIVER","data length = " + messageBody.length);
 					
 					if(messageBody != null && 
-							messageBody[0] == SmsCipher.MAGIC[0] && 
-									messageBody[1] == SmsCipher.MAGIC[1] && 
-											messageBody[2] == SmsCipher.MAGIC[2] && 
-													messageBody[3] == SmsCipher.MAGIC[3]) {
+						messageBody[0] == SmsCipher.MAGIC[0] && 
+						messageBody[1] == SmsCipher.MAGIC[1] && 
+						messageBody[2] == SmsCipher.MAGIC[2] && 
+						messageBody[3] == SmsCipher.MAGIC[3]) {
 
-						
+							//TODO: put message to inform contact using old release 
 							Tools tools = new Tools(context);
 
 							String originatingAddress = messages[0].getOriginatingAddress();
@@ -120,6 +120,75 @@ public class SMSReceiver extends BroadcastReceiver
 							abortBroadcast();
 						 
 						
+					}
+					else if(messageBody != null && 
+							messageBody[0] == SmsCipher.MAGIC2[0] && 
+							messageBody[1] == SmsCipher.MAGIC2[1] && 
+							messageBody[2] == SmsCipher.MAGIC2[2] && 
+							messageBody[3] == SmsCipher.MAGIC2[3]) {
+
+							if(messageBody[4] == 0x00) {
+								abortBroadcast();							
+							}
+							
+							Tools tools = new Tools(context);
+			
+							String originatingAddress = messages[0].getOriginatingAddress();
+							
+							String message = "";
+			
+							byte[] key = null;
+							try {
+								key = tools.getKey(originatingAddress);
+			
+								SmsCipher cipher = new SmsCipher(context);
+								
+								try {
+									message = cipher.decrypt(key, messageBody);
+									
+									message += "\n" + 
+											context.getString(R.string.secured_by_appname, 
+													context.getString(R.string.app_name));
+									
+								} catch (InvalidKeyException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.unexpected_error);
+								} catch (NoSuchAlgorithmException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.unexpected_error);
+								} catch (NoSuchPaddingException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.unexpected_error);
+								} catch (InvalidAlgorithmParameterException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.unexpected_error);
+								} catch (IllegalBlockSizeException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.blocksize_error);
+								} catch (BadPaddingException e) {
+									e.printStackTrace();
+									message = context.getString(R.string.padding_error);
+								}
+							} 
+							catch (NoContactException e1) {
+								e1.printStackTrace();
+								message = context.getString(R.string.unknown_user);
+							} catch (NoCharabiaKeyException e) {
+								e.printStackTrace();
+								message = context.getString(R.string.no_key_for_user);
+							}
+							
+							
+							long timeStamp = messages[0].getTimestampMillis(); 
+							tools.putSmsToDatabase(originatingAddress, 
+									timeStamp, 
+									Tools.MESSAGE_TYPE_INBOX, 
+									messages[0].getStatus(), 
+									message);
+			
+							tools.showNotification(originatingAddress, timeStamp);
+			
+							abortBroadcast();
 					}
 				}
 			}
