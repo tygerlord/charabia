@@ -134,7 +134,7 @@ public class SMSReceiver extends BroadcastReceiver
 							
 							SmsCipher cipher = new SmsCipher(context);
 
-							if(messageBody[4] == 0x00) {
+							if(messageBody[4] == SmsCipher.KEY) {
 								//Receive a crypted key from originatingAdress, 
 								
 								abortBroadcast();							

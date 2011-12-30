@@ -16,6 +16,8 @@
  package com.charabia;
 
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -143,9 +145,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private Tools tools = new Tools(this);
 	
 	// Max length of data that can be send by sms
-	private static final int BLOCK_SIZE = 112;
+	private static final int BLOCK_SIZE = 127;
 	
-	// Message part currently sending block are 112 byte length max
+	// Message part currently sending block are BLOCK_SIZE bytes length max
 	private int mFragment;
 	
 	private byte[] key = null;
@@ -297,6 +299,42 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		int lg = messageView.length();
 		titleMessageView.setText(getResources().getString(R.string.message,  
 				lg, (lg/BLOCK_SIZE)+1));
+		
+		SmsCipher c = new SmsCipher(this);
+		
+		try {
+			String texte = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefjhiklmnopqrstuvwx";
+			
+			byte[] d = c.encrypt(SmsCipher.demo_key, texte);
+			
+			Log.v("CHRABIA", "encrypted(" + texte.length() + "," + d.length + ") = " + Tools.bytesToHex(d));
+			
+			texte = c.decrypt(SmsCipher.demo_key, d);
+			
+			Log.v("CHRABIA", "decrypted = " + texte);
+			
+			
+		} catch (InvalidKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchPaddingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalBlockSizeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (BadPaddingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidAlgorithmParameterException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 	}
 	
 	@Override
@@ -405,16 +443,20 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		return true;
 	}
 
+	public void buttonOptions(View v) {
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+		intent.setClassName(this, PreferencesActivity.class.getName());
+		startActivity(intent);
+	}
+	
 	/* Handles item selections */
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		Intent intent;
 		switch (item.getItemId()) {
-			case R.id.main_menu_options: 
-				intent = new Intent(Intent.ACTION_VIEW);
-				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-				intent.setClassName(this, PreferencesActivity.class.getName());
-				startActivity(intent);
+			case R.id.main_menu_options:
+				buttonOptions(null);
 				return true;
 			case R.id.main_menu_edit: 
 				intent = new Intent(Intent.ACTION_VIEW);

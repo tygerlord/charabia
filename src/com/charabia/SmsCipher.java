@@ -45,8 +45,8 @@ public class SmsCipher
 	
 	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
 
-	public static final byte KEY = 0x00;
-	public static final byte OTHER = 0x01;
+	public static final byte MESSAGE = 0x01;
+	public static final byte KEY = 0x02;
 	
 	public static final byte[] demo_key = new byte[] { 
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -172,33 +172,40 @@ public class SmsCipher
 	
 		SecretKey key = new SecretKeySpec(key_data, "AES");
 	
-		c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(data, MAGIC.length, 16));
+		byte[] IV = new byte[16];
+		int pos = MAGIC2.length+1;
+		System.arraycopy(data, pos, IV, 0, 7); pos += 7;
+		
+		c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
 
-		String result = new String(c.doFinal(data, MAGIC.length+16, data.length-16-MAGIC.length));
+		String result = new String(c.doFinal(data, pos, data.length-pos));
 		
 		return result;
 	}
 
-	public byte[] encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public byte[] encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 		Cipher c = Cipher.getInstance(CIPHER_ALGO);
 
 		SecretKey key = new SecretKeySpec(key_data, "AES");
 
 		SecureRandom sr = new SecureRandom();
 		
+		// generate salt but keep only first 7 bytes, set other to 0
+		// this for keep message size at 140 bytes total size sms data allowed
 		byte[] bIV = sr.generateSeed(16);
-		sr.
+		for(int i = 7; i < 16; i++) bIV[i] = (byte)0x00;
 		
 		c.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(bIV));
 
 		byte[] cryptedTexte = c.doFinal(texte.getBytes());
-		byte[] data = new byte[MAGIC.length+cryptedTexte.length+bIV.length];
+		byte[] data = new byte[MAGIC.length+1+7+cryptedTexte.length];
 
-		System.arraycopy(MAGIC2, 0, data, 0, MAGIC2.length);
-		System.arraycopy(bIV, 0, data, MAGIC2.length, bIV.length);
-		System.arraycopy(cryptedTexte, 0, data, MAGIC2.length+bIV.length, cryptedTexte.length);
+		int pos = 0;
+		System.arraycopy(MAGIC2, 0, data, pos, MAGIC2.length); pos += MAGIC2.length;
+		data[pos] = MESSAGE; pos += 1;
+		System.arraycopy(bIV, 0, data, pos, 7); pos += 7;
+		System.arraycopy(cryptedTexte, 0, data, pos, cryptedTexte.length);
 
-		
 		return data;
 	}
 }

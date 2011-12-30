@@ -15,7 +15,16 @@
  */
 package com.charabia;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.StreamCorruptedException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+
 import android.net.Uri;
 import android.content.Intent;
 import android.content.Context;
@@ -111,6 +120,8 @@ public class Tools {
 	public static final int MESSAGE_IS_NOT_SEEN = 0;
 	public static final int MESSAGE_IS_SEEN = 1;
 
+	private static final String KEYPAIR_FILENAME= "keypair.data";
+	
 	public Tools(Context context) {
 		this.context = context;
 	}
@@ -445,4 +456,65 @@ public class Tools {
         return result; 
 	}
 	
+	/*
+	 * load or create RSA keypair for sms key exchange process 
+	 */
+	public KeyPair loadKeyPair() {
+	
+		KeyPair keyPair = null;
+		
+		try {
+			FileInputStream fis = context.openFileInput(KEYPAIR_FILENAME);
+			ObjectInputStream ois = new ObjectInputStream(fis);
+			keyPair = (KeyPair) ois.readObject();
+			fis.close();
+		} 
+		catch (StreamCorruptedException e1) {
+			e1.printStackTrace();
+		} 
+		catch (IOException e1) {
+			e1.printStackTrace();
+		} 
+		catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		catch (FileNotFoundException e1) {
+			try {
+				KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+				gen.initialize(1024);
+				keyPair = gen.generateKeyPair();
+			} 
+			catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			} 
+		}
+
+		return keyPair;
+	}
+	
+    public static String bytesToHex(byte[] data) {
+        StringBuffer buf = new StringBuffer();
+
+        for (int i = 0; i < data.length; i++) {
+            buf.append(byteToHex(data[i]).toUpperCase());
+        }
+        return (buf.toString());
+    }
+
+    private static final String tab = "0123456789ABCDEF";
+    
+    public static String byteToHex(byte data) {
+
+    	
+        StringBuffer buf = new StringBuffer();
+
+        buf.append(tab.charAt((data >>> 4) & 0x0F));
+
+        buf.append(tab.charAt(data & 0x0F));
+
+        return buf.toString();
+
+    }
+
+ 	
 }
