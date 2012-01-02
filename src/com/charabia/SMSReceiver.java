@@ -66,7 +66,6 @@ public class SMSReceiver extends BroadcastReceiver
 							
 							String message = "";
 
-							/*
 							byte[] key = null;
 							try {
 								key = tools.getKey(originatingAddress);
@@ -107,7 +106,6 @@ public class SMSReceiver extends BroadcastReceiver
 								e.printStackTrace();
 								message = context.getString(R.string.no_key_for_user);
 							}
-							*/
 							
 							long timeStamp = messages[0].getTimestampMillis(); 
 							tools.putSmsToDatabase(originatingAddress, 
@@ -123,23 +121,25 @@ public class SMSReceiver extends BroadcastReceiver
 						
 					}
 					else if(messageBody != null && 
-							messageBody[0] == SmsCipher.MAGIC2[0] && 
-							messageBody[1] == SmsCipher.MAGIC2[1] && 
-							messageBody[2] == SmsCipher.MAGIC2[2] && 
-							messageBody[3] == SmsCipher.MAGIC2[3]) {
+							messageBody[0] == Tools.MAGIC[0] && 
+							messageBody[1] == Tools.MAGIC[1] && 
+							messageBody[2] == Tools.MAGIC[2] && 
+							messageBody[3] == Tools.MAGIC[3]) {
 
 							Tools tools = new Tools(context);
 						
 							String originatingAddress = messages[0].getOriginatingAddress();
 							
-							SmsCipher cipher = new SmsCipher(context);
-
-							if(messageBody[4] == SmsCipher.KEY) {
-								//Receive a crypted key from originatingAdress, 
+							if(messageBody[4] == Tools.KEY_TYPE) {
+								//Receive a public key from originatingAdress, 
 								
 								abortBroadcast();							
 							}
-							
+							else if(messageBody[4] == Tools.CRYPTED_KEY_TYPE) {
+								//Receive a crypted AES key from originatingAdress, 
+								
+								abortBroadcast();							
+							}
 							
 							String message = "";
 			
@@ -148,7 +148,7 @@ public class SMSReceiver extends BroadcastReceiver
 								key = tools.getKey(originatingAddress);
 				
 								try {
-									message = cipher.decrypt(key, messageBody);
+									message = tools.decrypt(key, messageBody);
 									
 									message += "\n" + 
 											context.getString(R.string.secured_by_appname, 

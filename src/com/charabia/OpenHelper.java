@@ -25,24 +25,43 @@ public class OpenHelper extends SQLiteOpenHelper
 
 	public static final String DATABASE_NAME = "CHARABIA_BDD";
 
+	private static final int DATABASE_VERSION = 2;
+
 	public static final String ID = "_id";
 	public static final String KEY = "KEY";
 	public static final String PHONE = "PHONE";
 	public static final String LOOKUP = "LOOKUP";
 	public static final String CONTACT_ID = "CONTACT_ID";
+	public static final String DATE_KEY = "DATE_KEY";
 	
 	public static final String TABLE_KEYS = "TABLE_KEYS";
-	
-	private static final int DATABASE_VERSION = 1;
+
+	public static final String PUBLIC_KEYS = "PUBLIC_KEYS";
 
 	private static final String TABLE_KEYS_CREATE =
-				"CREATE TABLE " + TABLE_KEYS + " (" +
-				ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-				LOOKUP + " TEXT UNIQUE," +
-				CONTACT_ID + " INTEGER," +
-				PHONE + " TEXT," +
-				KEY + " BLOB);";
+		"CREATE TABLE " + TABLE_KEYS + " (" +
+		ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+		LOOKUP + " TEXT UNIQUE," +
+		CONTACT_ID + " INTEGER," +
+		PHONE + " TEXT," +
+		KEY + " BLOB);";
 
+	private static final String PUBLIC_KEYS_CREATE =
+			"CREATE TABLE " + PUBLIC_KEYS + " (" +
+			ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+			PHONE + " TEXT NOT NULL," +		
+			DATE_KEY + " TEXT DEFAULT CURRENT_TIMESTAMP, " +
+			KEY + " BLOB);";
+
+	private static final String ADD_DATE_TO_TABLE_KEYS = 
+		"ALTER TABLE " + TABLE_KEYS + " ADD " + DATE_KEY + " TEXT";
+	
+	private static final String ADD_TRIGGER_DATE =
+		"CREATE TRIGGER table_keys_date AFTER UPDATE OF " + KEY + " ON " + TABLE_KEYS + "\n" + 
+		"BEGIN\n" +
+		"	UPDATE " + TABLE_KEYS + " SET " + DATE_KEY + " = CURRENT_TIMESTAMP WHERE " +  ID + " = OLD." + ID + ";\n" +    
+		"END";
+			
 	public OpenHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
@@ -50,6 +69,7 @@ public class OpenHelper extends SQLiteOpenHelper
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL(TABLE_KEYS_CREATE);
+		onUpgrade(db, 1, 2);
 	}
 
 	@Override
@@ -57,7 +77,11 @@ public class OpenHelper extends SQLiteOpenHelper
 		// Example
 		//db.execSQL("DROP TABLE IF EXISTS " + TABLE_KEYS);
 		//onCreate(db);
-		
+		if(oldVersion == 1 && newVersion == 2) {
+			db.execSQL(ADD_DATE_TO_TABLE_KEYS);
+			db.execSQL(ADD_TRIGGER_DATE);
+			db.execSQL(PUBLIC_KEYS_CREATE);
+		}
 	}
 
 }

@@ -36,14 +36,21 @@ public class DataProvider extends ContentProvider
 	public static final Uri CONTENT_URI = 
 			Uri.parse("content://"+ PROVIDER_NAME + "/keys");
 
+	public static final Uri PUBKEYS_CONTENT_URI = 
+			Uri.parse("content://"+ PROVIDER_NAME + "/pubkeys");
+
 	private static final int KEYS = 1;
 	private static final int KEYS_ID = 2;
+	private static final int PUBKEYS = 3;
+	private static final int PUBKEYS_ID = 4;
 	
 	private static final UriMatcher uriMatcher;
 	static{
 		uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 		uriMatcher.addURI(PROVIDER_NAME, "keys", KEYS);
 		uriMatcher.addURI(PROVIDER_NAME, "keys/#", KEYS_ID);
+		uriMatcher.addURI(PROVIDER_NAME, "pubkeys", PUBKEYS);
+		uriMatcher.addURI(PROVIDER_NAME, "pubkeys/#", PUBKEYS_ID);
 	}
 
 	private SQLiteDatabase db = null;
@@ -60,6 +67,13 @@ public class DataProvider extends ContentProvider
 			case KEYS_ID:
 				id = uri.getPathSegments().get(1);
 				table = OpenHelper.TABLE_KEYS;
+				break;
+			case PUBKEYS:
+				table = OpenHelper.PUBLIC_KEYS;
+				break;
+			case PUBKEYS_ID:
+				id = uri.getPathSegments().get(1);
+				table = OpenHelper.PUBLIC_KEYS;
 				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
@@ -87,6 +101,10 @@ public class DataProvider extends ContentProvider
 				return "vnd.android.cursor.dir/vnd.charabia.keys";
 			case KEYS_ID:                
 				return "vnd.android.cursor.item/vnd.charabia.key";
+			case PUBKEYS:
+				return "vnd.android.cursor.dir/vnd.charabia.pubkeys";
+			case PUBKEYS_ID:                
+				return "vnd.android.cursor.item/vnd.charabia.pubkey";
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);        
 		}   
@@ -99,6 +117,9 @@ public class DataProvider extends ContentProvider
 		switch (uriMatcher.match(uri)) {
 			case KEYS:
 				table = OpenHelper.TABLE_KEYS;
+				break;
+			case PUBKEYS:
+				table = OpenHelper.PUBLIC_KEYS;
 				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
@@ -138,6 +159,13 @@ public class DataProvider extends ContentProvider
 				id = uri.getPathSegments().get(1);
 				table = OpenHelper.TABLE_KEYS;
 				break;
+			case PUBKEYS:
+				table = OpenHelper.PUBLIC_KEYS;
+				break;
+			case PUBKEYS_ID:
+				id = uri.getPathSegments().get(1);
+				table = OpenHelper.PUBLIC_KEYS;
+				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
 		}    
@@ -175,6 +203,13 @@ public class DataProvider extends ContentProvider
 	        case KEYS_ID:
 	            id = uri.getPathSegments().get(1);
 	    		table = OpenHelper.TABLE_KEYS;
+	            break;
+	    	case PUBKEYS:
+	    		table = OpenHelper.PUBLIC_KEYS;
+	    		break;
+	        case PUBKEYS_ID:
+	            id = uri.getPathSegments().get(1);
+	    		table = OpenHelper.PUBLIC_KEYS;
 	            break;
 	        default: throw new IllegalArgumentException(
 	            "Unknown URI " + uri);    

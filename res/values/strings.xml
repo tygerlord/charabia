@@ -7,8 +7,8 @@
 	<string name="info">\nVersion %s</string>
 	<string name="quit">Quitter</string>
 	<string name="keys">Clés</string>
-	<string name="master">Maitre</string>
-	<string name="slave">Esclave</string>
+	<string name="master">Par QRcode, mode Maitre</string>
+	<string name="slave">Par QRCode, mode Esclave</string>
 	<plurals name="to">
         <item quantity="zero">Destinataire</item>
 	    <item quantity="one">Destinataire</item>

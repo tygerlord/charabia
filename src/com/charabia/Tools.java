@@ -17,13 +17,27 @@ package com.charabia;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import android.net.Uri;
 import android.content.Intent;
@@ -32,6 +46,7 @@ import android.content.ContentValues;
 import android.content.ContentResolver;
 import android.text.format.DateFormat;
 import android.util.Log;
+import android.widget.Toast;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.graphics.Bitmap;
@@ -122,6 +137,21 @@ public class Tools {
 
 	private static final String KEYPAIR_FILENAME= "keypair.data";
 	
+	public static final byte[] MAGIC = { (byte)0x84, (byte)0x15, (byte)0x61, (byte)0xB7 };
+	
+	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
+
+	public static final byte MESSAGE_TYPE = 0x01; // we receive a message
+	public static final byte KEY_TYPE = 0x02; // we receive a public key
+	public static final byte CRYPTED_KEY_TYPE = 0x03; // we receive aes key crypted by public key
+
+	public static final byte[] demo_key = new byte[] { 
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 
+	};
+
 	public Tools(Context context) {
 		this.context = context;
 	}
@@ -474,19 +504,30 @@ public class Tools {
 		} 
 		catch (IOException e1) {
 			e1.printStackTrace();
+			
+			if(e1 instanceof FileNotFoundException) {
+				try {
+					KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+					gen.initialize(1024);
+					keyPair = gen.generateKeyPair();
+
+					FileOutputStream fos = context.openFileOutput(KEYPAIR_FILENAME, Context.MODE_PRIVATE);
+					ObjectOutputStream oos = new ObjectOutputStream(fos);
+					oos.writeObject(keyPair);
+					oos.close();
+				} 
+				catch (NoSuchAlgorithmException e) {
+					e.printStackTrace();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} 
+				
+			}
 		} 
 		catch (ClassNotFoundException e) {
 			e.printStackTrace();
-		}
-		catch (FileNotFoundException e1) {
-			try {
-				KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-				gen.initialize(1024);
-				keyPair = gen.generateKeyPair();
-			} 
-			catch (NoSuchAlgorithmException e) {
-				e.printStackTrace();
-			} 
 		}
 
 		return keyPair;
@@ -516,5 +557,66 @@ public class Tools {
 
     }
 
- 	
+	public String decrypt(byte[] key_data, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+		Cipher c = Cipher.getInstance(CIPHER_ALGO);
+	
+		SecretKey key = new SecretKeySpec(key_data, "AES");
+	
+		byte[] IV = new byte[16];
+		int pos = MAGIC.length+1;
+		System.arraycopy(data, pos, IV, 0, 7); pos += 7;
+		
+		c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
+
+		String result = new String(c.doFinal(data, pos, data.length-pos));
+		
+		return result;
+	}
+
+	public byte[] encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+		Cipher c = Cipher.getInstance(CIPHER_ALGO);
+
+		SecretKey key = new SecretKeySpec(key_data, "AES");
+
+		SecureRandom sr = new SecureRandom();
+		
+		// generate salt but keep only first 7 bytes, set other to 0
+		// this for keep message size at 140 bytes total size sms data allowed
+		byte[] bIV = sr.generateSeed(16);
+		for(int i = 7; i < 16; i++) bIV[i] = (byte)0x00;
+		
+		c.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(bIV));
+
+		byte[] cryptedTexte = c.doFinal(texte.getBytes());
+		byte[] data = new byte[MAGIC.length+1+7+cryptedTexte.length];
+
+		int pos = 0;
+		System.arraycopy(MAGIC, 0, data, pos, MAGIC.length); pos += MAGIC.length;
+		data[pos] = MESSAGE_TYPE; pos += 1;
+		System.arraycopy(bIV, 0, data, pos, 7); pos += 7;
+		System.arraycopy(cryptedTexte, 0, data, pos, cryptedTexte.length);
+
+		return data;
+	}
+ 
+	public SecretKey generateKeyAES(int size) {
+		try {
+			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+			keyGen.init(size);
+			SecretKey key = keyGen.generateKey();
+			
+			// key.getEncoded to have byte[]
+			return key;
+		}
+		catch(Exception e) {
+			Toast.makeText(context, context.getString(R.string.unexpected_error) + "\n" + e.toString(), Toast.LENGTH_LONG).show();
+		}
+
+		return null;
+	}
+
+	public SecretKey generateKeyAES() {
+		return generateKeyAES(256);
+	}
+
 }

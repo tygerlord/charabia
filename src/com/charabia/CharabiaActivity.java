@@ -16,19 +16,14 @@
  package com.charabia;
 
 import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PublicKey;
-import java.security.Security;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.Vector;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -300,41 +295,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		titleMessageView.setText(getResources().getString(R.string.message,  
 				lg, (lg/BLOCK_SIZE)+1));
 		
-		SmsCipher c = new SmsCipher(this);
-		
-		try {
-			String texte = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefjhiklmnopqrstuvwx";
-			
-			byte[] d = c.encrypt(SmsCipher.demo_key, texte);
-			
-			Log.v("CHRABIA", "encrypted(" + texte.length() + "," + d.length + ") = " + Tools.bytesToHex(d));
-			
-			texte = c.decrypt(SmsCipher.demo_key, d);
-			
-			Log.v("CHRABIA", "decrypted = " + texte);
-			
-			
-		} catch (InvalidKeyException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchPaddingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalBlockSizeException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (BadPaddingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvalidAlgorithmParameterException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
 	}
 	
 	@Override
@@ -443,11 +403,8 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		return true;
 	}
 
-	public void buttonOptions(View v) {
-		Intent intent = new Intent(Intent.ACTION_VIEW);
-		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-		intent.setClassName(this, PreferencesActivity.class.getName());
-		startActivity(intent);
+	public void buttonShare(View v) {
+		showDialog(MODE_DIALOG);
 	}
 	
 	/* Handles item selections */
@@ -456,7 +413,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		Intent intent;
 		switch (item.getItemId()) {
 			case R.id.main_menu_options:
-				buttonOptions(null);
+				intent = new Intent(Intent.ACTION_VIEW);
+				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+				intent.setClassName(this, PreferencesActivity.class.getName());
+				startActivity(intent);
 				return true;
 			case R.id.main_menu_edit: 
 				intent = new Intent(Intent.ACTION_VIEW);
@@ -694,61 +654,65 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 		switch (reqCode) {
 			case SMS_KEY_CONTACT:
-				Uri uri = data.getData();
-				
-				ContentResolver cr = getContentResolver();
-				
-				Cursor cursor =  cr.query(uri, new String[] { Contacts.LOOKUP_KEY }, 
-						null, null, null);
-				
-				String lookup = null;
-				
-				if(cursor.moveToFirst()) {
-					lookup = cursor.getString(0);
-				}
-				
-				cursor.close();
-
-				if(lookup == null) {
-					Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
-					return;
-				}
-				
-				cursor = cr.query(Data.CONTENT_URI, 
-						new String[] { Phone.NUMBER },
-						Data.MIMETYPE + "=? AND " + Data.LOOKUP_KEY + "=?",
-						new String[] { Phone.CONTENT_ITEM_TYPE, lookup },
-						null);
-
-				ArrayList<String> options = new ArrayList<String>();
-				
-				while(cursor.moveToNext()) {
-					options.add(cursor.getString(0));
-				}
+				if (resultCode == RESULT_OK) {
+					Uri uri = data.getData();
 					
-				cursor.close();
-				
-				phoneList = new String[options.size()];
-
-				KeyPairGenerator gen;
-				try {
-					gen = KeyPairGenerator.getInstance("RSA");
-				} 
-				catch (NoSuchAlgorithmException e) {
-					e.printStackTrace();
-					Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
-					return;
+					ContentResolver cr = getContentResolver();
+					
+					Cursor cursor =  cr.query(uri, new String[] { Contacts.LOOKUP_KEY }, 
+							null, null, null);
+					
+					String lookup = null;
+					
+					if(cursor.moveToFirst()) {
+						lookup = cursor.getString(0);
+					}
+					
+					cursor.close();
+	
+					if(lookup == null) {
+						Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+						return;
+					}
+					
+					cursor = cr.query(Data.CONTENT_URI, 
+							new String[] { Phone.NUMBER },
+							Data.MIMETYPE + "=? AND " + Data.LOOKUP_KEY + "=?",
+							new String[] { Phone.CONTENT_ITEM_TYPE, lookup },
+							null);
+	
+					ArrayList<String> options = new ArrayList<String>();
+					
+					while(cursor.moveToNext()) {
+						options.add(cursor.getString(0));
+					}
+						
+					cursor.close();
+					
+					phoneList = new String[options.size()];
+	
+					KeyPairGenerator gen;
+					try {
+						gen = KeyPairGenerator.getInstance("RSA");
+					} 
+					catch (NoSuchAlgorithmException e) {
+						e.printStackTrace();
+						Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
+						return;
+					}
+					//TODO preference to increase key size and so increase security
+					gen.initialize(1024);
+					keypair = gen.generateKeyPair();
+					RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
+					
+					Builder builder = new AlertDialog.Builder(this);
+					builder.setTitle(getString(R.string.del_or_change_number));
+					builder.setItems(options.toArray(phoneList), null);//editListener);
+					builder.create().show();
 				}
-				//TODO preference to increase key size and so increase security
-				gen.initialize(1024);
-				keypair = gen.generateKeyPair();
-				RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
-				
-				Builder builder = new AlertDialog.Builder(this);
-				builder.setTitle(getString(R.string.del_or_change_number));
-				builder.setItems(options.toArray(phoneList), null);//editListener);
-				builder.create().show();
-			
+				else {
+					Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
+				}
 				break;
         	case PICK_CONTACT:
         		if (resultCode == RESULT_OK) {
@@ -781,8 +745,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						
 						if(mode == MODE_ESCLAVE) {
 							// Save key and show crypted key on QRCode
-							SmsCipher cipher = new SmsCipher(CharabiaActivity.this);
-							key = cipher.generateKeyAES().getEncoded();
+							key = tools.generateKeyAES().getEncoded();
 							
 							KeyFactory keyFact = KeyFactory.getInstance("RSA");
 							
@@ -887,10 +850,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  		
 		String texte = messageView.getText().toString();
 
-		SmsCipher cipher = new SmsCipher(this);
 		int start = mFragment*BLOCK_SIZE;
 		int end = (start+BLOCK_SIZE)<texte.length()?(start+BLOCK_SIZE):texte.length();
-		byte[] data = cipher.encrypt(tools.getKey(phoneNumber), 
+		byte[] data = tools.encrypt(tools.getKey(phoneNumber), 
 				texte.substring(start, end));
 
 		Intent iSend = new Intent(SMS_SENT);

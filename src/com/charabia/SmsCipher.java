@@ -18,8 +18,6 @@ package com.charabia;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-
 import android.util.Base64;
 import android.widget.Toast;
 
@@ -34,6 +32,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
 import javax.crypto.spec.IvParameterSpec;
 
+@Deprecated
 public class SmsCipher
 {
 
@@ -41,13 +40,8 @@ public class SmsCipher
 	
 	public static final byte[] MAGIC = { 0x12, 0x45, 0x61, 0x17 };
 
-	public static final byte[] MAGIC2 = { (byte)0x84, (byte)0x15, (byte)0x61, (byte)0xB7 };
-	
 	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
 
-	public static final byte MESSAGE = 0x01;
-	public static final byte KEY = 0x02;
-	
 	public static final byte[] demo_key = new byte[] { 
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ,
@@ -134,8 +128,7 @@ public class SmsCipher
 		return null;
 	}
 
-	@Deprecated
-	public String _decrypt(byte[] key_data, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+	public String decrypt(byte[] key_data, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
 		Cipher c = Cipher.getInstance(CIPHER_ALGO);
 	
 		SecretKey key = new SecretKeySpec(key_data, "AES");
@@ -147,8 +140,7 @@ public class SmsCipher
 		return result;
 	}
 
-	@Deprecated
-	public byte[] _encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+	public byte[] encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 		Cipher c = Cipher.getInstance(CIPHER_ALGO);
 
 		SecretKey key = new SecretKeySpec(key_data, "AES");
@@ -167,45 +159,4 @@ public class SmsCipher
 		return data;
 	}
 
-	public String decrypt(byte[] key_data, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
-		Cipher c = Cipher.getInstance(CIPHER_ALGO);
-	
-		SecretKey key = new SecretKeySpec(key_data, "AES");
-	
-		byte[] IV = new byte[16];
-		int pos = MAGIC2.length+1;
-		System.arraycopy(data, pos, IV, 0, 7); pos += 7;
-		
-		c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
-
-		String result = new String(c.doFinal(data, pos, data.length-pos));
-		
-		return result;
-	}
-
-	public byte[] encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
-		Cipher c = Cipher.getInstance(CIPHER_ALGO);
-
-		SecretKey key = new SecretKeySpec(key_data, "AES");
-
-		SecureRandom sr = new SecureRandom();
-		
-		// generate salt but keep only first 7 bytes, set other to 0
-		// this for keep message size at 140 bytes total size sms data allowed
-		byte[] bIV = sr.generateSeed(16);
-		for(int i = 7; i < 16; i++) bIV[i] = (byte)0x00;
-		
-		c.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(bIV));
-
-		byte[] cryptedTexte = c.doFinal(texte.getBytes());
-		byte[] data = new byte[MAGIC.length+1+7+cryptedTexte.length];
-
-		int pos = 0;
-		System.arraycopy(MAGIC2, 0, data, pos, MAGIC2.length); pos += MAGIC2.length;
-		data[pos] = MESSAGE; pos += 1;
-		System.arraycopy(bIV, 0, data, pos, 7); pos += 7;
-		System.arraycopy(cryptedTexte, 0, data, pos, cryptedTexte.length);
-
-		return data;
-	}
 }

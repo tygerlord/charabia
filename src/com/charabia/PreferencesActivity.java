@@ -58,7 +58,7 @@ public final class PreferencesActivity extends PreferenceActivity
 				String phoneNumber = sharedPreferences.getString(PHONE_NUMBER, null);
 				
 				try {
-					new Tools(this).updateOrCreateContactKey(phoneNumber, SmsCipher.demo_key);
+					new Tools(this).updateOrCreateContactKey(phoneNumber, Tools.demo_key);
 				} catch (NoContactException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
