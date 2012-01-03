@@ -68,8 +68,15 @@ public class OpenHelper extends SQLiteOpenHelper
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		db.execSQL(TABLE_KEYS_CREATE);
-		onUpgrade(db, 1, 2);
+		db.beginTransaction();
+		try {
+			db.execSQL(TABLE_KEYS_CREATE);
+			onUpgrade(db, 1, 2);
+			db.setTransactionSuccessful();
+		}
+		finally {
+			db.endTransaction();
+		}
 	}
 
 	@Override
@@ -78,9 +85,16 @@ public class OpenHelper extends SQLiteOpenHelper
 		//db.execSQL("DROP TABLE IF EXISTS " + TABLE_KEYS);
 		//onCreate(db);
 		if(oldVersion == 1 && newVersion == 2) {
-			db.execSQL(ADD_DATE_TO_TABLE_KEYS);
-			db.execSQL(ADD_TRIGGER_DATE);
-			db.execSQL(PUBLIC_KEYS_CREATE);
+			db.beginTransaction();
+			try {
+				db.execSQL(ADD_DATE_TO_TABLE_KEYS);
+				db.execSQL(ADD_TRIGGER_DATE);
+				db.execSQL(PUBLIC_KEYS_CREATE);
+				db.setTransactionSuccessful();
+			}
+			finally {
+				db.endTransaction();
+			}
 		}
 	}
 

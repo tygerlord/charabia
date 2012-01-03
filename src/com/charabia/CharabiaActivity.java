@@ -966,7 +966,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
                             		dismissDialog(SEND_PROGRESS_DIALOG);
                             		messageView.setText("");
                             	}
-                            	else {
+                        		else {
                             		mFragment = 0;
                             		sendMessage();
                             	}

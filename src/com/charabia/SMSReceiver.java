@@ -24,6 +24,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -130,52 +132,35 @@ public class SMSReceiver extends BroadcastReceiver
 						
 							String originatingAddress = messages[0].getOriginatingAddress();
 							
-							if(messageBody[4] == Tools.KEY_TYPE) {
-								//Receive a public key from originatingAdress, 
-								
-								abortBroadcast();							
-							}
-							else if(messageBody[4] == Tools.CRYPTED_KEY_TYPE) {
-								//Receive a crypted AES key from originatingAdress, 
-								
-								abortBroadcast();							
-							}
-							
 							String message = "";
 			
-							byte[] key = null;
 							try {
-								key = tools.getKey(originatingAddress);
-				
-								try {
-									message = tools.decrypt(key, messageBody);
-									
-									message += "\n" + 
-											context.getString(R.string.secured_by_appname, 
-													context.getString(R.string.app_name));
-									
-								} catch (InvalidKeyException e) {
-									e.printStackTrace();
-									message = context.getString(R.string.unexpected_error);
-								} catch (NoSuchAlgorithmException e) {
-									e.printStackTrace();
-									message = context.getString(R.string.unexpected_error);
-								} catch (NoSuchPaddingException e) {
-									e.printStackTrace();
-									message = context.getString(R.string.unexpected_error);
-								} catch (InvalidAlgorithmParameterException e) {
-									e.printStackTrace();
-									message = context.getString(R.string.unexpected_error);
-								} catch (IllegalBlockSizeException e) {
-									e.printStackTrace();
-									message = context.getString(R.string.blocksize_error);
-								} catch (BadPaddingException e) {
-									e.printStackTrace();
-									message = context.getString(R.string.padding_error);
-								}
-							} 
-							catch (NoContactException e1) {
-								e1.printStackTrace();
+								message = tools.decrypt(originatingAddress, messageBody);
+								
+								message += "\n" + 
+										context.getString(R.string.secured_by_appname, 
+												context.getString(R.string.app_name));
+								
+							} catch (InvalidKeyException e) {
+								e.printStackTrace();
+								message = context.getString(R.string.unexpected_error);
+							} catch (NoSuchAlgorithmException e) {
+								e.printStackTrace();
+								message = context.getString(R.string.unexpected_error);
+							} catch (NoSuchPaddingException e) {
+								e.printStackTrace();
+								message = context.getString(R.string.unexpected_error);
+							} catch (InvalidAlgorithmParameterException e) {
+								e.printStackTrace();
+								message = context.getString(R.string.unexpected_error);
+							} catch (IllegalBlockSizeException e) {
+								e.printStackTrace();
+								message = context.getString(R.string.blocksize_error);
+							} catch (BadPaddingException e) {
+								e.printStackTrace();
+								message = context.getString(R.string.padding_error);
+							} catch (NoContactException e) {
+								e.printStackTrace();
 								message = context.getString(R.string.unknown_user);
 							} catch (NoCharabiaKeyException e) {
 								e.printStackTrace();

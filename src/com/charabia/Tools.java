@@ -557,18 +557,40 @@ public class Tools {
 
     }
 
-	public String decrypt(byte[] key_data, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
-		Cipher c = Cipher.getInstance(CIPHER_ALGO);
-	
-		SecretKey key = new SecretKeySpec(key_data, "AES");
-	
-		byte[] IV = new byte[16];
-		int pos = MAGIC.length+1;
-		System.arraycopy(data, pos, IV, 0, 7); pos += 7;
+	public String decrypt(String originatingAddress, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, NoContactException, NoCharabiaKeyException {
 		
-		c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
-
-		String result = new String(c.doFinal(data, pos, data.length-pos));
+		String result = context.getString(R.string.unexpected_error);
+		
+		if(data[4] == KEY_TYPE) {
+			// receive public key 
+			ContentResolver cr = context.getContentResolver();
+			ContentValues values = new ContentValues();
+			
+			values.put(OpenHelper.KEY, data);
+			values.put(OpenHelper.PHONE, originatingAddress);
+			
+			cr.insert(DataProvider.PUBKEYS_CONTENT_URI, values);
+			
+			result = "Ce contact demande à partager une clé charabia avec vous, cliquez sur ce lien pour ";
+		}
+		else if(data[4] == CRYPTED_KEY_TYPE) {
+			// receive crypted aes key
+		}
+		else {
+			byte[] key_data = getKey(originatingAddress);
+					
+			Cipher c = Cipher.getInstance(CIPHER_ALGO);
+		
+			SecretKey key = new SecretKeySpec(key_data, "AES");
+		
+			byte[] IV = new byte[16];
+			int pos = MAGIC.length+1;
+			System.arraycopy(data, pos, IV, 0, 7); pos += 7;
+			
+			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
+	
+			result = new String(c.doFinal(data, pos, data.length-pos));
+		}
 		
 		return result;
 	}
