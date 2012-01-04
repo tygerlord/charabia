@@ -62,4 +62,7 @@
 	<string name="error_read_file">Erreur lecture fichier</string>
 	<string name="error_decrypt_file">Erreur decryptage fichier\nmauvais mot de passe?</string>
 	<string name="by_sms">Par SMS</string>
+	<string name="yes">OUI</string>
+	<string name="no">NON</string>
+	<string name="query_chare_key">Voulez vous partagez une clé secréte avec ce contact? (coût 1 sms)</string>
 </resources>

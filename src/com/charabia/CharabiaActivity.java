@@ -93,7 +93,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private static final String TAG = "CHARABIA";
 
 	//port where data sms are send
-	private static final short sms_port = 1981;
+	public static final short sms_port = 1981;
 	
 	// Extra text data share by sms
 	public static final String SMS_BODY = "sms_body";

@@ -3,6 +3,14 @@
 		package="com.charabia"
 		android:versionName="2.00" android:versionCode="200">
 	<uses-sdk android:minSdkVersion="8" android:targetSdkVersion="11" />
+	<uses-permission android:name="android.permission.READ_SMS" />
+	<uses-permission android:name="android.permission.WRITE_SMS" />
+	<uses-permission android:name="android.permission.SEND_SMS" />
+	<uses-permission android:name="android.permission.RECEIVE_SMS" />
+	<uses-permission android:name="android.permission.READ_CONTACTS" />
+	<uses-permission android:name="android.permission.WRITE_CONTACTS" />
+	<uses-permission android:name="android.permission.READ_PHONE_STATE" />
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 	<application android:label="@string/app_name" android:icon="@drawable/ic_launcher" 		
 	    android:theme="@android:style/Theme.Black.NoTitleBar" >
 		<activity android:name=".CharabiaActivity"
@@ -17,11 +25,13 @@
 				<data android:scheme="sms" />
 				<data android:scheme="smsto" />
  			</intent-filter>
-            <intent-filter>
+        </activity>
+		<activity android:name=".ShareKeyActivity" >
+           <intent-filter>
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
-				<data android:scheme="http" android:host="localhost.charabia.com" android:port="1981" />
+				<data android:scheme="http" android:host="localhost.charabia.com" />
  			</intent-filter>
         </activity>
 		<receiver class=".SMSReceiver"
@@ -36,13 +46,5 @@
 		<activity android:name=".WebViewActivity" android:label="@string/app_name"/>
 		<activity android:name=".PreferencesActivity" android:label="@string/app_name"/>
 		<provider android:name=".DataProvider" android:authorities="com.charabia.provider.data" /> 
-		</application>
-	<uses-permission android:name="android.permission.READ_SMS" />
-	<uses-permission android:name="android.permission.WRITE_SMS" />
-	<uses-permission android:name="android.permission.SEND_SMS" />
-	<uses-permission android:name="android.permission.RECEIVE_SMS" />
-	<uses-permission android:name="android.permission.READ_CONTACTS" />
-	<uses-permission android:name="android.permission.WRITE_CONTACTS" />
-	<uses-permission android:name="android.permission.READ_PHONE_STATE" />
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+	</application>
 </manifest> 
