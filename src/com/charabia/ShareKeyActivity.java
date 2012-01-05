@@ -17,17 +17,32 @@
 package com.charabia;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAKeyGenParameterSpec;
+import java.security.spec.RSAPublicKeySpec;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.ShortBufferException;
+
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Intents;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.app.AlertDialog.Builder;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.ListView;
@@ -167,8 +182,9 @@ public class ShareKeyActivity extends FragmentActivity
 		private Tools tools;
 
 		private String phoneNumber = "";
-		private byte[] pubKey = null;
 		private byte[] aesKey = null;
+		private byte[] pubKey = null;
+		private byte[] sendData = null;
 		private long id = -1;
 		
 		private static final String SMS_SENT = "com.charabia.ShareKeyActivity.SMS_SENT";
@@ -220,13 +236,16 @@ public class ShareKeyActivity extends FragmentActivity
 		
 		private void send() {
 			
-			
 			dialog = new ProgressDialog(getActivity(), 
 					ProgressDialog.STYLE_SPINNER);
 			dialog.setCancelable(false);
 			dialog.setTitle(getString(R.string.send_message));
+			dialog.setMessage(phoneNumber);
 			dialog.show();
 			
+			Intent iSend = new Intent(SMS_SENT);
+			PendingIntent piSend = PendingIntent.getBroadcast(getActivity(), 0, iSend, 0);
+			SmsManager.getDefault().sendDataMessage(phoneNumber, null, CharabiaActivity.sms_port, sendData, piSend, null);
 			
 		}
 		
@@ -237,6 +256,7 @@ public class ShareKeyActivity extends FragmentActivity
 			
 			Cursor cursor = mAdapter.getCursor();
 	
+			
 			if(cursor.moveToPosition(position)) {
 				phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
 				pubKey = cursor.getBlob(cursor.getColumnIndex(OpenHelper.KEY));
@@ -259,9 +279,54 @@ public class ShareKeyActivity extends FragmentActivity
 						aesKey = tools.generateKeyAES().getEncoded();
 						
 						try {
+							Cipher rsaCipher;
+
+							rsaCipher = Cipher.getInstance(Tools.RSA_CIPHER_ALGO);
+
+							KeyFactory keyFact = KeyFactory.getInstance("RSA");
+							
+							PublicKey rsaPubkey = keyFact.generatePublic(
+									new RSAPublicKeySpec(new BigInteger(pubKey), RSAKeyGenParameterSpec.F4));
+
+							rsaCipher.init(Cipher.ENCRYPT_MODE, rsaPubkey);
+							
+							sendData = new byte[Tools.MAGIC.length + 1 + rsaCipher.getOutputSize(aesKey.length)];
+							
+							System.arraycopy(Tools.MAGIC, 0, sendData, 0, Tools.MAGIC.length);
+							sendData[4] = Tools.CRYPTED_KEY_TYPE;
+							rsaCipher.doFinal(aesKey, 0, aesKey.length, sendData, 6);
+
 							tools.updateOrCreateContactKey(phoneNumber, aesKey);
-						} catch (NoContactException e) {
+	
+							send();
+							
+							return;
+							
+						} 
+						catch (NoSuchAlgorithmException e) {
 							e.printStackTrace();
+						} 
+						catch (NoSuchPaddingException e) {
+							e.printStackTrace();
+						} 
+						catch (InvalidKeySpecException e) {
+							e.printStackTrace();
+						} 
+						catch (InvalidKeyException e) {
+							e.printStackTrace();
+						} 
+						catch (ShortBufferException e) {
+							e.printStackTrace();
+						} 
+						catch (IllegalBlockSizeException e) {
+							e.printStackTrace();
+						} 
+						catch (BadPaddingException e) {
+							e.printStackTrace();
+						} 
+						catch (NoContactException e) {
+							e.printStackTrace();
+
 							// No contact with this phone so ask for create it
 							Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
 							newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
@@ -269,7 +334,7 @@ public class ShareKeyActivity extends FragmentActivity
 							return;
 						}
 						
-						send();
+						Toast.makeText(getActivity(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
 					}	
              	});
 			builder.create().show();
@@ -316,9 +381,9 @@ public class ShareKeyActivity extends FragmentActivity
 				case ADD_CONTACT:
 					try {
 						tools.updateOrCreateContactKey(phoneNumber, aesKey);
+						send();
 					} catch (NoContactException e) {
 						e.printStackTrace();
-						Toast.makeText(getActivity(), R.string.no_contact, Toast.LENGTH_LONG).show();
 					}
 					break;
 			}
@@ -335,7 +400,11 @@ public class ShareKeyActivity extends FragmentActivity
 				
 				switch(getResultCode())
 				{
-					case Activity.RESULT_OK: info += "send ok"; result = R.string.send_success; return;
+					case Activity.RESULT_OK: 
+						info += "send ok"; 
+						result = R.string.send_success; 
+						deleteId();
+						return;
 					case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
 					case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
 					case SmsManager.RESULT_ERROR_NULL_PDU: info += "send failed, null pdu"; break;

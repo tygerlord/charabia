@@ -29,6 +29,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.spec.RSAKeyGenParameterSpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -140,7 +141,8 @@ public class Tools {
 	public static final byte[] MAGIC = { (byte)0x84, (byte)0x15, (byte)0x61, (byte)0xB7 };
 	
 	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
-
+	public static final String RSA_CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
+	
 	public static final byte MESSAGE_TYPE = 0x01; // we receive a message
 	public static final byte KEY_TYPE = 0x02; // we receive a public key
 	public static final byte CRYPTED_KEY_TYPE = 0x03; // we receive aes key crypted by public key
@@ -508,7 +510,7 @@ public class Tools {
 			if(e1 instanceof FileNotFoundException) {
 				try {
 					KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-					gen.initialize(1024);
+					gen.initialize(new RSAKeyGenParameterSpec(1024, RSAKeyGenParameterSpec.F4));
 					keyPair = gen.generateKeyPair();
 
 					FileOutputStream fos = context.openFileOutput(KEYPAIR_FILENAME, Context.MODE_PRIVATE);
@@ -518,9 +520,11 @@ public class Tools {
 				} 
 				catch (NoSuchAlgorithmException e) {
 					e.printStackTrace();
-				} catch (FileNotFoundException e) {
+				} 
+				catch (IOException e) {
 					e.printStackTrace();
-				} catch (IOException e) {
+				} 
+				catch (InvalidAlgorithmParameterException e) {
 					e.printStackTrace();
 				} 
 				
@@ -566,7 +570,10 @@ public class Tools {
 			ContentResolver cr = context.getContentResolver();
 			ContentValues values = new ContentValues();
 			
-			values.put(OpenHelper.KEY, data);
+			byte[] key = new byte[data.length-5];
+			System.arraycopy(data, 6, key, 0, key.length);
+			
+			values.put(OpenHelper.KEY, key);
 			values.put(OpenHelper.PHONE, originatingAddress);
 			
 			cr.insert(DataProvider.PUBKEYS_CONTENT_URI, values);

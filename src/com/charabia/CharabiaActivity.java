@@ -16,12 +16,14 @@
  package com.charabia;
 
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Vector;
@@ -73,6 +75,7 @@ import android.view.View.OnLongClickListener;
 import android.widget.Toast;
 import android.widget.TextView;
 import android.widget.EditText;
+import android.widget.ViewSwitcher;
 
 import android.telephony.SmsManager;
 import android.text.Editable;
@@ -560,24 +563,30 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						KeyPairGenerator gen;
 						try {
 							gen = KeyPairGenerator.getInstance("RSA");
-						} catch (NoSuchAlgorithmException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-							Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
+							//TODO preference to increase key size and so increase security
+							// but this increase amount of data to show in QRcode and can
+							// be more difficult to read
+							gen.initialize(new RSAKeyGenParameterSpec(256, RSAKeyGenParameterSpec.F4));
+
+							keypair = gen.generateKeyPair();
+							RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
+							
+							IntentIntegrator.initiateScan(CharabiaActivity.this);							
+							IntentIntegrator.shareText(CharabiaActivity.this, 
+									prefPhoneNumber + "\n" +
+									pubKey.getModulus() + "\n" + 
+									pubKey.getPublicExponent());
+							
 							return;
+						} 
+						catch (NoSuchAlgorithmException e) {
+							e.printStackTrace();
+						} 
+						catch (InvalidAlgorithmParameterException e) {
+							e.printStackTrace();
 						}
-						//TODO preference to increase key size and so increase security
-						// but this increase amount of data to show in QRcode and can
-						// be more difficult to read
-						gen.initialize(256);
-						keypair = gen.generateKeyPair();
-						RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
-						
-						IntentIntegrator.initiateScan(CharabiaActivity.this);							
-						IntentIntegrator.shareText(CharabiaActivity.this, 
-								prefPhoneNumber + "\n" +
-								pubKey.getModulus() + "\n" + 
-								pubKey.getPublicExponent());
+
+						Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
 			}
 
 		}
@@ -691,18 +700,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 					
 					phoneList = new String[options.size()];
 	
-					KeyPairGenerator gen;
-					try {
-						gen = KeyPairGenerator.getInstance("RSA");
-					} 
-					catch (NoSuchAlgorithmException e) {
-						e.printStackTrace();
-						Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
-						return;
-					}
-					//TODO preference to increase key size and so increase security
-					gen.initialize(1024);
-					keypair = gen.generateKeyPair();
+					keypair = tools.loadKeyPair();
 					RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
 					
 					Builder builder = new AlertDialog.Builder(this);
@@ -741,7 +739,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		                
 		                String[] infos = contents.split("\n");
 		                
-						Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+						Cipher rsaCipher = Cipher.getInstance(Tools.RSA_CIPHER_ALGO);
 						
 						if(mode == MODE_ESCLAVE) {
 							// Save key and show crypted key on QRCode
@@ -879,6 +877,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		
 	}
 
+	public void buttonMore(View view) {
+		ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
+		vs.showNext();
+	}
+	
 	/*
 	 * Called by button send
 	 */
