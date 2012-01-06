@@ -397,6 +397,9 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		
 		// Convenient way to refresh list
 		removeFromRecipientsList(-1);
+		
+		//ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
+		//vs.reset();
 	}
 
 	@Override
@@ -410,48 +413,66 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		showDialog(MODE_DIALOG);
 	}
 	
+	public void buttonOptions(View view) {
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+		intent.setClassName(this, PreferencesActivity.class.getName());
+		startActivity(intent);
+		if(view != null) {
+			ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
+			vs.showNext();
+		}
+	}
+
+	public void buttonHelp(View view) {
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+		intent.setClassName(this, WebViewActivity.class.getName());
+		intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "index.html")));
+		startActivity(intent);
+	}
+	
+	public void buttonAbout(View view) {
+		try {
+			PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setTitle(getString(R.string.app_name));
+			builder.setMessage(getString(R.string.info, pi.versionName));
+			builder.setIcon(R.drawable.ic_launcher);
+			builder.setPositiveButton(R.string.quit, null);
+			builder.show();
+		} catch (NameNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void buttonEdit(View view) {
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.setClassName(this, PickContactActivity.class.getName());
+		startActivity(intent);
+	}
+	
 	/* Handles item selections */
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		Intent intent;
 		switch (item.getItemId()) {
 			case R.id.main_menu_options:
-				intent = new Intent(Intent.ACTION_VIEW);
-				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-				intent.setClassName(this, PreferencesActivity.class.getName());
-				startActivity(intent);
+				buttonOptions(null);
 				return true;
 			case R.id.main_menu_edit: 
-				intent = new Intent(Intent.ACTION_VIEW);
-				intent.setClassName(this, PickContactActivity.class.getName());
-				startActivity(intent);
+				buttonEdit(null);
 				return true;
 			case R.id.main_menu_keys:
-				showDialog(MODE_DIALOG);
+				buttonShare(null);
 				return true;
 			case R.id.main_menu_help:
-				intent = new Intent(Intent.ACTION_VIEW);
-				intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-				intent.setClassName(this, WebViewActivity.class.getName());
-				intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "index.html")));
-				startActivity(intent);
+				buttonHelp(null);
 				return true;
 			case R.id.main_menu_about:
-				try {
-					PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
-					AlertDialog.Builder builder = new AlertDialog.Builder(this);
-					builder.setTitle(getString(R.string.app_name));
-					builder.setMessage(getString(R.string.info, pi.versionName));
-					builder.setIcon(R.drawable.ic_launcher);
-					builder.setPositiveButton(R.string.quit, null);
-					builder.show();
-					return true;
-				} catch (NameNotFoundException e) {
-					e.printStackTrace();
-				}
-				return false;
+				buttonAbout(null);
+				return true;
 			case R.id.main_menu_quit:
-				finish();
+				buttonQuit(null);
 				return true;
 			default:
 				return super.onOptionsItemSelected(item);
@@ -830,7 +851,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
   }
 
- 	public void quit(View view) {
+ 	public void buttonQuit(View view) {
 		finish();
 	}
  	
@@ -916,7 +937,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	        } else if ("SEND".equals(action)) {
 	            buttonSend(null);
 	        } else if ("OUT".equals(action) || "QUIT".equals(action)) {
-	            quit(null);
+	            buttonQuit(null);
 	        } else if ("CLEAR".equals(action)) {
 	            clear(null);
 	        } else if ("MODE".equals(action)) {

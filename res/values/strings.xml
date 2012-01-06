@@ -65,4 +65,6 @@
 	<string name="yes">OUI</string>
 	<string name="no">NON</string>
 	<string name="query_chare_key">Voulez vous partagez une clé secréte avec ce contact? (coût 1 sms)</string>
+	<string name="directory">Annuaire</string>
+	<string name="share">Partager</string>
 </resources>
