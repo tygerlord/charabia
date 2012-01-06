@@ -397,9 +397,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		
 		// Convenient way to refresh list
 		removeFromRecipientsList(-1);
-		
-		//ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
-		//vs.reset();
 	}
 
 	@Override
@@ -418,10 +415,13 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 		intent.setClassName(this, PreferencesActivity.class.getName());
 		startActivity(intent);
+		/*
 		if(view != null) {
+		 
 			ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
 			vs.showNext();
 		}
+		*/
 	}
 
 	public void buttonHelp(View view) {
@@ -492,7 +492,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				builder.setItems(new String[] { 
 						getString(R.string.master), 
 						getString(R.string.slave), 
-						getString(R.string.by_sms) 
+						//getString(R.string.by_sms) 
 					}, modeListener);
 				dialog = builder.create();
 				break;
