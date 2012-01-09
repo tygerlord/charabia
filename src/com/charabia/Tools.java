@@ -144,7 +144,7 @@ public class Tools {
 	public static final String RSA_CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
 	
 	public static final byte MESSAGE_TYPE = 0x01; // we receive a message
-	public static final byte KEY_TYPE = 0x02; // we receive a public key
+	public static final byte PUBLIC_KEY_TYPE = 0x02; // we receive a public key
 	public static final byte CRYPTED_KEY_TYPE = 0x03; // we receive aes key crypted by public key
 
 	public static final byte[] demo_key = new byte[] { 
@@ -565,7 +565,7 @@ public class Tools {
 		
 		String result = context.getString(R.string.unexpected_error);
 		
-		if(data[4] == KEY_TYPE) {
+		if(data[4] == PUBLIC_KEY_TYPE) {
 			// receive public key 
 			ContentResolver cr = context.getContentResolver();
 			ContentValues values = new ContentValues();

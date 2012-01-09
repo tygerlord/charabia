@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 		package="com.charabia"
-		android:versionName="1.40" android:versionCode="140">
+		android:versionName="1.50" android:versionCode="150">
 	<uses-sdk android:minSdkVersion="8" android:targetSdkVersion="11" />
 	<uses-permission android:name="android.permission.READ_SMS" />
 	<uses-permission android:name="android.permission.WRITE_SMS" />
@@ -14,6 +14,7 @@
 	<application android:label="@string/app_name" android:icon="@drawable/ic_launcher" 		
 	    android:theme="@android:style/Theme.Black.NoTitleBar" >
 		<activity android:name=".CharabiaActivity"
+		     	android:windowSoftInputMode="stateAlwaysVisible"
 				android:label="@string/app_name">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />

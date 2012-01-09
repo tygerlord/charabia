@@ -7,175 +7,192 @@
 	android:eventsInterceptionEnabled="true"
 	android:orientation="vertical">
 
-	<LinearLayout
-	    android:id="@+id/mainLayout"
+	<ViewSwitcher
+	    android:id="@+id/viewSwitcher1"
 	    android:layout_width="match_parent"
 	    android:layout_height="wrap_content"
-	    android:orientation="vertical" >
+	    android:inAnimation="@anim/scale_in"
+	    android:outAnimation="@anim/scale_out" >
 
-		<LinearLayout
-		    android:id="@+id/menuLayout"
-		    android:layout_width="match_parent"
-		    android:layout_height="match_parent"
-		    android:layout_margin="0dp"
-		    android:background="@android:color/darker_gray"
-		    android:baselineAligned="false"
-		    android:gravity="left|right" >
+	    <LinearLayout
+	        android:id="@+id/mainLayout"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:orientation="vertical" >
 
-		    <TextView
-		        android:id="@+id/textView1"
-		        android:layout_width="wrap_content"
-		        android:layout_height="match_parent"
-		        android:gravity="center_vertical|left"
-		        android:text="@string/app_name"
-		        android:layout_marginLeft="5dp"
-		        android:textAppearance="?android:attr/textAppearanceLarge" />
+	        <LinearLayout
+	            android:id="@+id/menuLayout"
+	            android:layout_width="match_parent"
+	            android:layout_height="match_parent"
+	            android:layout_margin="0dp"
+	            android:background="@android:color/darker_gray"
+	            android:baselineAligned="false"
+	            android:gravity="left|right" >
 
-		    <LinearLayout
-		        android:id="@+id/buttonsLayout"
-		        android:layout_width="fill_parent"
-		        android:layout_height="match_parent"
-		        android:gravity="right" >
+	            <TextView
+	                android:id="@+id/textView1"
+	                android:layout_width="wrap_content"
+	                android:layout_height="match_parent"
+	                android:layout_marginLeft="5dp"
+	                android:gravity="center_vertical|left"
+	                android:text="@string/app_name"
+	                android:textAppearance="?android:attr/textAppearanceLarge" />
 
-		        <ImageView
-		            android:id="@+id/image2"
-		            android:layout_width="wrap_content"
-		            android:layout_height="wrap_content"
-		            android:clickable="true"
-		            android:onClick="addRecipient"
-		            android:src="@android:drawable/ic_menu_sort_alphabetically" />
+	            <LinearLayout
+	                android:id="@+id/buttonsLayout"
+	                android:layout_width="fill_parent"
+	                android:layout_height="match_parent"
+	                android:gravity="right" >
 
-		        <ImageView
-		            android:id="@+id/image3"
-		            android:layout_width="wrap_content"
-		            android:layout_height="wrap_content"
-		            android:clickable="true"
-		            android:onClick="buttonMore"
-		            android:src="@android:drawable/ic_menu_more" />
+	                <ImageView
+	                    android:id="@+id/image2"
+	                    android:layout_width="wrap_content"
+	                    android:layout_height="wrap_content"
+	                    android:clickable="true"
+	                    android:onClick="addRecipient"
+	                    android:src="@android:drawable/ic_menu_sort_alphabetically" />
 
-		        <ImageView
-		            android:id="@+id/image1"
-		            android:layout_width="wrap_content"
-		            android:layout_height="wrap_content"
-		            android:clickable="true"
-		            android:focusable="true"
-		            android:onClick="buttonSend"
-		            android:src="@android:drawable/ic_menu_send" />
-		    </LinearLayout>
+	                <ImageView
+	                    android:id="@+id/image3"
+	                    android:layout_width="wrap_content"
+	                    android:layout_height="wrap_content"
+	                    android:clickable="true"
+	                    android:onClick="buttonMore"
+	                    android:src="@android:drawable/ic_menu_more" />
 
-		</LinearLayout>
-
-		<ViewSwitcher
-		    android:id="@+id/viewSwitcher1"
-		    android:layout_width="match_parent"
-		    android:layout_height="wrap_content"
-		    android:inAnimation="@anim/scale_in"
-		    android:outAnimation="@anim/scale_out" >
+	                <ImageView
+	                    android:id="@+id/image1"
+	                    android:layout_width="wrap_content"
+	                    android:layout_height="wrap_content"
+	                    android:clickable="true"
+	                    android:focusable="true"
+	                    android:onClick="buttonSend"
+	                    android:src="@android:drawable/ic_menu_send" />
+	            </LinearLayout>
+	        </LinearLayout>
 
-			<LinearLayout
-			    android:id="@+id/ihm"
-			    android:layout_width="fill_parent"
-			    android:layout_height="wrap_content"
-			    android:isScrollContainer="true"
-			    android:orientation="vertical"
-			    android:weightSum="1" >
+	        <LinearLayout
+	            android:id="@+id/ihm"
+	            android:layout_width="fill_parent"
+	            android:layout_height="wrap_content"
+	            android:isScrollContainer="true"
+	            android:orientation="vertical"
+	            android:weightSum="1" >
 
-			    <TextView
-			        android:id="@+id/title_recipients"
-			        android:layout_width="wrap_content"
-			        android:layout_height="wrap_content"
-			        android:textAppearance="?android:attr/textAppearanceLarge" />
+	            <TextView
+	                android:id="@+id/title_recipients"
+	                android:layout_width="wrap_content"
+	                android:layout_height="wrap_content"
+	                android:textAppearance="?android:attr/textAppearanceLarge" />
 
-			    <TextView
-			        android:id="@+id/recipients"
-			        android:layout_width="fill_parent"
-			        android:layout_height="wrap_content"
-			        android:background="@android:drawable/editbox_background"
-			        android:inputType="text|textMultiLine|textAutoCorrect"
-			        android:maxLines="3"
-			        android:minLines="1"
-			        android:onClick="addRecipient" />
+	            <TextView
+	                android:id="@+id/recipients"
+	                android:layout_width="fill_parent"
+	                android:layout_height="wrap_content"
+	                android:background="@android:drawable/editbox_background"
+	                android:inputType="text|textMultiLine|textAutoCorrect"
+	                android:maxLines="3"
+	                android:minLines="1"
+	                android:onClick="addRecipient" />
 
-			    <TextView
-			        android:id="@+id/title_message"
-			        android:layout_width="wrap_content"
-			        android:layout_height="wrap_content"
-			        android:text="@string/message"
-			        android:textAppearance="?android:attr/textAppearanceLarge" />
+	            <TextView
+	                android:id="@+id/title_message"
+	                android:layout_width="wrap_content"
+	                android:layout_height="wrap_content"
+	                android:text="@string/message"
+	                android:textAppearance="?android:attr/textAppearanceLarge" />
 
-			    <EditText
-			        android:id="@+id/message"
-			        android:layout_width="fill_parent"
-			        android:layout_height="wrap_content"
-			        android:layout_marginBottom="10dp"
-			        android:background="@android:drawable/editbox_background"
-			        android:gravity="top"
-			        android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
-			        android:minLines="3" >
+	            <EditText
+	                android:id="@+id/message"
+	                android:layout_width="fill_parent"
+	                android:layout_height="wrap_content"
+	                android:layout_marginBottom="10dp"
+	                android:background="@android:drawable/editbox_background"
+	                android:gravity="top"
+	                android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
+	                android:imeOptions="actionSend"
+	                android:minLines="3" >
 
-			        <requestFocus />
-			    </EditText>
-			</LinearLayout>
-
-			<TableLayout
-			    android:id="@+id/subMenuLayout"
-			    android:layout_width="match_parent"
-			    android:layout_height="wrap_content" >
-			    
-			    <TableRow>
-			        <Button
-			          	android:layout_weight="1"
-			          	android:layout_width="0dip"
-			            android:layout_height="wrap_content"
-			            android:onClick="addRecipient"
-			            android:text="@string/directory"
-			            android:drawableTop="@android:drawable/ic_menu_sort_alphabetically" />
-	
-			        <Button
-			            android:layout_weight="1"
-			            android:layout_width="0dip"
-			            android:layout_height="wrap_content"
-			            android:onClick="buttonShare"
-			            android:text="@string/share"
-			            android:drawableTop="@android:drawable/ic_menu_share" />
-	
-			        <Button
-			            android:layout_weight="1"
-			            android:layout_width="0dip"
-			            android:layout_height="wrap_content"
-			            android:onClick="buttonSend"
-			            android:text="@string/send"
-			            android:drawableTop="@android:drawable/ic_menu_send" />
-		        </TableRow>
-		        <TableRow>
-					<Button
-					    android:layout_weight="1"
-					    android:layout_width="0dip"
-					    android:layout_height="wrap_content" 
-					    android:onClick="buttonOptions"
-					    android:text="@string/options"
-					    android:drawableTop="@android:drawable/ic_menu_preferences" />
-					
-     				<Button 
-     				    android:layout_weight="1"
-     				    android:layout_width="0dip" 
-     				    android:layout_height="wrap_content" 
-     				    android:onClick="buttonHelp" 
-     				    android:text="@string/help"
-     				    android:drawableTop="@android:drawable/ic_menu_help" />
-     				
-     				<Button
-     				    android:layout_weight="1"
-     				    android:layout_width="0dip" 
-     				    android:layout_height="wrap_content"
-     				    android:onClick="buttonQuit"
-     				    android:text="@string/quit"
-     				    android:drawableTop="@android:drawable/ic_menu_close_clear_cancel" />"
-			    </TableRow>
-			</TableLayout>
+	                <requestFocus />
+	            </EditText>
+	        </LinearLayout>
+	    </LinearLayout>
 
-		</ViewSwitcher>
+	    <TableLayout
+	        android:id="@+id/subMenuLayout"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content" >
 
-	</LinearLayout>
+	        <TableRow>
+
+	            <Button
+	                android:layout_width="0dip"
+	                android:layout_height="wrap_content"
+	                android:layout_weight="1"
+	                android:drawableTop="@android:drawable/ic_menu_sort_alphabetically"
+	                android:onClick="buttonDirectory"
+	                android:text="@string/directory" />
+
+	            <Button
+	                android:layout_width="0dip"
+	                android:layout_height="wrap_content"
+	                android:layout_weight="1"
+	                android:drawableTop="@android:drawable/ic_menu_share"
+	                android:onClick="buttonShare"
+	                android:text="@string/share" />
+
+	            <Button
+	                android:layout_width="0dip"
+	                android:layout_height="wrap_content"
+	                android:layout_weight="1"
+	                android:drawableTop="@android:drawable/ic_menu_edit"
+	                android:onClick="buttonEdit"
+	                android:text="@string/edit" />
+	        </TableRow>
+
+	        <TableRow>
+
+	            <Button
+	                android:layout_width="0dip"
+	                android:layout_height="wrap_content"
+	                android:layout_weight="1"
+	                android:drawableTop="@android:drawable/ic_menu_preferences"
+	                android:onClick="buttonOptions"
+	                android:text="@string/options" />
+
+	            <Button
+	                android:layout_width="0dip"
+	                android:layout_height="wrap_content"
+	                android:layout_weight="1"
+	                android:drawableTop="@android:drawable/ic_menu_help"
+	                android:onClick="buttonHelp"
+	                android:text="@string/help" />
+
+	            <Button
+	                android:layout_width="0dip"
+	                android:layout_height="wrap_content"
+	                android:layout_weight="1"
+	                android:drawableTop="@android:drawable/ic_menu_info_details"
+	                android:onClick="buttonAbout"
+	                android:text="@string/about" />
+	        </TableRow>
+	        <TableRow>
+	            <Button 
+	                android:layout_width="0dip" 
+	                android:layout_height="wrap_content"
+	                android:layout_weight="1"
+	                android:drawableTop="@android:drawable/ic_menu_close_clear_cancel"
+	                android:onClick="buttonQuit"
+	                android:text="@string/quit" />
+	            <ImageView 
+	                android:layout_width="0dip" 
+	                android:layout_weight="1" />
+	            <ImageView
+	                android:layout_width="0dip"
+	                android:layout_weight="1" />
+	        </TableRow>
+	    </TableLayout>
+
+	</ViewSwitcher>
  
 </android.gesture.GestureOverlayView>

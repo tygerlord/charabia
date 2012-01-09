@@ -25,7 +25,7 @@
 	<string name="clear">Effacer</string>
 	<string name="delete">Supprimer</string>
 	<string name="error_create_key">Erreur lors de la création de la clé</string>
-	<string name="edit">Contacts</string>
+	<string name="edit">Editer</string>
 	<string name="message_send_to">Message envoyé au %s"</string>
 	<string name="no_phone_number">Pas de numéro de téléphone</string>
 	<string name="empty_message">Message vide</string>
@@ -67,4 +67,6 @@
 	<string name="query_chare_key">Voulez vous partagez une clé secréte avec ce contact? (coût 1 sms)</string>
 	<string name="directory">Annuaire</string>
 	<string name="share">Partager</string>
+	<string name="contacts">Contacts</string>
+	<string name="send_invit_on_phone">Envoyer invitation au numéro?</string>
 </resources>

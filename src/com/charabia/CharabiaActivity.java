@@ -51,6 +51,7 @@ import android.content.DialogInterface;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -71,6 +72,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View.OnLongClickListener;
+import android.view.inputmethod.InputMethodManager;
 
 import android.widget.Toast;
 import android.widget.TextView;
@@ -81,6 +83,7 @@ import android.telephony.SmsManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 
+import com.charabia.PickContactActivity.CursorLoaderListFragment;
 import com.google.zxing.integration.android.IntentIntegrator;
 
 // TODO option preference to store or not message
@@ -298,6 +301,18 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		titleMessageView.setText(getResources().getString(R.string.message,  
 				lg, (lg/BLOCK_SIZE)+1));
 		
+	    //((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE))  
+        //	.showSoftInput(messageView, 0); 
+	    
+	    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+	    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,0);
+
+	    /*
+	     ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE))  
+                .hideSoftInputFromWindow(editText.getWindowToken(), 0);
+InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0); 
+	     */
 	}
 	
 	@Override
@@ -401,9 +416,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		MenuInflater inflater = getMenuInflater();
+		return super.onCreateOptionsMenu(menu);
+		/*MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main, menu);
 		return true;
+		*/
 	}
 
 	public void buttonShare(View v) {
@@ -415,13 +432,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 		intent.setClassName(this, PreferencesActivity.class.getName());
 		startActivity(intent);
-		/*
-		if(view != null) {
-		 
-			ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
-			vs.showNext();
-		}
-		*/
 	}
 
 	public void buttonHelp(View view) {
@@ -446,12 +456,17 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		}
 	}
 	
-	public void buttonEdit(View view) {
+	public void buttonDirectory(View view) {
 		Intent intent = new Intent(Intent.ACTION_VIEW);
 		intent.setClassName(this, PickContactActivity.class.getName());
 		startActivity(intent);
 	}
-	
+
+	public void buttonEdit(View view) {
+		ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
+		vs.showNext();
+	}
+
 	/* Handles item selections */
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -460,7 +475,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				buttonOptions(null);
 				return true;
 			case R.id.main_menu_edit: 
-				buttonEdit(null);
+				buttonDirectory(null);
 				return true;
 			case R.id.main_menu_keys:
 				buttonShare(null);
@@ -492,7 +507,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				builder.setItems(new String[] { 
 						getString(R.string.master), 
 						getString(R.string.slave), 
-						//getString(R.string.by_sms) 
+						getString(R.string.by_sms) 
 					}, modeListener);
 				dialog = builder.create();
 				break;
@@ -719,14 +734,39 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						
 					cursor.close();
 					
-					phoneList = new String[options.size()];
+					final String[] phoneList = options.toArray(new String[0]);
 	
-					keypair = tools.loadKeyPair();
-					RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
-					
 					Builder builder = new AlertDialog.Builder(this);
-					builder.setTitle(getString(R.string.del_or_change_number));
-					builder.setItems(options.toArray(phoneList), null);//editListener);
+					builder.setTitle(R.string.send_invit_on_phone);
+					builder.setItems(phoneList, 				
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialogInterface, int i) {
+								keypair = tools.loadKeyPair();
+								RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
+								
+								byte[] encoded = pubKey.getModulus().toByteArray();
+										
+								try {
+								Cipher cipher = Cipher.getInstance(tools.RSA_CIPHER_ALGO);
+								
+								cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+								
+								Log.v(TAG, "size=" + cipher.getBlockSize());
+								
+								byte[] result = cipher.doFinal(Tools.demo_key);
+								
+								Log.v(TAG, "result size=" + result.length);
+								
+								}
+								catch(Exception e) {
+									e.printStackTrace();
+								}
+								
+								
+								Log.v(TAG, "encoded length = " + encoded.length);
+							}
+					});
+
 					builder.create().show();
 				}
 				else {
