@@ -746,25 +746,16 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
 								
 								byte[] encoded = pubKey.getModulus().toByteArray();
 										
-								try {
-								Cipher cipher = Cipher.getInstance(tools.RSA_CIPHER_ALGO);
+								byte[] data = new byte[Tools.MAGIC.length + 1 + encoded.length];
 								
-								cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+								System.arraycopy(Tools.MAGIC, 0, data, 0, Tools.MAGIC.length);
+								data[Tools.MAGIC.length+1] = Tools.PUBLIC_KEY_TYPE;
+								System.arraycopy(encoded, 0, data, Tools.MAGIC.length+1+1, encoded.length);
 								
-								Log.v(TAG, "size=" + cipher.getBlockSize());
-								
-								byte[] result = cipher.doFinal(Tools.demo_key);
-								
-								Log.v(TAG, "result size=" + result.length);
-								
-								}
-								catch(Exception e) {
-									e.printStackTrace();
-								}
-								
-								
-								Log.v(TAG, "encoded length = " + encoded.length);
-							}
+								Intent iSend = new Intent(SMS_SENT);
+								PendingIntent piSend = PendingIntent.getBroadcast(CharabiaActivity.this, 0, iSend, 0);
+								SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, null);
+						}
 					});
 
 					builder.create().show();
@@ -1051,6 +1042,30 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
             }
     };
 
+    private BroadcastReceiver sendPubKeyReceiver = new BroadcastReceiver()
+    {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                    String info = "Send pubkey information: ";
+                    
+                    switch(getResultCode())
+                    {
+                            case Activity.RESULT_OK: 
+                            	Toast.makeText(getBaseContext(), R.string.send_success, Toast.LENGTH_SHORT).show();
+                            	return;
+                            case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
+                            case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
+                            case SmsManager.RESULT_ERROR_NULL_PDU: info += "send failed, null pdu"; break;
+                            case SmsManager.RESULT_ERROR_RADIO_OFF: info += "send failed, radio is off"; break;
+                    }
+                    
+                    Log.v("CHARABIA", info);
+                    
+                    dismissDialog(SEND_PROGRESS_DIALOG);
+                    
+            }
+    };
 
     @Override
     protected void onDestroy()
