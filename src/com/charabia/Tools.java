@@ -140,7 +140,7 @@ public class Tools {
 	
 	public static final byte[] MAGIC = { (byte)0x84, (byte)0x15, (byte)0x61, (byte)0xB7 };
 	
-	public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
+	public static final String CIPHER_ALGO = "AES/CTR/PKCS5Padding";
 	public static final String RSA_CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
 	
 	public static final byte MESSAGE_TYPE = 0x01; // we receive a message
@@ -578,7 +578,8 @@ public class Tools {
 			
 			cr.insert(DataProvider.PUBKEYS_CONTENT_URI, values);
 			
-			result = "Ce contact demande à partager une clé charabia avec vous, cliquez sur ce lien pour ";
+			result = context.getString(R.string.pubkey_received);
+					
 		}
 		else if(data[4] == CRYPTED_KEY_TYPE) {
 			// receive crypted aes key
@@ -590,11 +591,11 @@ public class Tools {
 		
 			SecretKey key = new SecretKeySpec(key_data, "AES");
 		
-			byte[] IV = new byte[16];
+			//byte[] IV = new byte[16];
 			int pos = MAGIC.length+1;
-			System.arraycopy(data, pos, IV, 0, 7); pos += 7;
+			//System.arraycopy(data, pos, IV, 0, 7); pos += 7;
 			
-			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
+			c.init(Cipher.DECRYPT_MODE, key);//, new IvParameterSpec(IV));
 	
 			result = new String(c.doFinal(data, pos, data.length-pos));
 		}
@@ -614,15 +615,15 @@ public class Tools {
 		byte[] bIV = sr.generateSeed(16);
 		for(int i = 7; i < 16; i++) bIV[i] = (byte)0x00;
 		
-		c.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(bIV));
+		c.init(Cipher.ENCRYPT_MODE, key);//, new IvParameterSpec(bIV));
 
 		byte[] cryptedTexte = c.doFinal(texte.getBytes());
-		byte[] data = new byte[MAGIC.length+1+7+cryptedTexte.length];
+		byte[] data = new byte[MAGIC.length+1+cryptedTexte.length];
 
 		int pos = 0;
 		System.arraycopy(MAGIC, 0, data, pos, MAGIC.length); pos += MAGIC.length;
 		data[pos] = MESSAGE_TYPE; pos += 1;
-		System.arraycopy(bIV, 0, data, pos, 7); pos += 7;
+		//System.arraycopy(bIV, 0, data, pos, 7); pos += 7;
 		System.arraycopy(cryptedTexte, 0, data, pos, cryptedTexte.length);
 
 		return data;

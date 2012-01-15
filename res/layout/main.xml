@@ -172,21 +172,27 @@
 	                android:layout_width="0dip"
 	                android:layout_height="wrap_content"
 	                android:layout_weight="1"
-	                android:drawableTop="@android:drawable/ic_menu_info_details"
-	                android:onClick="buttonAbout"
-	                android:text="@string/about" />
+	                android:drawableTop="@android:drawable/ic_menu_add"
+	                android:onClick="buttonInvite"
+	                android:text="@string/invite" />
 	        </TableRow>
 	        <TableRow>
 	            <Button 
 	                android:layout_width="0dip" 
 	                android:layout_height="wrap_content"
 	                android:layout_weight="1"
+	                android:drawableTop="@android:drawable/ic_menu_info_details"
+	                android:onClick="buttonAbout"
+	                android:text="@string/about" />
+	            
+	            <Button
+	                android:layout_width="0dip"
+	                android:layout_height="wrap_content" 
+	                android:layout_weight="1" 
 	                android:drawableTop="@android:drawable/ic_menu_close_clear_cancel"
 	                android:onClick="buttonQuit"
 	                android:text="@string/quit" />
-	            <ImageView 
-	                android:layout_width="0dip" 
-	                android:layout_weight="1" />
+	            
 	            <ImageView
 	                android:layout_width="0dip"
 	                android:layout_weight="1" />

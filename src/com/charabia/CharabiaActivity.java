@@ -141,6 +141,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	private static final String SMS_SENT = "com.charabia.SMS_SENT";
 	private static final String SMS_DELIVERED = "com.charabia.SMS_DELIVERED";
+	private static final String SMS_PUBKEY_SENT = "com.charabia.SMS_PUBKEY_SENT";
 	
 	// Utilities class instance
 	private Tools tools = new Tools(this);
@@ -220,9 +221,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	{
 		super.onCreate(savedInstanceState);
 	
-        registerReceiver(sendreceiver, new IntentFilter(SMS_SENT));
-        registerReceiver(deliveredreceiver, new IntentFilter(SMS_DELIVERED));
-
+        registerReceiver(sendReceiver, new IntentFilter(SMS_SENT));
+        registerReceiver(deliveredReceiver, new IntentFilter(SMS_DELIVERED));
+        registerReceiver(sendPubKeyReceiver, new IntentFilter(SMS_PUBKEY_SENT));
+        
         setContentView(R.layout.main);
         
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -300,19 +302,22 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		int lg = messageView.length();
 		titleMessageView.setText(getResources().getString(R.string.message,  
 				lg, (lg/BLOCK_SIZE)+1));
-		
-	    //((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE))  
-        //	.showSoftInput(messageView, 0); 
-	    
-	    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-	    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,0);
 
-	    /*
-	     ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE))  
-                .hideSoftInputFromWindow(editText.getWindowToken(), 0);
-InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0); 
-	     */
+		try {
+			String texte = "bonjour";
+			
+			byte[] data = tools.encrypt(Tools.demo_key, texte);
+			
+			Log.v(TAG, "data="+Base64.encodeToString(data, Base64.NO_WRAP));
+			
+			String result = tools.decrypt("5554", data);
+			
+			Log.v(TAG, "result="+result);
+			
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@Override
@@ -465,6 +470,13 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
 	public void buttonEdit(View view) {
 		ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
 		vs.showNext();
+	}
+
+	public void buttonInvite(View view) {
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.setClassName(this, ShareKeyActivity.class.getName());
+		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+		startActivity(intent);
 	}
 
 	/* Handles item selections */
@@ -741,20 +753,28 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
 					builder.setItems(phoneList, 				
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialogInterface, int i) {
+								
+								showDialog(SEND_PROGRESS_DIALOG);
+								
 								keypair = tools.loadKeyPair();
 								RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
 								
 								byte[] encoded = pubKey.getModulus().toByteArray();
 										
-								byte[] data = new byte[Tools.MAGIC.length + 1 + encoded.length];
+								byte[] data = new byte[Tools.MAGIC.length + encoded.length];
 								
 								System.arraycopy(Tools.MAGIC, 0, data, 0, Tools.MAGIC.length);
-								data[Tools.MAGIC.length+1] = Tools.PUBLIC_KEY_TYPE;
-								System.arraycopy(encoded, 0, data, Tools.MAGIC.length+1+1, encoded.length);
+								//data[Tools.MAGIC.length] = Tools.PUBLIC_KEY_TYPE;
+								System.arraycopy(encoded, 0, data, Tools.MAGIC.length, encoded.length);
 								
-								Intent iSend = new Intent(SMS_SENT);
+								Intent iSend = new Intent(SMS_PUBKEY_SENT);
 								PendingIntent piSend = PendingIntent.getBroadcast(CharabiaActivity.this, 0, iSend, 0);
-								SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, null);
+								
+								Log.v(TAG, "phoneList[i]=" + phoneList[i]);
+								
+								Log.v(TAG, "data.length=" + data.length);
+								
+								SmsManager.getDefault().sendDataMessage(phoneList[i], null, sms_port, data, piSend, null);
 						}
 					});
 
@@ -905,6 +925,8 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
 		byte[] data = tools.encrypt(tools.getKey(phoneNumber), 
 				texte.substring(start, end));
 
+		Log.v(TAG, "send block data size = " + data.length);
+		
 		Intent iSend = new Intent(SMS_SENT);
 		Intent iDelivered = new Intent(SMS_DELIVERED);
 		PendingIntent piSend = PendingIntent.getBroadcast(this, 0, iSend, 0);
@@ -977,7 +999,7 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
 	    }	
 	}
 	
-	private BroadcastReceiver deliveredreceiver = new BroadcastReceiver()
+	private BroadcastReceiver deliveredReceiver = new BroadcastReceiver()
     {
             @Override
             public void onReceive(Context context, Intent intent)
@@ -994,7 +1016,7 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
             }
     };
     
-    private BroadcastReceiver sendreceiver = new BroadcastReceiver()
+    private BroadcastReceiver sendReceiver = new BroadcastReceiver()
     {
             @Override
             public void onReceive(Context context, Intent intent)
@@ -1047,12 +1069,15 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
             @Override
             public void onReceive(Context context, Intent intent)
             {
+            		int result = R.string.unexpected_error;
+            		
                     String info = "Send pubkey information: ";
                     
                     switch(getResultCode())
                     {
-                            case Activity.RESULT_OK: 
-                            	Toast.makeText(getBaseContext(), R.string.send_success, Toast.LENGTH_SHORT).show();
+                            case Activity.RESULT_OK:
+                            	info += "send successful";
+                            	result += R.string.send_success;
                             	return;
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
                             case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
@@ -1063,6 +1088,8 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
                     Log.v("CHARABIA", info);
                     
                     dismissDialog(SEND_PROGRESS_DIALOG);
+
+                    Toast.makeText(getBaseContext(), result, Toast.LENGTH_SHORT).show();
                     
             }
     };
@@ -1070,8 +1097,9 @@ imm.hideSoftInputFromWindow(singleedittext.getWindowToken(),0);
     @Override
     protected void onDestroy()
     {
-    	unregisterReceiver(sendreceiver);
-    	unregisterReceiver(deliveredreceiver);
+    	unregisterReceiver(sendReceiver);
+    	unregisterReceiver(deliveredReceiver);
+    	unregisterReceiver(sendPubKeyReceiver);
     	
         super.onDestroy();
     }

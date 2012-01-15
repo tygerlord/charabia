@@ -223,7 +223,7 @@ public class ShareKeyActivity extends FragmentActivity
             if(savedInstanceState != null) {
             }
             
-            getActivity().registerReceiver(sendreceiver, new IntentFilter(SMS_SENT));
+            getActivity().registerReceiver(sendReceiver, new IntentFilter(SMS_SENT));
 		}
 		
 		private void deleteId() {
@@ -389,7 +389,7 @@ public class ShareKeyActivity extends FragmentActivity
 			}
 		}
 
-		private BroadcastReceiver sendreceiver = new BroadcastReceiver()
+		private BroadcastReceiver sendReceiver = new BroadcastReceiver()
 		{
 			@Override
 			public void onReceive(Context context, Intent intent)
@@ -422,7 +422,7 @@ public class ShareKeyActivity extends FragmentActivity
 		@Override
 		public void onDestroy()
 	    {
-	    	getActivity().unregisterReceiver(sendreceiver);
+	    	getActivity().unregisterReceiver(sendReceiver);
 	        super.onDestroy();
 	    }
 

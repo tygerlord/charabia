@@ -69,4 +69,6 @@
 	<string name="share">Partager</string>
 	<string name="contacts">Contacts</string>
 	<string name="send_invit_on_phone">Envoyer invitation au numéro?</string>
+	<string name="pubkey_received">Ce contact vous a envoyé une demande de partage de clé secréte sous Charabia. Lancer l\'application Charabia pour répondre à sa demande.</string>
+	<string name="invite">Invité</string>
 </resources>
