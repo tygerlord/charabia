@@ -43,6 +43,13 @@
 				<data android:port="1981" />
 			</intent-filter>
 		</receiver>
+		<receiver class=".SendResultReceiver"
+			android:name=".SendResultReceiver">
+			<intent-filter>
+				<action android:name="com.charabia.intent.SMS_SENT" />
+				<action android:name="com.charabia.intent.SMS_PUBKEY_SENT" />
+			</intent-filter>
+		</receiver>
 		<activity android:name=".PickContactActivity" android:label="@string/app_name"/>
 		<activity android:name=".WebViewActivity" android:label="@string/app_name"/>
 		<activity android:name=".PreferencesActivity" android:label="@string/app_name"/>

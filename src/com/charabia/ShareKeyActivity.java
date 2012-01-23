@@ -290,11 +290,12 @@ public class ShareKeyActivity extends FragmentActivity
 
 							rsaCipher.init(Cipher.ENCRYPT_MODE, rsaPubkey);
 							
-							sendData = new byte[Tools.MAGIC.length + 1 + rsaCipher.getOutputSize(aesKey.length)];
+							sendData = new byte[5 + rsaCipher.getOutputSize(aesKey.length)];
 							
-							System.arraycopy(Tools.MAGIC, 0, sendData, 0, Tools.MAGIC.length);
-							sendData[4] = Tools.CRYPTED_KEY_TYPE;
-							rsaCipher.doFinal(aesKey, 0, aesKey.length, sendData, 6);
+							sendData[0] = Tools.MAGIC[0];
+							sendData[1] = Tools.MAGIC[1];
+							sendData[2] = Tools.CRYPTED_KEY_TYPE;
+							rsaCipher.doFinal(aesKey, 0, aesKey.length, sendData, 5);
 
 							tools.updateOrCreateContactKey(phoneNumber, aesKey);
 	

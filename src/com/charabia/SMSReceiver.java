@@ -24,8 +24,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -124,9 +122,7 @@ public class SMSReceiver extends BroadcastReceiver
 					}
 					else if(messageBody != null && 
 							messageBody[0] == Tools.MAGIC[0] && 
-							messageBody[1] == Tools.MAGIC[1] && 
-							messageBody[2] == Tools.MAGIC[2] && 
-							messageBody[3] == Tools.MAGIC[3]) {
+							messageBody[1] == Tools.MAGIC[1]) {
 
 							Tools tools = new Tools(context);
 						
@@ -135,7 +131,7 @@ public class SMSReceiver extends BroadcastReceiver
 							String message = "";
 			
 							try {
-								message = tools.decrypt(originatingAddress, messageBody);
+								message = new String(tools.decrypt(originatingAddress, messageBody));
 								
 								message += "\n" + 
 										context.getString(R.string.secured_by_appname, 

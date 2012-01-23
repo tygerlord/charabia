@@ -25,7 +25,7 @@ public class OpenHelper extends SQLiteOpenHelper
 
 	public static final String DATABASE_NAME = "CHARABIA_BDD";
 
-	private static final int DATABASE_VERSION = 2;
+	private static final int DATABASE_VERSION = 4;
 
 	public static final String ID = "_id";
 	public static final String KEY = "KEY";
@@ -33,11 +33,17 @@ public class OpenHelper extends SQLiteOpenHelper
 	public static final String LOOKUP = "LOOKUP";
 	public static final String CONTACT_ID = "CONTACT_ID";
 	public static final String DATE_KEY = "DATE_KEY";
+	public static final String COUNTER = "COUNTER";
+	public static final String MSG_CLEAR = "MSG_CLEAR";
+	public static final String MSG_CRYPTED = "MSG_CRYPTED";
+	public static final String ERROR_MSG = "ERROR_MSG";
 	
 	public static final String TABLE_KEYS = "TABLE_KEYS";
 
 	public static final String PUBLIC_KEYS = "PUBLIC_KEYS";
 
+	public static final String OUT_MSG_TABLE = "OUT_MSG_TABLE";
+	
 	private static final String TABLE_KEYS_CREATE =
 		"CREATE TABLE " + TABLE_KEYS + " (" +
 		ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -55,6 +61,9 @@ public class OpenHelper extends SQLiteOpenHelper
 
 	private static final String ADD_DATE_TO_TABLE_KEYS = 
 		"ALTER TABLE " + TABLE_KEYS + " ADD " + DATE_KEY + " TEXT";
+
+	private static final String ADD_COUNTER_TO_TABLE_KEYS = 
+			"ALTER TABLE " + TABLE_KEYS + " ADD " + COUNTER + " INTEGER DEFAULT 0";
 	
 	private static final String ADD_TRIGGER_DATE =
 		"CREATE TRIGGER table_keys_date AFTER UPDATE OF " + KEY + " ON " + TABLE_KEYS + "\n" + 
@@ -62,40 +71,47 @@ public class OpenHelper extends SQLiteOpenHelper
 		"	UPDATE " + TABLE_KEYS + " SET " + DATE_KEY + " = CURRENT_TIMESTAMP WHERE " +  ID + " = OLD." + ID + ";\n" +    
 		"END";
 			
+	private static final String OUT_MSG_TABLE_CREATE =
+			"CREATE TABLE " + OUT_MSG_TABLE + " (" +
+			ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+			PHONE + " TEXT," +
+			COUNTER + " INTEGER DEFAULT 0," +
+			ERROR_MSG + " TEXT," +
+			MSG_CRYPTED + " BLOB," +
+			MSG_CLEAR + " TEXT);";
+ 
 	public OpenHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
+		onUpgrade(db, 1, DATABASE_VERSION);
+	}
+
+	@Override
+	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+		
 		db.beginTransaction();
 		try {
-			db.execSQL(TABLE_KEYS_CREATE);
-			onUpgrade(db, 1, 2);
+			if(oldVersion <= 1) {
+				db.execSQL(TABLE_KEYS_CREATE);
+			}
+			if(oldVersion <= 2) {
+				db.execSQL(ADD_DATE_TO_TABLE_KEYS);
+				db.execSQL(ADD_TRIGGER_DATE);
+				db.execSQL(PUBLIC_KEYS_CREATE);
+			}
+			if(oldVersion <= 3) {
+				db.execSQL(ADD_COUNTER_TO_TABLE_KEYS);
+				db.execSQL(OUT_MSG_TABLE_CREATE);
+			}
 			db.setTransactionSuccessful();
 		}
 		finally {
 			db.endTransaction();
 		}
-	}
-
-	@Override
-	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		// Example
-		//db.execSQL("DROP TABLE IF EXISTS " + TABLE_KEYS);
-		//onCreate(db);
-		if(oldVersion == 1 && newVersion == 2) {
-			db.beginTransaction();
-			try {
-				db.execSQL(ADD_DATE_TO_TABLE_KEYS);
-				db.execSQL(ADD_TRIGGER_DATE);
-				db.execSQL(PUBLIC_KEYS_CREATE);
-				db.setTransactionSuccessful();
-			}
-			finally {
-				db.endTransaction();
-			}
-		}
+		
 	}
 
 }

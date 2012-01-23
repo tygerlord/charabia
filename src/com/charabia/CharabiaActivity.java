@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Charabia authors
+ * Copyright (C) 2011,2012 Charabia authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,6 @@ import android.content.DialogInterface;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -67,13 +66,10 @@ import android.gesture.GestureOverlayView.OnGesturePerformedListener;
 import android.gesture.Prediction;
 import android.util.Base64;
 import android.util.Log;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View.OnLongClickListener;
-import android.view.inputmethod.InputMethodManager;
-
 import android.widget.Toast;
 import android.widget.TextView;
 import android.widget.EditText;
@@ -83,7 +79,6 @@ import android.telephony.SmsManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 
-import com.charabia.PickContactActivity.CursorLoaderListFragment;
 import com.google.zxing.integration.android.IntentIntegrator;
 
 // TODO option preference to store or not message
@@ -306,11 +301,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		try {
 			String texte = "bonjour";
 			
-			byte[] data = tools.encrypt(Tools.demo_key, texte);
+			byte[] data = tools.encrypt("5554", texte.getBytes());
 			
 			Log.v(TAG, "data="+Base64.encodeToString(data, Base64.NO_WRAP));
+			Log.v(TAG, "data="+Tools.bytesToHex(data));
 			
-			String result = tools.decrypt("5554", data);
+			String result = new String(tools.decrypt("5554", data));
 			
 			Log.v(TAG, "result="+result);
 			
@@ -922,13 +918,12 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 		int start = mFragment*BLOCK_SIZE;
 		int end = (start+BLOCK_SIZE)<texte.length()?(start+BLOCK_SIZE):texte.length();
-		byte[] data = tools.encrypt(tools.getKey(phoneNumber), 
-				texte.substring(start, end));
+		byte[] data = tools.encrypt(phoneNumber, texte.substring(start, end).getBytes());
 
 		Log.v(TAG, "send block data size = " + data.length);
 		
 		Intent iSend = new Intent(SMS_SENT);
-		Intent iDelivered = new Intent(SMS_DELIVERED);
+		//Intent iDelivered = new Intent(SMS_DELIVERED);
 		PendingIntent piSend = PendingIntent.getBroadcast(this, 0, iSend, 0);
 		//PendingIntent piDelivered = PendingIntent.getBroadcast(this, 0, iDelivered, 0);
 		//TODO piDelivered?

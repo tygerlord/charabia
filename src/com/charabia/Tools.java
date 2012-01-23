@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Charabia authors
+ * Copyright (C) 2011,2012 Charabia authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
+import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.spec.RSAKeyGenParameterSpec;
 
 import javax.crypto.BadPaddingException;
@@ -37,10 +37,12 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.ShortBufferException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import android.net.Uri;
+import android.content.ContentUris;
 import android.content.Intent;
 import android.content.Context;
 import android.content.ContentValues;
@@ -82,6 +84,20 @@ class NoCharabiaKeyException extends Exception {
 	private static final long serialVersionUID = 1L;
 	
 	public NoCharabiaKeyException(String message) {
+		super(message);
+	}
+
+
+}
+
+class OverflowCharabiaCounterException extends Exception {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	public OverflowCharabiaCounterException(String message) {
 		super(message);
 	}
 
@@ -138,14 +154,14 @@ public class Tools {
 
 	private static final String KEYPAIR_FILENAME= "keypair.data";
 	
-	public static final byte[] MAGIC = { (byte)0x84, (byte)0x15, (byte)0x61, (byte)0xB7 };
+	public static final byte[] MAGIC = { (byte)0x19, (byte)0x81 };
 	
 	public static final String CIPHER_ALGO = "AES/CTR/PKCS5Padding";
 	public static final String RSA_CIPHER_ALGO = "RSA/ECB/PKCS1Padding";
 	
-	public static final byte MESSAGE_TYPE = 0x01; // we receive a message
-	public static final byte PUBLIC_KEY_TYPE = 0x02; // we receive a public key
-	public static final byte CRYPTED_KEY_TYPE = 0x03; // we receive aes key crypted by public key
+	public static final byte MESSAGE_TYPE = (byte)0x00; // we receive a message
+	public static final byte PUBLIC_KEY_TYPE = (byte)0x80; // we receive a public key
+	public static final byte CRYPTED_KEY_TYPE = (byte)0xC0; // we receive aes key crypted by public key
 
 	public static final byte[] demo_key = new byte[] { 
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -561,11 +577,11 @@ public class Tools {
 
     }
 
-	public String decrypt(String originatingAddress, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, NoContactException, NoCharabiaKeyException {
+	public byte[] decrypt(String originatingAddress, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, NoContactException, NoCharabiaKeyException {
 		
-		String result = context.getString(R.string.unexpected_error);
+		byte[] result = context.getString(R.string.unexpected_error).getBytes();
 		
-		if(data[4] == PUBLIC_KEY_TYPE) {
+		if((data[2] & PUBLIC_KEY_TYPE) == PUBLIC_KEY_TYPE) {
 			// receive public key 
 			ContentResolver cr = context.getContentResolver();
 			ContentValues values = new ContentValues();
@@ -578,10 +594,10 @@ public class Tools {
 			
 			cr.insert(DataProvider.PUBKEYS_CONTENT_URI, values);
 			
-			result = context.getString(R.string.pubkey_received);
+			result = context.getString(R.string.pubkey_received).getBytes();
 					
 		}
-		else if(data[4] == CRYPTED_KEY_TYPE) {
+		else if((data[2] & CRYPTED_KEY_TYPE) == CRYPTED_KEY_TYPE) {
 			// receive crypted aes key
 		}
 		else {
@@ -591,41 +607,80 @@ public class Tools {
 		
 			SecretKey key = new SecretKeySpec(key_data, "AES");
 		
-			//byte[] IV = new byte[16];
-			int pos = MAGIC.length+1;
-			//System.arraycopy(data, pos, IV, 0, 7); pos += 7;
+			byte[] IV = new byte[16];
 			
-			c.init(Cipher.DECRYPT_MODE, key);//, new IvParameterSpec(IV));
+			IV[1] = data[2];
+			IV[2] = data[3];
+			IV[3] = data[4];
+			
+			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
 	
-			result = new String(c.doFinal(data, pos, data.length-pos));
+			result =c.doFinal(data, 5, data.length-5);
 		}
 		
 		return result;
 	}
 
-	public byte[] encrypt(byte[] key_data, String texte) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
+	public byte[] encrypt(String destinationAddress, byte[] clearData) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoCharabiaKeyException, NoContactException, OverflowCharabiaCounterException, ShortBufferException {
+		ContentResolver cr = context.getContentResolver();
+
+        String lookupKey = getLookupFromPhoneNumber(destinationAddress);
+      
+        Cursor cursor = cr.query(DataProvider.CONTENT_URI, 
+        		new String[]{OpenHelper.ID, OpenHelper.KEY, OpenHelper.COUNTER}, 
+        		OpenHelper.LOOKUP + "=?", 
+        		new String[] { lookupKey }, null);
+        
+        byte[] key = null;
+        int counter = -1;
+        long id = -1;
+        
+        if(cursor.moveToFirst()) {
+        	key = cursor.getBlob(cursor.getColumnIndex(OpenHelper.KEY));
+        	counter = cursor.getInt(cursor.getColumnIndex(OpenHelper.COUNTER));
+        	id = cursor.getLong(cursor.getColumnIndex(OpenHelper.ID));
+        }
+        
+        cursor.close();
+        
+        if(key == null || counter < 0) {
+        	throw new NoCharabiaKeyException("No Charabia key for " + destinationAddress);
+        }
+	    
+        if(counter>=(0x3fffff)) {
+        	throw new OverflowCharabiaCounterException("key exeed use");
+        }
+        counter += 1;
+      
+        // save new counter value
+        ContentValues values = new ContentValues();
+        values.put(OpenHelper.COUNTER, counter);
+        cr.update(ContentUris.withAppendedId(DataProvider.CONTENT_URI, id), values, null, null);
+        
+        
 		Cipher c = Cipher.getInstance(CIPHER_ALGO);
 
-		SecretKey key = new SecretKeySpec(key_data, "AES");
+		SecretKey keySpec = new SecretKeySpec(key, "AES");
 
-		SecureRandom sr = new SecureRandom();
+		byte[] bIV = new byte[16];
+		ByteBuffer bbuf = ByteBuffer.wrap(bIV, 0, 4);
+		bbuf.putInt(counter);
 		
-		// generate salt but keep only first 7 bytes, set other to 0
-		// this for keep message size at 140 bytes total size sms data allowed
-		byte[] bIV = sr.generateSeed(16);
-		for(int i = 7; i < 16; i++) bIV[i] = (byte)0x00;
+		c.init(Cipher.ENCRYPT_MODE, keySpec, new IvParameterSpec(bIV));
 		
-		c.init(Cipher.ENCRYPT_MODE, key);//, new IvParameterSpec(bIV));
+		//byte[] cryptedTexte = c.doFinal(texte.getBytes());
+		//byte[] data = new byte[MAGIC.length+1+cryptedTexte.length];
 
-		byte[] cryptedTexte = c.doFinal(texte.getBytes());
-		byte[] data = new byte[MAGIC.length+1+cryptedTexte.length];
-
-		int pos = 0;
-		System.arraycopy(MAGIC, 0, data, pos, MAGIC.length); pos += MAGIC.length;
-		data[pos] = MESSAGE_TYPE; pos += 1;
-		//System.arraycopy(bIV, 0, data, pos, 7); pos += 7;
-		System.arraycopy(cryptedTexte, 0, data, pos, cryptedTexte.length);
-
+		byte[] data = new byte[2+3+c.getOutputSize(clearData.length)];
+				
+		data[0] = MAGIC[0];
+		data[1] = MAGIC[1];
+		data[2] = (byte)(bIV[1] & MESSAGE_TYPE);
+		data[3] = bIV[2];
+		data[4] = bIV[3];
+		
+		c.doFinal(clearData, 0, clearData.length, data, 5);
+		
 		return data;
 	}
  
