@@ -128,6 +128,7 @@ public class SMSReceiver extends BroadcastReceiver
 						
 							String originatingAddress = messages[0].getOriginatingAddress();
 							
+							/*
 							String message = "";
 			
 							try {
@@ -172,7 +173,12 @@ public class SMSReceiver extends BroadcastReceiver
 									message);
 			
 							tools.showNotification(originatingAddress, timeStamp);
-			
+							*/
+							
+							tools.manageMsg(originatingAddress, 
+									messageBody, 
+									messages[0].getTimestampMillis());
+							
 							abortBroadcast();
 					}
 				}

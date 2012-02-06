@@ -32,6 +32,8 @@ public class SendResultReceiver extends BroadcastReceiver
 		if (intent.getAction().equals(ACTION_RESULT_SMS)) {
             String info = "Send information: ";
             
+            Log.v("CHARABIA", "SendResultReceiver + " + intent.getParcelableExtra("MSG_URI"));
+            
             switch(getResultCode())
             {
                     case Activity.RESULT_OK: 

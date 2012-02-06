@@ -71,4 +71,9 @@
 	<string name="send_invit_on_phone">Envoyer invitation au numéro?</string>
 	<string name="pubkey_received">Ce contact vous a envoyé une demande de partage de clé secréte sous Charabia. Lancer l\'application Charabia pour répondre à sa demande.</string>
 	<string name="invite">Invité</string>
+	<string name="invitation_received">Invitation reçue</string>
+	<string name="invitation_send">Invitation envoyée</string>
+	<string name="message_received">Message reçue</string>
+	<string name="message_send">Message envoyée</string>
+	<string name="invitation_answer">Reponse reçue</string>
 </resources>

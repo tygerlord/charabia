@@ -51,6 +51,7 @@ import android.content.DialogInterface;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -93,9 +94,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	// Tag used to log messages
 	private static final String TAG = "CHARABIA";
 
-	//port where data sms are send
-	public static final short sms_port = 1981;
-	
 	// Extra text data share by sms
 	public static final String SMS_BODY = "sms_body";
 	
@@ -136,7 +134,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 	private static final String SMS_SENT = "com.charabia.SMS_SENT";
 	private static final String SMS_DELIVERED = "com.charabia.SMS_DELIVERED";
-	private static final String SMS_PUBKEY_SENT = "com.charabia.SMS_PUBKEY_SENT";
 	
 	// Utilities class instance
 	private Tools tools = new Tools(this);
@@ -218,7 +215,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
         registerReceiver(sendReceiver, new IntentFilter(SMS_SENT));
         registerReceiver(deliveredReceiver, new IntentFilter(SMS_DELIVERED));
-        registerReceiver(sendPubKeyReceiver, new IntentFilter(SMS_PUBKEY_SENT));
         
         setContentView(R.layout.main);
         
@@ -470,7 +466,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 	public void buttonInvite(View view) {
 		Intent intent = new Intent(Intent.ACTION_VIEW);
-		intent.setClassName(this, ShareKeyActivity.class.getName());
+		intent.setClassName(this, SmsViewActivity.class.getName());
 		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
 		startActivity(intent);
 	}
@@ -750,27 +746,21 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialogInterface, int i) {
 								
-								showDialog(SEND_PROGRESS_DIALOG);
-								
 								keypair = tools.loadKeyPair();
 								RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
 								
 								byte[] encoded = pubKey.getModulus().toByteArray();
 										
-								byte[] data = new byte[Tools.MAGIC.length + encoded.length];
+								byte[] data = new byte[3 + encoded.length];
 								
-								System.arraycopy(Tools.MAGIC, 0, data, 0, Tools.MAGIC.length);
-								//data[Tools.MAGIC.length] = Tools.PUBLIC_KEY_TYPE;
-								System.arraycopy(encoded, 0, data, Tools.MAGIC.length, encoded.length);
+								data[0] = Tools.MAGIC[0];
+								data[1] = Tools.MAGIC[1];
+								data[2] = Tools.PUBLIC_KEY_TYPE;
+	
+								System.arraycopy(encoded, 0, data, 3, encoded.length);
 								
-								Intent iSend = new Intent(SMS_PUBKEY_SENT);
-								PendingIntent piSend = PendingIntent.getBroadcast(CharabiaActivity.this, 0, iSend, 0);
+								tools.sendData(phoneList[i], Tools.INVITATION_SEND, "", data);
 								
-								Log.v(TAG, "phoneList[i]=" + phoneList[i]);
-								
-								Log.v(TAG, "data.length=" + data.length);
-								
-								SmsManager.getDefault().sendDataMessage(phoneList[i], null, sms_port, data, piSend, null);
 						}
 					});
 
@@ -909,8 +899,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  	
  	/*
  	 * Use to send a message from list
- 	 */
- 	private synchronized void sendFragment() throws Exception, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoLookupKeyException, NoCharabiaKeyException  {
+	private synchronized void _sendFragment() throws Exception, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoLookupKeyException, NoCharabiaKeyException  {
  		
   		String phoneNumber = recipientsList.get(0);
  		
@@ -929,13 +918,28 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		//TODO piDelivered?
 		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, null);
  	}
+  	 */
+ 	
+ 	private synchronized void sendFragment(ContentResolver cr) throws Exception, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoLookupKeyException, NoCharabiaKeyException  {
+ 		
+  		String phoneNumber = recipientsList.get(0);
+ 		
+		String texte = messageView.getText().toString();
+
+		int start = mFragment*BLOCK_SIZE;
+		int end = (start+BLOCK_SIZE)<texte.length()?(start+BLOCK_SIZE):texte.length();
+		String subText = texte.substring(start, end);
+		byte[] data = tools.encrypt(phoneNumber, subText.getBytes());
+		
+		tools.sendData(phoneNumber, Tools.MESSAGE_SEND, subText, data);
+ 	}
  
-	public synchronized void sendMessage() {
+	public synchronized void _sendMessage() {
 
 		showDialog(SEND_PROGRESS_DIALOG);
 
 		try {
-			sendFragment();
+			//sendFragment();
 			return;
 		} catch (Throwable e) {
 			e.printStackTrace();
@@ -943,6 +947,27 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 		dismissDialog(SEND_PROGRESS_DIALOG);
 		showDialog(SEND_ERROR_DIALOG);
+		
+	}
+
+	public synchronized void sendMessage() {
+		ContentResolver cr = getContentResolver();
+		
+		try {
+			do {
+	      		mFragment=0;
+	    		while(mFragment*BLOCK_SIZE < messageView.length()) {
+	    			sendFragment(cr);
+	    			mFragment++;
+	    		}
+			}while(removeFromRecipientsList(0)==false);
+			
+			messageView.setText("");
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
+		}
 		
 	}
 
@@ -1094,7 +1119,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
     {
     	unregisterReceiver(sendReceiver);
     	unregisterReceiver(deliveredReceiver);
-    	unregisterReceiver(sendPubKeyReceiver);
     	
         super.onDestroy();
     }

@@ -47,6 +47,7 @@ import android.content.Intent;
 import android.content.Context;
 import android.content.ContentValues;
 import android.content.ContentResolver;
+import android.telephony.SmsManager;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.widget.Toast;
@@ -162,6 +163,17 @@ public class Tools {
 	public static final byte MESSAGE_TYPE = (byte)0x00; // we receive a message
 	public static final byte PUBLIC_KEY_TYPE = (byte)0x80; // we receive a public key
 	public static final byte CRYPTED_KEY_TYPE = (byte)0xC0; // we receive aes key crypted by public key
+
+	public static final int MESSAGE_ERROR = 1;
+	public static final int MESSAGE_SEND = MESSAGE_ERROR + 1;
+	public static final int MESSAGE_RECEIVED = MESSAGE_SEND + 1;
+	public static final int INVITATION_SEND = MESSAGE_RECEIVED + 1;
+	public static final int INVITATION_RECEIVED = INVITATION_SEND + 1;
+	public static final int INVITATION_ANSWER = INVITATION_RECEIVED + 1;
+	
+	//port where data sms are send
+	public static final short sms_port = 1981;
+	
 
 	public static final byte[] demo_key = new byte[] { 
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -581,42 +593,21 @@ public class Tools {
 		
 		byte[] result = context.getString(R.string.unexpected_error).getBytes();
 		
-		if((data[2] & PUBLIC_KEY_TYPE) == PUBLIC_KEY_TYPE) {
-			// receive public key 
-			ContentResolver cr = context.getContentResolver();
-			ContentValues values = new ContentValues();
-			
-			byte[] key = new byte[data.length-5];
-			System.arraycopy(data, 6, key, 0, key.length);
-			
-			values.put(OpenHelper.KEY, key);
-			values.put(OpenHelper.PHONE, originatingAddress);
-			
-			cr.insert(DataProvider.PUBKEYS_CONTENT_URI, values);
-			
-			result = context.getString(R.string.pubkey_received).getBytes();
-					
-		}
-		else if((data[2] & CRYPTED_KEY_TYPE) == CRYPTED_KEY_TYPE) {
-			// receive crypted aes key
-		}
-		else {
-			byte[] key_data = getKey(originatingAddress);
-					
-			Cipher c = Cipher.getInstance(CIPHER_ALGO);
-		
-			SecretKey key = new SecretKeySpec(key_data, "AES");
-		
-			byte[] IV = new byte[16];
-			
-			IV[1] = data[2];
-			IV[2] = data[3];
-			IV[3] = data[4];
-			
-			c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
+		byte[] key_data = getKey(originatingAddress);
+				
+		Cipher c = Cipher.getInstance(CIPHER_ALGO);
 	
-			result =c.doFinal(data, 5, data.length-5);
-		}
+		SecretKey key = new SecretKeySpec(key_data, "AES");
+	
+		byte[] IV = new byte[16];
+		
+		IV[1] = data[2];
+		IV[2] = data[3];
+		IV[3] = data[4];
+		
+		c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
+
+		result =c.doFinal(data, 5, data.length-5);
 		
 		return result;
 	}
@@ -703,5 +694,100 @@ public class Tools {
 	public SecretKey generateKeyAES() {
 		return generateKeyAES(256);
 	}
+
+	public void manageMsg(String originatingAddress, byte[] messageBody, long timeStamp) {
+		
+		ContentResolver cr = context.getContentResolver();
+		
+		
+		byte msgType = (byte)(messageBody[2] & 0xC0);
+		
+		ContentValues values = new ContentValues();
+		
+		values.put(OpenHelper.PHONE, originatingAddress);
+		values.put(OpenHelper.MSG_DATA, messageBody);
+		values.put(OpenHelper.MSG_DATE, timeStamp);
+		
+		if(msgType == MESSAGE_TYPE) {
+			String message = "";
+			
+			try {
+				message = new String(decrypt(originatingAddress, messageBody));
+				
+				message += "\n" + 
+						context.getString(R.string.secured_by_appname, 
+								context.getString(R.string.app_name));
+				
+			} catch (InvalidKeyException e) {
+				e.printStackTrace();
+				message = context.getString(R.string.unexpected_error);
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+				message = context.getString(R.string.unexpected_error);
+			} catch (NoSuchPaddingException e) {
+				e.printStackTrace();
+				message = context.getString(R.string.unexpected_error);
+			} catch (InvalidAlgorithmParameterException e) {
+				e.printStackTrace();
+				message = context.getString(R.string.unexpected_error);
+			} catch (IllegalBlockSizeException e) {
+				e.printStackTrace();
+				message = context.getString(R.string.blocksize_error);
+			} catch (BadPaddingException e) {
+				e.printStackTrace();
+				message = context.getString(R.string.padding_error);
+			} catch (NoContactException e) {
+				e.printStackTrace();
+				message = context.getString(R.string.unknown_user);
+			} catch (NoCharabiaKeyException e) {
+				e.printStackTrace();
+				message = context.getString(R.string.no_key_for_user);
+			}
+			
+			values.put(OpenHelper.MSG_TYPE, MESSAGE_RECEIVED);
+			values.put(OpenHelper.MSG_TEXT, message);
+			
+		}
+		else if(msgType == PUBLIC_KEY_TYPE) {
+			values.put(OpenHelper.MSG_TYPE, INVITATION_RECEIVED);
+			values.put(OpenHelper.MSG_TEXT, context.getString(R.string.invitation_received));
+		}
+		else if(msgType == CRYPTED_KEY_TYPE) {
+			values.put(OpenHelper.MSG_TYPE, INVITATION_ANSWER);
+			values.put(OpenHelper.MSG_TEXT, context.getString(R.string.invitation_answer));
+			
+		}
+		else {
+			values.put(OpenHelper.MSG_TYPE, MESSAGE_ERROR);
+			values.put(OpenHelper.MSG_TEXT, context.getString(R.string.unexpected_error));
+		}
+		
+		cr.insert(DataProvider.MSG_CONTENT_URI, values);
+		
+		showNotification(originatingAddress, timeStamp);
+	}
+	
+	public synchronized void sendData(String phoneNumber, int type,  String text, byte[] data) {
+ 		ContentResolver cr = context.getContentResolver();
+ 		
+		Log.v(TAG, "send block data size = " + data.length);
+		
+		ContentValues values = new ContentValues();
+		
+		values.put(OpenHelper.PHONE, phoneNumber);
+		values.put(OpenHelper.MSG_TYPE, type);
+		values.put(OpenHelper.MSG_TEXT, text);
+		values.put(OpenHelper.MSG_DATA, data);
+		
+		Uri uri = cr.insert(DataProvider.MSG_CONTENT_URI, values);
+	
+		Intent iSend = new Intent(SendResultReceiver.ACTION_RESULT_SMS);
+		iSend.putExtra("MSG_URI", uri);
+		PendingIntent piSend = PendingIntent.getBroadcast(context, 0, iSend, PendingIntent.FLAG_ONE_SHOT);
+		Log.v(TAG, "sendDataMessage " + phoneNumber + " port " + sms_port);
+		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, 
+						data, piSend, null);
+ 		
+ 	}
 
 }

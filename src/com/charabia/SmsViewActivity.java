@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Charabia authors
+ * Copyright (C) 2011,2012 Charabia authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import android.app.ProgressDialog;
 import android.app.AlertDialog.Builder;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.ListView;
@@ -70,7 +71,7 @@ import android.support.v4.widget.SimpleCursorAdapter.ViewBinder;
  * @author 
  *
  */
-public class ShareKeyActivity extends FragmentActivity 
+public class SmsViewActivity extends FragmentActivity 
 {
 
 	@Override
@@ -107,15 +108,15 @@ public class ShareKeyActivity extends FragmentActivity
 				
 				try {
 
+					StringBuffer displayName = new StringBuffer();
+					
 					String lookupKey = tools.getLookupFromPhoneNumber(phoneNumber);
 					
 					Uri contactUri = Contacts.lookupContact(context.getContentResolver(),  
-							Contacts.getLookupUri(-1, lookupKey));
+							Contacts.getLookupUri(0, lookupKey));
 
 					Cursor cname = context.getContentResolver().query(contactUri, 
 							new String[] { Contacts.DISPLAY_NAME }, null, null, null);
-					
-					StringBuffer displayName = new StringBuffer();
 					
 					if(cname.moveToFirst()) {
 						displayName.append(cname.getString(0));
@@ -128,8 +129,34 @@ public class ShareKeyActivity extends FragmentActivity
 					
 					displayName.append("\n");
 					displayName.append(phoneNumber);
+
+					int type = cursor.getInt(cursor.getColumnIndex(OpenHelper.MSG_TYPE));
+					if(type == Tools.MESSAGE_SEND) {
+						displayName.append("\n");
+						displayName.append(context.getString(R.string.message_send));
+						tv.setTextColor(Color.WHITE);
+					}
+					else if (type == Tools.MESSAGE_RECEIVED) {
+						tv.setTextColor(Color.BLUE);
+						displayName.append("\n");
+						displayName.append(context.getString(R.string.message_received));
+					}
+					else if (type == Tools.INVITATION_SEND) {
+						tv.setTextColor(Color.GREEN);
+						displayName.append("\n");
+						displayName.append(context.getString(R.string.invitation_send));
+					}
+					else if (type == Tools.INVITATION_RECEIVED) {
+						tv.setTextColor(Color.YELLOW);
+						displayName.append("\n");
+						displayName.append(context.getString(R.string.invitation_received));
+					}
+					else if (type == Tools.CRYPTED_KEY_TYPE) {
+						tv.setTextColor(Color.MAGENTA);
+						displayName.append("\n");
+						displayName.append(context.getString(R.string.invitation_answer));
+					}
 					
-					//tv.setTextColor(Color.GREEN);
 					tv.setText(displayName);
 					
 					java.io.InputStream input = Contacts.openContactPhotoInputStream(
@@ -154,7 +181,7 @@ public class ShareKeyActivity extends FragmentActivity
 				catch(Exception e) {
 					e.printStackTrace();
 					iv.setImageResource(android.R.drawable.ic_secure);
-					//tv.setTextColor(Color.RED);
+					tv.setTextColor(Color.RED);
 					tv.setText("erreur" + "\n" + phoneNumber);
 					return true;
 				}
@@ -229,7 +256,7 @@ public class ShareKeyActivity extends FragmentActivity
 		private void deleteId() {
 			ContentResolver cr = getActivity().getContentResolver();
 			
-			cr.delete(ContentUris.withAppendedId(DataProvider.PUBKEYS_CONTENT_URI, id), null, null);
+			cr.delete(ContentUris.withAppendedId(DataProvider.MSG_CONTENT_URI, id), null, null);
 			
 			getLoaderManager().restartLoader(CONTACTS_LOADER, null, this);
 		}
@@ -245,7 +272,7 @@ public class ShareKeyActivity extends FragmentActivity
 			
 			Intent iSend = new Intent(SMS_SENT);
 			PendingIntent piSend = PendingIntent.getBroadcast(getActivity(), 0, iSend, 0);
-			SmsManager.getDefault().sendDataMessage(phoneNumber, null, CharabiaActivity.sms_port, sendData, piSend, null);
+			//SmsManager.getDefault().sendDataMessage(phoneNumber, null, Tools.sms_port, sendData, piSend, null);
 			
 		}
 		
@@ -345,11 +372,13 @@ public class ShareKeyActivity extends FragmentActivity
 		public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 
 	        return new CursorLoader(getActivity(), 
-	        		DataProvider.PUBKEYS_CONTENT_URI,
+	        		DataProvider.MSG_CONTENT_URI,
 	        		new String[] { 
 	        			OpenHelper.ID, 
 	        			OpenHelper.PHONE, 
-	        			OpenHelper.KEY
+	        			OpenHelper.MSG_TYPE,
+	        			OpenHelper.MSG_DATE,
+	        			OpenHelper.MSG_TEXT
 	        		}, 
 	        		null, 
 	        		null,

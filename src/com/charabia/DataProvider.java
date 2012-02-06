@@ -36,21 +36,22 @@ public class DataProvider extends ContentProvider
 	public static final Uri CONTENT_URI = 
 			Uri.parse("content://"+ PROVIDER_NAME + "/keys");
 
-	public static final Uri PUBKEYS_CONTENT_URI = 
-			Uri.parse("content://"+ PROVIDER_NAME + "/pubkeys");
+	public static final Uri MSG_CONTENT_URI = 
+			Uri.parse("content://"+ PROVIDER_NAME + "/msgs");
+
 
 	private static final int KEYS = 1;
 	private static final int KEYS_ID = 2;
-	private static final int PUBKEYS = 3;
-	private static final int PUBKEYS_ID = 4;
+	private static final int MSGS = 3;
+	private static final int MSGS_ID = 4;
 	
 	private static final UriMatcher uriMatcher;
 	static{
 		uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 		uriMatcher.addURI(PROVIDER_NAME, "keys", KEYS);
 		uriMatcher.addURI(PROVIDER_NAME, "keys/#", KEYS_ID);
-		uriMatcher.addURI(PROVIDER_NAME, "pubkeys", PUBKEYS);
-		uriMatcher.addURI(PROVIDER_NAME, "pubkeys/#", PUBKEYS_ID);
+		uriMatcher.addURI(PROVIDER_NAME, "msgs", MSGS);
+		uriMatcher.addURI(PROVIDER_NAME, "msgs/#", MSGS_ID);
 	}
 
 	private SQLiteDatabase db = null;
@@ -68,12 +69,12 @@ public class DataProvider extends ContentProvider
 				id = uri.getPathSegments().get(1);
 				table = OpenHelper.TABLE_KEYS;
 				break;
-			case PUBKEYS:
-				table = OpenHelper.PUBLIC_KEYS;
+			case MSGS:
+				table = OpenHelper.MSG_TABLE;
 				break;
-			case PUBKEYS_ID:
+			case MSGS_ID:
 				id = uri.getPathSegments().get(1);
-				table = OpenHelper.PUBLIC_KEYS;
+				table = OpenHelper.MSG_TABLE;
 				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
@@ -101,10 +102,10 @@ public class DataProvider extends ContentProvider
 				return "vnd.android.cursor.dir/vnd.charabia.keys";
 			case KEYS_ID:                
 				return "vnd.android.cursor.item/vnd.charabia.key";
-			case PUBKEYS:
-				return "vnd.android.cursor.dir/vnd.charabia.pubkeys";
-			case PUBKEYS_ID:                
-				return "vnd.android.cursor.item/vnd.charabia.pubkey";
+			case MSGS:
+				return "vnd.android.cursor.dir/vnd.charabia.msgs";
+			case MSGS_ID:                
+				return "vnd.android.cursor.item/vnd.charabia.msg";
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);        
 		}   
@@ -118,8 +119,8 @@ public class DataProvider extends ContentProvider
 			case KEYS:
 				table = OpenHelper.TABLE_KEYS;
 				break;
-			case PUBKEYS:
-				table = OpenHelper.PUBLIC_KEYS;
+			case MSGS:
+				table = OpenHelper.MSG_TABLE;
 				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
@@ -159,12 +160,12 @@ public class DataProvider extends ContentProvider
 				id = uri.getPathSegments().get(1);
 				table = OpenHelper.TABLE_KEYS;
 				break;
-			case PUBKEYS:
-				table = OpenHelper.PUBLIC_KEYS;
+			case MSGS:
+				table = OpenHelper.MSG_TABLE;
 				break;
-			case PUBKEYS_ID:
+			case MSGS_ID:
 				id = uri.getPathSegments().get(1);
-				table = OpenHelper.PUBLIC_KEYS;
+				table = OpenHelper.MSG_TABLE;
 				break;
 			default: throw new IllegalArgumentException(
 				"Unknown URI " + uri);    
@@ -204,12 +205,12 @@ public class DataProvider extends ContentProvider
 	            id = uri.getPathSegments().get(1);
 	    		table = OpenHelper.TABLE_KEYS;
 	            break;
-	    	case PUBKEYS:
-	    		table = OpenHelper.PUBLIC_KEYS;
+	    	case MSGS:
+	    		table = OpenHelper.MSG_TABLE;
 	    		break;
-	        case PUBKEYS_ID:
+	        case MSGS_ID:
 	            id = uri.getPathSegments().get(1);
-	    		table = OpenHelper.PUBLIC_KEYS;
+	    		table = OpenHelper.MSG_TABLE;
 	            break;
 	        default: throw new IllegalArgumentException(
 	            "Unknown URI " + uri);    
