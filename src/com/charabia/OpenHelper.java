@@ -41,6 +41,8 @@ public class OpenHelper extends SQLiteOpenHelper
 	public static final String MSG_TEXT = "MSG_TEXT";
 	public static final String MSG_ERROR = "MSG_ERROR";
 	public static final String MSG_STATUS = "MSG_STATUS";
+	public static final String CONTACT_URI = "CONTACT_URI";
+	public static final String MSG_PORT = "MSG_PORT";
 	
 	public static final String TABLE_KEYS = "TABLE_KEYS";
 
@@ -81,12 +83,14 @@ public class OpenHelper extends SQLiteOpenHelper
 			"CREATE TABLE " + MSG_TABLE + " (" +
 			ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
 			PHONE + " TEXT," +
+			CONTACT_URI + " TEXT DEFAULT NULL," + 
 			COUNTER + " INTEGER DEFAULT 0," +
 			MSG_DATE + " INTEGER DEFAULT 0," + 
 			MSG_TYPE + " INTEGER DEFAULT 0," +
 			MSG_STATUS + " INTEGER DEFAULT 0," +
 			MSG_ERROR + " TEXT," +
 			MSG_DATA + " BLOB," +
+			MSG_PORT + " INTEGER DEFAULT 1981," +
 			MSG_TEXT + " TEXT);";
  
 	public OpenHelper(Context context) {

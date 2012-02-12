@@ -15,27 +15,21 @@
  */
  package com.charabia;
 
-import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAKeyGenParameterSpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Vector;
 import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.app.AlertDialog.Builder;
 
@@ -44,17 +38,11 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
-import android.provider.ContactsContract.Intents;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.content.DialogInterface;
 
-import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
-import android.content.ContentUris;
-import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -65,8 +53,8 @@ import android.gesture.GestureLibrary;
 import android.gesture.GestureOverlayView;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
 import android.gesture.Prediction;
-import android.util.Base64;
 import android.util.Log;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -76,7 +64,6 @@ import android.widget.TextView;
 import android.widget.EditText;
 import android.widget.ViewSwitcher;
 
-import android.telephony.SmsManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 
@@ -131,9 +118,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private Vector<String> recipientsList = new Vector<String>();
 	
 	private GestureLibrary mLibrary = null;
-	
-	private static final String SMS_SENT = "com.charabia.SMS_SENT";
-	private static final String SMS_DELIVERED = "com.charabia.SMS_DELIVERED";
 	
 	// Utilities class instance
 	private Tools tools = new Tools(this);
@@ -213,9 +197,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	{
 		super.onCreate(savedInstanceState);
 	
-        registerReceiver(sendReceiver, new IntentFilter(SMS_SENT));
-        registerReceiver(deliveredReceiver, new IntentFilter(SMS_DELIVERED));
-        
         setContentView(R.layout.main);
         
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -282,7 +263,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			public void onTextChanged(CharSequence s, int start, int before,
 					int count) {
 				int lg = messageView.length();
-				titleMessageView.setText(getResources().getString(R.string.message,  
+				titleMessageView.setText(getResources().getString(R.string.title_message,  
 						lg, (lg/BLOCK_SIZE)+1));
 			}
 		});
@@ -294,74 +275,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		titleMessageView.setText(getResources().getString(R.string.message,  
 				lg, (lg/BLOCK_SIZE)+1));
 
-		try {
-			String texte = "bonjour";
-			
-			byte[] data = tools.encrypt("5554", texte.getBytes());
-			
-			Log.v(TAG, "data="+Base64.encodeToString(data, Base64.NO_WRAP));
-			Log.v(TAG, "data="+Tools.bytesToHex(data));
-			
-			String result = new String(tools.decrypt("5554", data));
-			
-			Log.v(TAG, "result="+result);
-			
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-		}
 	}
 	
 	@Override
 	protected void onResume() {
 		super.onResume();
-
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		prefPhoneNumber = prefs.getString(PreferencesActivity.PHONE_NUMBER, null);
-		if(prefPhoneNumber == null || prefPhoneNumber.length() <= 0) {
-			
-			Intent intent;
-	
-			intent = new Intent(Intent.ACTION_VIEW);
-			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-			intent.setClassName(this, PreferencesActivity.class.getName());
-			startActivity(intent);
-	
-			intent = new Intent(Intent.ACTION_VIEW);
-			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-			intent.setClassName(this, WebViewActivity.class.getName());
-			intent.setData(Uri.parse(WebViewActivity.getBaseUrl(this, "/help", "enter_phone_number.html")));
-			startActivity(intent);
-			
-			
-			//Attempt to retrieve old keys
-			
-			android.content.ContentResolver cr = getContentResolver();
-			android.database.Cursor cursor = cr.query(Data.CONTENT_URI, 
-					new String[] { Data._ID, Tools.PHONE, Tools.KEY },
-					Data.MIMETYPE + "=?",
-					new String[] { Tools.CONTENT_ITEM_TYPE },
-					null);
-			while(cursor.moveToNext()) {
-				try {
-					tools.updateOrCreateContactKey(
-						cursor.getString(cursor.getColumnIndex(Tools.PHONE)), 
-						Base64.decode(cursor.getString(cursor.getColumnIndex(Tools.KEY)),
-								Base64.DEFAULT),
-								false);
-					
-					cr.delete(ContentUris.withAppendedId(Data.CONTENT_URI, 
-							cursor.getLong(cursor.getColumnIndex(Data._ID))), 
-							null, null);
-				} catch (NoContactException e) {
-					e.printStackTrace();
-					Toast.makeText(this, "No contact for " + cursor.getColumnIndex(Tools.PHONE), 
-							Toast.LENGTH_SHORT).show();
-				}
-				
-			}
-		}
-
 
 		Intent intent = getIntent();
 		String action = intent == null ? null : intent.getAction();
@@ -413,11 +331,10 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		return super.onCreateOptionsMenu(menu);
-		/*MenuInflater inflater = getMenuInflater();
+		//return super.onCreateOptionsMenu(menu);
+		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main, menu);
 		return true;
-		*/
 	}
 
 	public void buttonShare(View v) {
@@ -481,7 +398,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			case R.id.main_menu_edit: 
 				buttonDirectory(null);
 				return true;
-			case R.id.main_menu_keys:
+			case R.id.main_menu_share:
 				buttonShare(null);
 				return true;
 			case R.id.main_menu_help:
@@ -759,7 +676,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	
 								System.arraycopy(encoded, 0, data, 3, encoded.length);
 								
-								tools.sendData(phoneList[i], Tools.INVITATION_SEND, "", data);
+								tools.sendData(phoneList[i], Tools.INVITATION, "", data);
 								
 						}
 					});
@@ -785,106 +702,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
   	        		Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
   		        }
   	    		break;
-        	case IntentIntegrator.REQUEST_CODE:
-	            if (resultCode == RESULT_OK) {
-	                try {
-		            	String contents = data.getStringExtra("SCAN_RESULT");
-		                @SuppressWarnings("unused")
-						String format = data.getStringExtra("SCAN_RESULT_FORMAT");
-		                // Handle successful scan
-		                
-		        		// TODO: add more tests control
-		                
-		                String[] infos = contents.split("\n");
-		                
-						Cipher rsaCipher = Cipher.getInstance(Tools.RSA_CIPHER_ALGO);
-						
-						if(mode == MODE_ESCLAVE) {
-							// Save key and show crypted key on QRCode
-							key = tools.generateKeyAES().getEncoded();
-							
-							KeyFactory keyFact = KeyFactory.getInstance("RSA");
-							
-							PublicKey pubkey = keyFact.generatePublic(
-									new RSAPublicKeySpec(new BigInteger(infos[1]), 
-											new BigInteger(infos[2])));
-							
-							rsaCipher.init(Cipher.ENCRYPT_MODE, pubkey);
-							
-							int blockSize = rsaCipher.getBlockSize();
-							
-							int nbBlock = key.length/blockSize;
-							int reste = key.length%blockSize;
-							
-							byte[] cryptedKey = new byte[(nbBlock+1)*rsaCipher.getOutputSize(blockSize)];
-							
-							int offset = 0;
-							
-							for(int i = 0; i < nbBlock; i++){
-								offset += rsaCipher.doFinal(key, i*blockSize, blockSize, cryptedKey, offset);
-							}
-							
-							rsaCipher.doFinal(key, nbBlock*blockSize, reste, cryptedKey, offset);
-							
-							IntentIntegrator.shareText(CharabiaActivity.this, 
-									prefPhoneNumber + "\n" +
-									Base64.encodeToString(cryptedKey,Base64.NO_WRAP));
-							
-						}
-						else {
-							
-							// We have read crypted key, so decode it
-							rsaCipher.init(Cipher.DECRYPT_MODE, keypair.getPrivate());
-							
-							byte[] cryptedData = Base64.decode(infos[1], Base64.NO_WRAP);
-
-							int blockSize = rsaCipher.getBlockSize();
-							int nbBlock = cryptedData.length/blockSize;
-							
-							int offset = 0;
-												
-							byte[] tempKey = new byte[(nbBlock+1)*blockSize];
-							
-							for(int i = 0; i < nbBlock; i++) {
-								offset += rsaCipher.doFinal(cryptedData, i*blockSize, blockSize, tempKey, offset);
-							}
-							
-							key = new byte[offset];
-							System.arraycopy(tempKey, 0, key, 0, offset);
-						}
-		                
-						phoneNumber = infos[0];
-						
-						// store the key
-						// TODO dialog to confirm add contact in mode SLAVE
-		                try {
-							new Tools(this).updateOrCreateContactKey(phoneNumber, key);
-						} 
-		                catch (NoContactException e) {
-							e.printStackTrace();
-							// propose to add contact
-							Intent newIntent = new Intent(Intents.SHOW_OR_CREATE_CONTACT);
-							newIntent.setData(Uri.fromParts("tel", phoneNumber, null));
-							startActivityForResult(newIntent, ADD_CONTACT);
-							return;
-		                }
-		                		                
-		               	Toast.makeText(this, getString(R.string.contact_added) + "\n" + phoneNumber, Toast.LENGTH_LONG).show();
-		                
-	            	}
-	            	catch(Exception e) {
-	            		e.printStackTrace();
-	            		Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
-	            	}
-	                
-	            }
-	            else {
-	            	// TODO: string
-	            	Toast.makeText(this, R.string.fail_reading_tag, Toast.LENGTH_LONG).show();
-	            }
-        		break;
-	         	
-		}
+ 		}
 
   }
 
@@ -897,30 +715,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
  		recipientsView.setText("");
  	}
  	
- 	/*
- 	 * Use to send a message from list
-	private synchronized void _sendFragment() throws Exception, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoLookupKeyException, NoCharabiaKeyException  {
- 		
-  		String phoneNumber = recipientsList.get(0);
- 		
-		String texte = messageView.getText().toString();
-
-		int start = mFragment*BLOCK_SIZE;
-		int end = (start+BLOCK_SIZE)<texte.length()?(start+BLOCK_SIZE):texte.length();
-		byte[] data = tools.encrypt(phoneNumber, texte.substring(start, end).getBytes());
-
-		Log.v(TAG, "send block data size = " + data.length);
-		
-		Intent iSend = new Intent(SMS_SENT);
-		//Intent iDelivered = new Intent(SMS_DELIVERED);
-		PendingIntent piSend = PendingIntent.getBroadcast(this, 0, iSend, 0);
-		//PendingIntent piDelivered = PendingIntent.getBroadcast(this, 0, iDelivered, 0);
-		//TODO piDelivered?
-		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, data, piSend, null);
- 	}
-  	 */
- 	
- 	private synchronized void sendFragment(ContentResolver cr) throws Exception, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoLookupKeyException, NoCharabiaKeyException  {
+  	private synchronized void sendFragment(ContentResolver cr) throws Exception, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, NoLookupKeyException, NoCharabiaKeyException  {
  		
   		String phoneNumber = recipientsList.get(0);
  		
@@ -931,7 +726,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		String subText = texte.substring(start, end);
 		byte[] data = tools.encrypt(phoneNumber, subText.getBytes());
 		
-		tools.sendData(phoneNumber, Tools.MESSAGE_SEND, subText, data);
+		tools.sendData(phoneNumber, Tools.MESSAGE, subText, data);
  	}
  
 	public synchronized void _sendMessage() {
@@ -1019,108 +814,4 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	    }	
 	}
 	
-	private BroadcastReceiver deliveredReceiver = new BroadcastReceiver()
-    {
-            @Override
-            public void onReceive(Context context, Intent intent)
-            {
-                    String info = "Delivery information: ";
-                    
-                    switch(getResultCode())
-                    {
-                            case Activity.RESULT_OK: info += "delivered"; break;
-                            case Activity.RESULT_CANCELED: info += "not delivered"; break;
-                    }
-                    
-                    Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
-            }
-    };
-    
-    private BroadcastReceiver sendReceiver = new BroadcastReceiver()
-    {
-            @Override
-            public void onReceive(Context context, Intent intent)
-            {
-                    String info = "Send information: ";
-                    
-                    switch(getResultCode())
-                    {
-                            case Activity.RESULT_OK: 
-
-                            	//TODO: preference
-                        		tools.putSmsToDatabase(recipientsList.get(0), 
-                        				System.currentTimeMillis(), 
-                        				Tools.MESSAGE_TYPE_SENT,
-                        				0, 
-                        				messageView.getText().toString());
-                        		
-                        		mFragment+=1;
-                        		if(mFragment*BLOCK_SIZE < messageView.length()) {
-                        			sendMessage();
-                        		}
-                        		else if(removeFromRecipientsList(0)) {
-                            		clear(null);
-                            		dismissDialog(SEND_PROGRESS_DIALOG);
-                            		messageView.setText("");
-                            	}
-                        		else {
-                            		mFragment = 0;
-                            		sendMessage();
-                            	}
-                            	Toast.makeText(getBaseContext(), R.string.send_success, Toast.LENGTH_SHORT).show();
-                            	return;
-                            case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
-                            case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
-                            case SmsManager.RESULT_ERROR_NULL_PDU: info += "send failed, null pdu"; break;
-                            case SmsManager.RESULT_ERROR_RADIO_OFF: info += "send failed, radio is off"; break;
-                    }
-                    
-                    //Toast.makeText(getBaseContext(), info, Toast.LENGTH_SHORT).show();
-                    Log.v("CHARABIA", info);
-                    
-                    dismissDialog(SEND_PROGRESS_DIALOG);
-                    showDialog(SEND_ERROR_DIALOG);
-                    
-            }
-    };
-
-    private BroadcastReceiver sendPubKeyReceiver = new BroadcastReceiver()
-    {
-            @Override
-            public void onReceive(Context context, Intent intent)
-            {
-            		int result = R.string.unexpected_error;
-            		
-                    String info = "Send pubkey information: ";
-                    
-                    switch(getResultCode())
-                    {
-                            case Activity.RESULT_OK:
-                            	info += "send successful";
-                            	result += R.string.send_success;
-                            	return;
-                            case SmsManager.RESULT_ERROR_GENERIC_FAILURE: info += "send failed, generic failure"; break;
-                            case SmsManager.RESULT_ERROR_NO_SERVICE: info += "send failed, no service"; break;
-                            case SmsManager.RESULT_ERROR_NULL_PDU: info += "send failed, null pdu"; break;
-                            case SmsManager.RESULT_ERROR_RADIO_OFF: info += "send failed, radio is off"; break;
-                    }
-                    
-                    Log.v("CHARABIA", info);
-                    
-                    dismissDialog(SEND_PROGRESS_DIALOG);
-
-                    Toast.makeText(getBaseContext(), result, Toast.LENGTH_SHORT).show();
-                    
-            }
-    };
-
-    @Override
-    protected void onDestroy()
-    {
-    	unregisterReceiver(sendReceiver);
-    	unregisterReceiver(deliveredReceiver);
-    	
-        super.onDestroy();
-    }
-
 }

@@ -15,7 +15,7 @@
         <item quantity="other">Destinataires</item>
     </plurals>
 	<string name="from">De</string>
-	<string name="message">Message %1$d car. %2$d sms</string>
+	<string name="title_message">Message %1$d car. %2$d sms</string>
 	<string name="send">Envoyer</string>
 	<string name="add_to">Ajouter destinataire</string>
 	<string name="incoming_message_ticker_text">message</string>
@@ -74,6 +74,11 @@
 	<string name="invitation_received">Invitation reçue</string>
 	<string name="invitation_send">Invitation envoyée</string>
 	<string name="message_received">Message reçue</string>
+	<string name="message">Message</string>
 	<string name="message_send">Message envoyée</string>
 	<string name="invitation_answer">Reponse reçue</string>
+	<string name="no_action">Pas d\'action en cours. Clique long pour composer un message.</string>
+	<string name="sending">Envoi en cours.</string>
+	<string name="invitation">Invitation</string>
+	<string name="save_quit">Sauver et quitter</string>
 </resources>

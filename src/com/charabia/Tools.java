@@ -165,11 +165,17 @@ public class Tools {
 	public static final byte CRYPTED_KEY_TYPE = (byte)0xC0; // we receive aes key crypted by public key
 
 	public static final int MESSAGE_ERROR = 1;
-	public static final int MESSAGE_SEND = MESSAGE_ERROR + 1;
-	public static final int MESSAGE_RECEIVED = MESSAGE_SEND + 1;
-	public static final int INVITATION_SEND = MESSAGE_RECEIVED + 1;
-	public static final int INVITATION_RECEIVED = INVITATION_SEND + 1;
+	public static final int MESSAGE = MESSAGE_ERROR + 1;
+	public static final int MESSAGE_SEND = MESSAGE + 1;
+	public static final int MESSAGE_DELIVERED = MESSAGE_SEND + 1;
+	public static final int MESSAGE_RECEIVED = MESSAGE_DELIVERED + 1;
+	public static final int INVITATION = MESSAGE_RECEIVED + 1;
+	public static final int INVITATION_SEND = INVITATION + 1;
+	public static final int INVITATION_DELIVERED = INVITATION_SEND + 1;
+	public static final int INVITATION_RECEIVED = INVITATION_DELIVERED + 1;
 	public static final int INVITATION_ANSWER = INVITATION_RECEIVED + 1;
+	public static final int INVITATION_ANSWER_SEND = INVITATION_ANSWER + 1;
+	public static final int INVITATION_ANSWER_DELIVERED = INVITATION_ANSWER_SEND + 1;
 	
 	//port where data sms are send
 	public static final short sms_port = 1981;
@@ -699,10 +705,20 @@ public class Tools {
 		
 		ContentResolver cr = context.getContentResolver();
 		
+		ContentValues values = new ContentValues();
+		
+		Log.v(TAG, "from " + originatingAddress + ", " + bytesToHex(messageBody));
+		
+		try {
+			String lookupKey = getLookupFromPhoneNumber(originatingAddress);
+			Uri contactUri = Contacts.lookupContact(context.getContentResolver(),  
+					Contacts.getLookupUri(0, lookupKey));
+			values.put(OpenHelper.CONTACT_URI, contactUri.toString());
+		} catch (NoContactException e1) {
+			e1.printStackTrace();
+		}
 		
 		byte msgType = (byte)(messageBody[2] & 0xC0);
-		
-		ContentValues values = new ContentValues();
 		
 		values.put(OpenHelper.PHONE, originatingAddress);
 		values.put(OpenHelper.MSG_DATA, messageBody);
@@ -771,13 +787,25 @@ public class Tools {
  		ContentResolver cr = context.getContentResolver();
  		
 		Log.v(TAG, "send block data size = " + data.length);
+		Log.v(TAG, "to " + phoneNumber + ", " + bytesToHex(data));
 		
 		ContentValues values = new ContentValues();
 		
+		try {
+			String lookupKey = getLookupFromPhoneNumber(phoneNumber);
+			Uri contactUri = Contacts.lookupContact(context.getContentResolver(),  
+					Contacts.getLookupUri(0, lookupKey));
+			values.put(OpenHelper.CONTACT_URI, contactUri.toString());
+		} catch (NoContactException e1) {
+			e1.printStackTrace();
+		}
+
 		values.put(OpenHelper.PHONE, phoneNumber);
 		values.put(OpenHelper.MSG_TYPE, type);
 		values.put(OpenHelper.MSG_TEXT, text);
 		values.put(OpenHelper.MSG_DATA, data);
+		values.put(OpenHelper.MSG_PORT, sms_port);
+		values.put(OpenHelper.MSG_STATUS, 0);
 		
 		Uri uri = cr.insert(DataProvider.MSG_CONTENT_URI, values);
 	
