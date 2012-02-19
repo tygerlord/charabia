@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Charabia authors
+ * Copyright (C) 2012 Charabia authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,27 +18,19 @@
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.widget.Toast;
+import android.util.Log;
 
-public class SMSReceiverTest extends BroadcastReceiver 
+public class SmsSender extends BroadcastReceiver 
 {
+	public static final String ACTION_SEND_SMS  = "com.charabia.intent.SEND_SMS";
+
 	@Override
 	public void onReceive(Context context, Intent intent)
 	{
-		Toast.makeText(context, "sms", Toast.LENGTH_LONG).show();
+		Log.v("CHARABIA", "SmsSender received intent " + intent);
 		
-		SMSReceiver receiver = new SMSReceiver();
-		
-		intent.setAction(SMSReceiver.ACTION_RECEIVE_SMS);
-		
-		receiver.onReceive(context, intent);
-		
-		/*
-		Tools tools = new Tools(context);
-		
-		tools.showNotification("12345678", index); index++;
-		
-		tools.showNotification("12345678", index); index++;
-		*/
+		if (intent.getAction().equals(ACTION_SEND_SMS)) {
+			new Tools(context).sendData(intent.getData());
+		}
 	} 
 }

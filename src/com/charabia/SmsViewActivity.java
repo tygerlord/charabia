@@ -30,8 +30,6 @@ import java.security.spec.RSAPublicKeySpec;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Vector;
-
 import javax.crypto.Cipher;
 
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -45,20 +43,15 @@ import android.provider.ContactsContract.Intents;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.app.AlertDialog.Builder;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.TextView;
 import android.widget.ListView;
 import android.widget.Toast;
-import android.widget.ViewSwitcher;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
@@ -744,6 +737,7 @@ public class SmsViewActivity extends FragmentActivity
             if(savedInstanceState != null) {
             }
             
+            /*
             getListView().setOnItemLongClickListener(new OnItemLongClickListener() {
     			@Override
     			public boolean onItemLongClick(AdapterView<?> parent, View view,
@@ -755,15 +749,12 @@ public class SmsViewActivity extends FragmentActivity
     				return true;
     			}
     		});
-
+			*/
 		}
 		
-		private void deleteId() {
+		private void deleteId(long id) {
 			ContentResolver cr = getActivity().getContentResolver();
-			
 			cr.delete(ContentUris.withAppendedId(DataProvider.MSG_CONTENT_URI, id), null, null);
-			
-			getLoaderManager().restartLoader(CONTACTS_LOADER, null, this);
 		}
 		
 		private void dialogMessageSend(final long id, String displayName, Drawable photo, String message) {
@@ -780,16 +771,10 @@ public class SmsViewActivity extends FragmentActivity
 			builder.setNegativeButton(R.string.clear,  
 					new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface dialog, int whichButton) {
-							
+							deleteId(id);
 						}
 					}
 				);
-			builder.setNeutralButton(R.string.save_quit, 
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int whichButton) {
-					}	
-             	}
-			);
 			builder.setPositiveButton(R.string.ok, null);
 		
 			builder.setTitle(displayName);
@@ -810,9 +795,7 @@ public class SmsViewActivity extends FragmentActivity
 			builder.setNegativeButton(R.string.clear,  
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int whichButton) {
-						ContentResolver cr = getActivity().getContentResolver();
-						
-						cr.delete(ContentUris.withAppendedId(DataProvider.MSG_CONTENT_URI, id), null, null);
+						deleteId(id);
 					}
 				}
 			);
@@ -836,17 +819,18 @@ public class SmsViewActivity extends FragmentActivity
 				builder.setIcon(photo);
 			}
 			builder.setMessage(message);
-			builder.setNegativeButton(R.string.no,  
+			builder.setNegativeButton(R.string.refuse,  
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int whichButton) {
 						
 					}
 				}
 			);
-			builder.setPositiveButton(R.string.yes, 
+			builder.setPositiveButton(R.string.accept, 
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int whichButton) {
-					
+						//TODO:
+						
 					}
              	});
 			builder.create().show();
@@ -885,63 +869,91 @@ public class SmsViewActivity extends FragmentActivity
 			
 			this.id = id;
 			
-			Cursor cursor = mAdapter.getCursor();
+			try {
+				Cursor cursor = mAdapter.getCursor();
+		
+				int type = 0;
+				String message = null;
+				Uri contactUri = null;
+				String phoneNumber = null;
+				
+				if(cursor.moveToPosition(position)) {
+					phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
+					type = cursor.getInt(cursor.getColumnIndex(OpenHelper.MSG_TYPE));
+					int count = cursor.getInt(cursor.getColumnIndex(OpenHelper.COUNTER));
+					message = "attempt " + count + "," + cursor.getString(cursor.getColumnIndex(OpenHelper.MSG_ERROR));
+					if(message == null || message.equals("")) {
+						message = cursor.getString(cursor.getColumnIndex(OpenHelper.MSG_TEXT));
+					}
+					contactUri = Uri.parse(cursor.getString(
+							cursor.getColumnIndex(OpenHelper.CONTACT_URI)));
+				}
+				
+				ContentResolver cr = getActivity().getContentResolver();
+				
+				Cursor cname = cr.query(contactUri, 
+						new String[] { Contacts.DISPLAY_NAME }, null, null, null);
 	
-			int type = 0;
-			String message = null;
-			Uri contactUri = null;
-			String phoneNumber = null;
-			
-			if(cursor.moveToPosition(position)) {
-				phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
-				type = cursor.getInt(cursor.getColumnIndex(OpenHelper.MSG_TYPE));
-				message = cursor.getString(cursor.getColumnIndex(OpenHelper.MSG_TEXT));
-				contactUri = Uri.parse(cursor.getString(
-						cursor.getColumnIndex(OpenHelper.CONTACT_URI)));
-			}
-			
-			ContentResolver cr = getActivity().getContentResolver();
-			
-			Cursor cname = cr.query(contactUri, 
-					new String[] { Contacts.DISPLAY_NAME }, null, null, null);
-
-			
-			String displayName = null;
-			
-			if(cname.moveToFirst()) {
-				displayName = cname.getString(0);
-			}
-			else {
-				displayName = getActivity().getString(R.string.unknow);
-			}
-			
-			cname.close();
-
-			java.io.InputStream input = Contacts.openContactPhotoInputStream(
-					cr,
-					contactUri);
-
-			Drawable photo = null;
-			if(input != null) {
-				photo = Drawable.createFromStream(input, null);
-			}
-			
-			if(type == Tools.MESSAGE || type == Tools.MESSAGE_SEND) {
-				dialogMessageSend(id, displayName, photo, message);
-			}
-			else if (type == Tools.MESSAGE_RECEIVED) {
-				dialogMessageReceived(id, displayName, photo, message);
-			}
-			else if (type == Tools.INVITATION || type == Tools.INVITATION_SEND) {
-				dialogMessageSend(id, displayName, photo, message);
-			}
-			else if (type == Tools.INVITATION_RECEIVED) {
-				dialogInvitationReceived(id, displayName, photo, message);
-			}
-			else if (type == Tools.INVITATION_ANSWER || type == Tools.INVITATION_ANSWER_SEND) {
-				dialogInvitationAnswer(id, displayName, photo, message);
-			}
+				
+				String displayName = null;
+				
+				if(cname.moveToFirst()) {
+					displayName = cname.getString(0);
+				}
+				else {
+					displayName = getActivity().getString(R.string.unknow);
+				}
+				
+				cname.close();
 	
+				java.io.InputStream input = Contacts.openContactPhotoInputStream(
+						cr,
+						contactUri);
+	
+				Drawable photo = null;
+				if(input != null) {
+					photo = Drawable.createFromStream(input, null);
+				}
+				
+				if(type == Tools.MESSAGE || type == Tools.MESSAGE_SEND) {
+					dialogMessageSend(id, displayName, photo, message);
+				}
+				else if (type == Tools.MESSAGE_RECEIVED) {
+					dialogMessageReceived(id, displayName, photo, message);
+				}
+				else if (type == Tools.INVITATION || type == Tools.INVITATION_SEND) {
+					dialogMessageSend(id, displayName, photo, message);
+				}
+				else if (type == Tools.INVITATION_RECEIVED) {
+					dialogInvitationReceived(id, displayName, photo, message);
+				}
+				else if (type == Tools.INVITATION_ANSWER || type == Tools.INVITATION_ANSWER_SEND) {
+					dialogInvitationAnswer(id, displayName, photo, message);
+				}
+				else {
+					throw new Exception("Unexpected error");
+				}
+			}
+			catch(Exception e ){
+				e.printStackTrace();
+				
+				final long _id = id;
+				Builder builder = new AlertDialog.Builder(getActivity());
+				builder.setIcon(R.drawable.ic_launcher);
+				builder.setNegativeButton(R.string.yes,  
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int whichButton) {
+								ContentResolver cr = getActivity().getContentResolver();
+								cr.delete(ContentUris.withAppendedId(DataProvider.MSG_CONTENT_URI, _id), null, null);
+							}
+						}
+					);
+				builder.setPositiveButton(R.string.no, null);
+			
+				builder.setTitle(R.string.delete);
+				builder.setMessage(R.string.unexpected_error);
+				builder.create().show();	
+			}
 		}
 	
 		@Override
@@ -956,7 +968,9 @@ public class SmsViewActivity extends FragmentActivity
 	        			OpenHelper.MSG_TYPE,
 	        			OpenHelper.MSG_DATE,
 	        			OpenHelper.MSG_TEXT,
-	        			OpenHelper.MSG_STATUS
+	        			OpenHelper.MSG_STATUS,
+	        			OpenHelper.COUNTER,
+	        			OpenHelper.MSG_ERROR
 	        		}, 
 	        		null, 
 	        		null,

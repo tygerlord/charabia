@@ -809,13 +809,52 @@ public class Tools {
 		
 		Uri uri = cr.insert(DataProvider.MSG_CONTENT_URI, values);
 	
-		Intent iSend = new Intent(SendResultReceiver.ACTION_RESULT_SMS);
-		iSend.putExtra("MSG_URI", uri);
-		PendingIntent piSend = PendingIntent.getBroadcast(context, 0, iSend, PendingIntent.FLAG_ONE_SHOT);
+		
+		Intent iSend = new Intent(SendResultReceiver.ACTION_RESULT_SMS, 
+				Uri.parse("message:"+uri.getPathSegments().get(1)));
+		PendingIntent piSend = PendingIntent.getBroadcast(context, 0, iSend, 0);
 		Log.v(TAG, "sendDataMessage " + phoneNumber + " port " + sms_port);
 		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, 
 						data, piSend, null);
  		
  	}
 
+	public synchronized void sendData(Uri msgUri) {
+		
+		Log.v(TAG, "sendData:" + msgUri);
+		
+        Uri uri = ContentUris.withAppendedId(DataProvider.MSG_CONTENT_URI, 
+        		Long.parseLong(msgUri.getSchemeSpecificPart()));
+
+		ContentResolver cr = context.getContentResolver();
+        
+        Cursor cursor = cr.query(uri, 
+        		new String[] { OpenHelper.PHONE, OpenHelper.MSG_DATA, OpenHelper.MSG_PORT, OpenHelper.COUNTER },
+        		null, null, null);
+        
+        String phoneNumber = null;
+        short sms_port = 0;
+        byte[] data = null;
+        int count = 0;
+        
+        if(cursor.moveToFirst()) {
+            phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
+            sms_port = cursor.getShort(cursor.getColumnIndex(OpenHelper.MSG_PORT));
+            data = cursor.getBlob(cursor.getColumnIndex(OpenHelper.MSG_DATA));
+            count = cursor.getInt(cursor.getColumnIndex(OpenHelper.COUNTER));
+        }
+        
+        cursor.close();
+        
+        if(phoneNumber != null && sms_port != 0 && data != null) {
+        	ContentValues values = new ContentValues();
+        	values.put(OpenHelper.COUNTER, count+1);
+        	cr.update(uri, values, null, null);
+     		Intent iSend = new Intent(SendResultReceiver.ACTION_RESULT_SMS, msgUri);
+     		PendingIntent piSend = PendingIntent.getBroadcast(context, 0, iSend, 0);
+     		Log.v("CHARABIA", "sendDataMessage again " + phoneNumber + " port " + sms_port);
+     		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, 
+     						data, piSend, null);
+        }
+	}
 }

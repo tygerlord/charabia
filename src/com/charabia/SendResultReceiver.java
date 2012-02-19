@@ -16,13 +16,14 @@
  package com.charabia;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.telephony.SmsManager;
 import android.util.Log;
@@ -39,9 +40,13 @@ public class SendResultReceiver extends BroadcastReceiver
             String info = "Send information: ";
             
             int resultCode = getResultCode();
-            
-            Uri uri = intent.getParcelableExtra("MSG_URI");
-            Log.v("CHARABIA", "SendResultReceiver + " + uri);
+                
+            Log.v("CHARABIA", "SendResultReceiver + " + intent.getData());
+
+            Uri uri = ContentUris.withAppendedId(DataProvider.MSG_CONTENT_URI, 
+            		Long.parseLong(intent.getData().getSchemeSpecificPart()));
+            		
+            Log.v("CHARABIA", "uri = " + uri);
             
             ContentResolver cr = context.getContentResolver();
             
@@ -68,31 +73,13 @@ public class SendResultReceiver extends BroadcastReceiver
             values.put(OpenHelper.MSG_STATUS, resultCode);
             
             cr.update(uri, values, null, null);
-            
-            Cursor cursor = cr.query(uri, 
-            		new String[] { OpenHelper.PHONE, OpenHelper.MSG_DATA, OpenHelper.MSG_PORT },
-            		null, null, null);
-            
-            String phoneNumber = null;
-            short sms_port = 0;
-            byte[] data = null;
-            
-            if(cursor.moveToFirst()) {
-                phoneNumber = cursor.getString(cursor.getColumnIndex(OpenHelper.PHONE));
-                sms_port = cursor.getShort(cursor.getColumnIndex(OpenHelper.MSG_PORT));
-                data = cursor.getBlob(cursor.getColumnIndex(OpenHelper.MSG_DATA));
-            }
-            
-            cursor.close();
-            
-            if(phoneNumber != null && sms_port != 0 && data != null) {
-	     		Intent iSend = new Intent(SendResultReceiver.ACTION_RESULT_SMS);
-	     		iSend.putExtra("MSG_URI", uri);
-	     		PendingIntent piSend = PendingIntent.getBroadcast(context, 0, iSend, PendingIntent.FLAG_ONE_SHOT);
-	     		Log.v("CHARABIA", "sendDataMessage again " + phoneNumber + " port " + sms_port);
-	     		SmsManager.getDefault().sendDataMessage(phoneNumber, null, sms_port, 
-	     						data, piSend, null);
-            }
+
+            Intent iSend = new Intent(SmsSender.ACTION_SEND_SMS, intent.getData());
+     		PendingIntent piAlarm = PendingIntent.getBroadcast(context, 0, iSend, 0);
+          
+     		AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+     		
+     		am.set(AlarmManager.RTC, System.currentTimeMillis()+(60*1000), piAlarm);
 		}
 	} 
 }

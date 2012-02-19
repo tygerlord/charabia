@@ -7,198 +7,97 @@
 	android:eventsInterceptionEnabled="true"
 	android:orientation="vertical">
 
-	<ViewSwitcher
-	    android:id="@+id/viewSwitcher1"
+	<LinearLayout
+	    android:id="@+id/mainLayout"
 	    android:layout_width="match_parent"
 	    android:layout_height="wrap_content"
-	    android:inAnimation="@anim/scale_in"
-	    android:outAnimation="@anim/scale_out" >
+	    android:orientation="vertical" >
 
 	    <LinearLayout
-	        android:id="@+id/mainLayout"
+	        android:id="@+id/menuLayout"
 	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content"
-	        android:orientation="vertical" >
+	        android:layout_height="match_parent"
+	        android:layout_margin="0dp"
+	        android:background="@android:color/darker_gray"
+	        android:baselineAligned="false"
+	        android:gravity="left|right" >
 
-	        <LinearLayout
-	            android:id="@+id/menuLayout"
-	            android:layout_width="match_parent"
+	        <TextView
+	            android:id="@+id/textView1"
+	            android:layout_width="wrap_content"
 	            android:layout_height="match_parent"
-	            android:layout_margin="0dp"
-	            android:background="@android:color/darker_gray"
-	            android:baselineAligned="false"
-	            android:gravity="left|right" >
-
-	            <TextView
-	                android:id="@+id/textView1"
-	                android:layout_width="wrap_content"
-	                android:layout_height="match_parent"
-	                android:layout_marginLeft="5dp"
-	                android:gravity="center_vertical|left"
-	                android:text="@string/app_name"
-	                android:textAppearance="?android:attr/textAppearanceLarge" />
-
-	            <LinearLayout
-	                android:id="@+id/buttonsLayout"
-	                android:layout_width="fill_parent"
-	                android:layout_height="match_parent"
-	                android:gravity="right" >
-
-	                <ImageView
-	                    android:id="@+id/image2"
-	                    android:layout_width="wrap_content"
-	                    android:layout_height="wrap_content"
-	                    android:clickable="true"
-	                    android:onClick="addRecipient"
-	                    android:src="@android:drawable/ic_menu_sort_alphabetically" />
-
-	                <ImageView
-	                    android:id="@+id/image3"
-	                    android:layout_width="wrap_content"
-	                    android:layout_height="wrap_content"
-	                    android:clickable="true"
-	                    android:onClick="buttonMore"
-	                    android:src="@android:drawable/ic_menu_more" />
-
-	                <ImageView
-	                    android:id="@+id/image1"
-	                    android:layout_width="wrap_content"
-	                    android:layout_height="wrap_content"
-	                    android:clickable="true"
-	                    android:focusable="true"
-	                    android:onClick="buttonSend"
-	                    android:src="@android:drawable/ic_menu_send" />
-	            </LinearLayout>
-	        </LinearLayout>
+	            android:layout_marginLeft="5dp"
+	            android:gravity="center_vertical|left"
+	            android:text="@string/app_name"
+	            android:textAppearance="?android:attr/textAppearanceLarge" />
 
 	        <LinearLayout
-	            android:id="@+id/ihm"
+	            android:id="@+id/buttonsLayout"
 	            android:layout_width="fill_parent"
-	            android:layout_height="wrap_content"
-	            android:isScrollContainer="true"
-	            android:orientation="vertical"
-	            android:weightSum="1" >
+	            android:layout_height="match_parent"
+	            android:gravity="right" >
 
-	            <TextView
-	                android:id="@+id/title_recipients"
+	            <ImageView
+	                android:id="@+id/image2"
 	                android:layout_width="wrap_content"
 	                android:layout_height="wrap_content"
-	                android:textAppearance="?android:attr/textAppearanceLarge" />
+	                android:clickable="true"
+	                android:onClick="addRecipient"
+	                android:src="@android:drawable/ic_menu_sort_alphabetically" />
 
-	            <TextView
-	                android:id="@+id/recipients"
-	                android:layout_width="fill_parent"
-	                android:layout_height="wrap_content"
-	                android:background="@android:drawable/editbox_background"
-	                android:inputType="text|textMultiLine|textAutoCorrect"
-	                android:maxLines="3"
-	                android:minLines="1"
-	                android:onClick="addRecipient" />
-
-	            <TextView
-	                android:id="@+id/title_message"
+	            <ImageView
+	                android:id="@+id/image1"
 	                android:layout_width="wrap_content"
 	                android:layout_height="wrap_content"
-	                android:text="@string/message"
-	                android:textAppearance="?android:attr/textAppearanceLarge" />
-
-	            <EditText
-	                android:id="@+id/message"
-	                android:layout_width="fill_parent"
-	                android:layout_height="wrap_content"
-	                android:layout_marginBottom="10dp"
-	                android:background="@android:drawable/editbox_background"
-	                android:gravity="top"
-	                android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
-	                android:imeOptions="actionSend"
-	                android:minLines="3" >
-
-	                <requestFocus />
-	            </EditText>
+	                android:clickable="true"
+	                android:focusable="true"
+	                android:onClick="buttonSend"
+	                android:src="@android:drawable/ic_menu_send" />
 	        </LinearLayout>
 	    </LinearLayout>
 
-	    <TableLayout
-	        android:id="@+id/subMenuLayout"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content" >
+	    <LinearLayout
+	        android:id="@+id/ihm"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:isScrollContainer="true"
+	        android:orientation="vertical"
+	        android:weightSum="1" >
 
-	        <TableRow>
+	        <TextView
+	            android:id="@+id/title_recipients"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:textAppearance="?android:attr/textAppearanceLarge" />
 
-	            <Button
-	                android:layout_width="0dip"
-	                android:layout_height="wrap_content"
-	                android:layout_weight="1"
-	                android:drawableTop="@android:drawable/ic_menu_sort_alphabetically"
-	                android:onClick="buttonDirectory"
-	                android:text="@string/directory" />
+	        <TextView
+	            android:id="@+id/recipients"
+	            android:layout_width="fill_parent"
+	            android:layout_height="wrap_content"
+	            android:background="@android:drawable/editbox_background"
+	            android:inputType="text|textMultiLine|textAutoCorrect"
+	            android:maxLines="3"
+	            android:minLines="1"
+	            android:onClick="addRecipient" />
 
-	            <Button
-	                android:layout_width="0dip"
-	                android:layout_height="wrap_content"
-	                android:layout_weight="1"
-	                android:drawableTop="@android:drawable/ic_menu_share"
-	                android:onClick="buttonShare"
-	                android:text="@string/share" />
+	        <TextView
+	            android:id="@+id/title_message"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="@string/message"
+	            android:textAppearance="?android:attr/textAppearanceLarge" />
 
-	            <Button
-	                android:layout_width="0dip"
-	                android:layout_height="wrap_content"
-	                android:layout_weight="1"
-	                android:drawableTop="@android:drawable/ic_menu_edit"
-	                android:onClick="buttonEdit"
-	                android:text="@string/edit" />
-	        </TableRow>
-
-	        <TableRow>
-
-	            <Button
-	                android:layout_width="0dip"
-	                android:layout_height="wrap_content"
-	                android:layout_weight="1"
-	                android:drawableTop="@android:drawable/ic_menu_preferences"
-	                android:onClick="buttonOptions"
-	                android:text="@string/options" />
-
-	            <Button
-	                android:layout_width="0dip"
-	                android:layout_height="wrap_content"
-	                android:layout_weight="1"
-	                android:drawableTop="@android:drawable/ic_menu_help"
-	                android:onClick="buttonHelp"
-	                android:text="@string/help" />
-
-	            <Button
-	                android:layout_width="0dip"
-	                android:layout_height="wrap_content"
-	                android:layout_weight="1"
-	                android:drawableTop="@android:drawable/ic_menu_add"
-	                android:onClick="buttonInvite"
-	                android:text="@string/invite" />
-	        </TableRow>
-	        <TableRow>
-	            <Button 
-	                android:layout_width="0dip" 
-	                android:layout_height="wrap_content"
-	                android:layout_weight="1"
-	                android:drawableTop="@android:drawable/ic_menu_info_details"
-	                android:onClick="buttonAbout"
-	                android:text="@string/about" />
-	            
-	            <Button
-	                android:layout_width="0dip"
-	                android:layout_height="wrap_content" 
-	                android:layout_weight="1" 
-	                android:drawableTop="@android:drawable/ic_menu_close_clear_cancel"
-	                android:onClick="buttonQuit"
-	                android:text="@string/quit" />
-	            
-	            <ImageView
-	                android:layout_width="0dip"
-	                android:layout_weight="1" />
-	        </TableRow>
-	    </TableLayout>
-
-	</ViewSwitcher>
+	        <EditText
+	            android:id="@+id/message"
+	            android:layout_width="fill_parent"
+	            android:layout_height="wrap_content"
+	            android:layout_marginBottom="10dp"
+	            android:background="@android:drawable/editbox_background"
+	            android:gravity="top"
+	            android:imeOptions="actionSend"
+	            android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
+	            android:minLines="3" />
+	    </LinearLayout>
+	</LinearLayout>
  
 </android.gesture.GestureOverlayView>

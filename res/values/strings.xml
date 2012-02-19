@@ -81,4 +81,7 @@
 	<string name="sending">Envoi en cours.</string>
 	<string name="invitation">Invitation</string>
 	<string name="save_quit">Sauver et quitter</string>
+	<string name="accept">Accepter</string>
+	<string name="refuse">Refuser</string>
+	<string name="send_again">Renvoyer</string>
 </resources>

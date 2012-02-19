@@ -85,32 +85,19 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	public static final String SMS_BODY = "sms_body";
 	
 	// Dialogs
-	private static final int MODE_DIALOG = 0;
-	private static final int SEND_PROGRESS_DIALOG = MODE_DIALOG + 1;
+	private static final int SEND_PROGRESS_DIALOG = 1;
 	private static final int SEND_ERROR_DIALOG = SEND_PROGRESS_DIALOG + 1;
 	private static final int EDIT_TO_DIALOG = SEND_ERROR_DIALOG + 1;
 	
 	// List of intent 
 	private static final int PICK_CONTACT = 1;
 	private static final int ADD_CONTACT = PICK_CONTACT + 1;
-	private static final int SMS_KEY_CONTACT = ADD_CONTACT + 1;
 	
 	// widgets
 	private TextView titleRecipientView = null;
 	private TextView recipientsView = null;
 	private TextView titleMessageView = null;
 	private EditText messageView = null;
-	
-	// Keys share mode
-	private static final int MODE_MAITRE = 0;
-	private static final int MODE_ESCLAVE = MODE_MAITRE + 1;
-	private static final int MODE_SMS = MODE_ESCLAVE + 1;
-
-	// store the mode of key exchange
-	private int mode = MODE_MAITRE;
-
-	// RSA keypair use to process exchange of key 
-	private KeyPair keypair = null;
 	
 	private String prefPhoneNumber = null;
 	
@@ -131,15 +118,11 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	private byte[] key = null;
 	private String phoneNumber = null;
 	
-	private String[] phoneList = null;
-
 	// Manage state changes
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-		outState.putInt("mode", mode);
 		outState.putString("prefPhoneNumber", prefPhoneNumber);
-		outState.putSerializable("keypair", keypair);
 		outState.putSerializable("recipientsList", recipientsList);
 		outState.putInt("mFragment", mFragment);
 		outState.putBoolean("dismissAction", dismissAction);
@@ -151,9 +134,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	@Override 
 	protected void onRestoreInstanceState(Bundle savedInstanceState) {
 		super.onRestoreInstanceState(savedInstanceState);
-		mode = savedInstanceState.getInt("mode");
 		prefPhoneNumber = savedInstanceState.getString("prefPhoneNumber");
-		keypair = (KeyPair) savedInstanceState.getSerializable("keypair");
 		recipientsList = (Vector<String>) savedInstanceState.getSerializable("recipientsList");
 		mFragment = savedInstanceState.getInt("mFragment");
 		dismissAction = savedInstanceState.getBoolean("dismissAction");
@@ -329,18 +310,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		removeFromRecipientsList(-1);
 	}
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		//return super.onCreateOptionsMenu(menu);
-		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.main, menu);
-		return true;
-	}
-
-	public void buttonShare(View v) {
-		showDialog(MODE_DIALOG);
-	}
-	
 	public void buttonOptions(View view) {
 		Intent intent = new Intent(Intent.ACTION_VIEW);
 		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
@@ -376,11 +345,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		startActivity(intent);
 	}
 
-	public void buttonEdit(View view) {
-		ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
-		vs.showNext();
-	}
-
 	public void buttonInvite(View view) {
 		Intent intent = new Intent(Intent.ACTION_VIEW);
 		intent.setClassName(this, SmsViewActivity.class.getName());
@@ -397,9 +361,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 				return true;
 			case R.id.main_menu_edit: 
 				buttonDirectory(null);
-				return true;
-			case R.id.main_menu_share:
-				buttonShare(null);
 				return true;
 			case R.id.main_menu_help:
 				buttonHelp(null);
@@ -422,16 +383,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		Dialog dialog;
 		AlertDialog.Builder builder;
 		switch(id) {
-			case MODE_DIALOG:
-				builder = new AlertDialog.Builder(this);
-				builder.setTitle(getString(R.string.app_name));
-				builder.setItems(new String[] { 
-						getString(R.string.master), 
-						getString(R.string.slave), 
-						getString(R.string.by_sms) 
-					}, modeListener);
-				dialog = builder.create();
-				break;
 			case SEND_PROGRESS_DIALOG:
 				dialog = new ProgressDialog(this, 
 						ProgressDialog.STYLE_SPINNER);
@@ -501,54 +452,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		}
 	}
 			
-	private final DialogInterface.OnClickListener modeListener =
-		new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialogInterface, int i) {
-				mode = i;
-				switch(mode) {
-					case MODE_SMS:
-						//sms
-						Intent intent = new Intent(Intent.ACTION_PICK, Contacts.CONTENT_URI);  
-						startActivityForResult(intent, SMS_KEY_CONTACT);  						
-						break;
-					case MODE_ESCLAVE:
-						IntentIntegrator.initiateScan(CharabiaActivity.this);							
-						break;
-					case MODE_MAITRE:
-					default:
-						//Master
-						KeyPairGenerator gen;
-						try {
-							gen = KeyPairGenerator.getInstance("RSA");
-							//TODO preference to increase key size and so increase security
-							// but this increase amount of data to show in QRcode and can
-							// be more difficult to read
-							gen.initialize(new RSAKeyGenParameterSpec(256, RSAKeyGenParameterSpec.F4));
-
-							keypair = gen.generateKeyPair();
-							RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
-							
-							IntentIntegrator.initiateScan(CharabiaActivity.this);							
-							IntentIntegrator.shareText(CharabiaActivity.this, 
-									prefPhoneNumber + "\n" +
-									pubKey.getModulus() + "\n" + 
-									pubKey.getPublicExponent());
-							
-							return;
-						} 
-						catch (NoSuchAlgorithmException e) {
-							e.printStackTrace();
-						} 
-						catch (InvalidAlgorithmParameterException e) {
-							e.printStackTrace();
-						}
-
-						Toast.makeText(getApplicationContext(), R.string.unexpected_error, Toast.LENGTH_LONG).show();
-			}
-
-		}
-	};
-
 	private final DialogInterface.OnDismissListener sendErrorDismissListener =
 		new DialogInterface.OnDismissListener() {
 			public void onDismiss(DialogInterface dialogInterface) {
@@ -619,74 +522,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		super.onActivityResult(reqCode, resultCode, data);
 
 		switch (reqCode) {
-			case SMS_KEY_CONTACT:
-				if (resultCode == RESULT_OK) {
-					Uri uri = data.getData();
-					
-					ContentResolver cr = getContentResolver();
-					
-					Cursor cursor =  cr.query(uri, new String[] { Contacts.LOOKUP_KEY }, 
-							null, null, null);
-					
-					String lookup = null;
-					
-					if(cursor.moveToFirst()) {
-						lookup = cursor.getString(0);
-					}
-					
-					cursor.close();
-	
-					if(lookup == null) {
-						Toast.makeText(this, R.string.unexpected_error, Toast.LENGTH_LONG).show();
-						return;
-					}
-					
-					cursor = cr.query(Data.CONTENT_URI, 
-							new String[] { Phone.NUMBER },
-							Data.MIMETYPE + "=? AND " + Data.LOOKUP_KEY + "=?",
-							new String[] { Phone.CONTENT_ITEM_TYPE, lookup },
-							null);
-	
-					ArrayList<String> options = new ArrayList<String>();
-					
-					while(cursor.moveToNext()) {
-						options.add(cursor.getString(0));
-					}
-						
-					cursor.close();
-					
-					final String[] phoneList = options.toArray(new String[0]);
-	
-					Builder builder = new AlertDialog.Builder(this);
-					builder.setTitle(R.string.send_invit_on_phone);
-					builder.setItems(phoneList, 				
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialogInterface, int i) {
-								
-								keypair = tools.loadKeyPair();
-								RSAPublicKey pubKey = (RSAPublicKey) keypair.getPublic();
-								
-								byte[] encoded = pubKey.getModulus().toByteArray();
-										
-								byte[] data = new byte[3 + encoded.length];
-								
-								data[0] = Tools.MAGIC[0];
-								data[1] = Tools.MAGIC[1];
-								data[2] = Tools.PUBLIC_KEY_TYPE;
-	
-								System.arraycopy(encoded, 0, data, 3, encoded.length);
-								
-								tools.sendData(phoneList[i], Tools.INVITATION, "", data);
-								
-						}
-					});
-
-					builder.create().show();
-				}
-				else {
-					Toast.makeText(this, R.string.error_create_key, Toast.LENGTH_LONG).show();
-				}
-				break;
         	case PICK_CONTACT:
         		if (resultCode == RESULT_OK) {
         			addToRecipientsList(data.getData().getSchemeSpecificPart());
@@ -729,22 +564,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		tools.sendData(phoneNumber, Tools.MESSAGE, subText, data);
  	}
  
-	public synchronized void _sendMessage() {
-
-		showDialog(SEND_PROGRESS_DIALOG);
-
-		try {
-			//sendFragment();
-			return;
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
-
-		dismissDialog(SEND_PROGRESS_DIALOG);
-		showDialog(SEND_ERROR_DIALOG);
-		
-	}
-
 	public synchronized void sendMessage() {
 		ContentResolver cr = getContentResolver();
 		
@@ -758,6 +577,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 			}while(removeFromRecipientsList(0)==false);
 			
 			messageView.setText("");
+			finish();
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -766,11 +586,6 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 		
 	}
 
-	public void buttonMore(View view) {
-		ViewSwitcher vs = (ViewSwitcher) findViewById(R.id.viewSwitcher1);
-		vs.showNext();
-	}
-	
 	/*
 	 * Called by button send
 	 */
@@ -808,9 +623,7 @@ public class CharabiaActivity extends Activity implements OnGesturePerformedList
 	            buttonQuit(null);
 	        } else if ("CLEAR".equals(action)) {
 	            clear(null);
-	        } else if ("MODE".equals(action)) {
-	        	showDialog(MODE_DIALOG);
-	        }
+	        } 
 	    }	
 	}
 	
